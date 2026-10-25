@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import type { CreateGroupRequest } from "@gather/contracts";
+import type { CreateGroupRequest, GroupSchedule } from "@gather/contracts";
 import { requireAuth } from "../auth.js";
 import type { GroupsStore } from "./store.js";
 
@@ -102,5 +102,27 @@ export function registerGroupRoutes(
     async (request) => ({
       members: await store.listMembers(request.params.groupId),
     }),
+  );
+
+  app.get<{ Params: { groupId: string } }>(
+    "/v1/groups/:groupId/schedule",
+    { preHandler: [requireAuth, memberOnly] },
+    async (request) => store.getSchedule(request.params.groupId),
+  );
+
+  app.put<{ Params: { groupId: string }; Body: GroupSchedule }>(
+    "/v1/groups/:groupId/schedule",
+    { preHandler: [requireAuth, memberOnly] },
+    async (request, reply) => {
+      const timezone = request.body?.timezone;
+      const weeklyEnabled = request.body?.weeklyEnabled;
+      if (!isNonEmptyString(timezone) || typeof weeklyEnabled !== "boolean") {
+        return reply.code(400).send({ error: "invalid_schedule" });
+      }
+      return store.putSchedule(request.params.groupId, {
+        timezone: timezone.trim(),
+        weeklyEnabled,
+      });
+    },
   );
 }

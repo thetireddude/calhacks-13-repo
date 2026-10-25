@@ -4,8 +4,9 @@ import type {
   GroupInviteResponse,
   GroupMemberResponse,
   GroupResponse,
+  GroupSchedule,
 } from "@gather/contracts";
-import type { GroupsStore } from "./store.js";
+import { DEFAULT_GROUP_SCHEDULE, type GroupsStore } from "./store.js";
 
 type GroupRow = {
   id: string;
@@ -26,6 +27,11 @@ type InviteRow = {
   token: string;
   expires_at: string | null;
   created_at: string;
+};
+
+type ScheduleRow = {
+  timezone: string;
+  weekly_enabled: boolean;
 };
 
 function toIsoTimestamp(value: string): string {
@@ -56,6 +62,13 @@ function mapInvite(row: InviteRow): GroupInviteResponse {
     token: row.token,
     expiresAt: row.expires_at ? toIsoTimestamp(row.expires_at) : null,
     createdAt: toIsoTimestamp(row.created_at),
+  };
+}
+
+function mapSchedule(row: ScheduleRow): GroupSchedule {
+  return {
+    timezone: row.timezone,
+    weeklyEnabled: row.weekly_enabled,
   };
 }
 
@@ -260,5 +273,46 @@ export class SupabaseGroupsStore implements GroupsStore {
     }
 
     return mapMember(data as MembershipRow);
+  }
+
+  async getSchedule(groupId: string): Promise<GroupSchedule> {
+    const { data, error } = await this.client
+      .from("group_schedules")
+      .select("timezone, weekly_enabled")
+      .eq("group_id", groupId)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(`get schedule failed: ${error.message}`);
+    }
+    if (!data) {
+      return { ...DEFAULT_GROUP_SCHEDULE };
+    }
+    return mapSchedule(data as ScheduleRow);
+  }
+
+  async putSchedule(
+    groupId: string,
+    schedule: GroupSchedule,
+  ): Promise<GroupSchedule> {
+    const { data, error } = await this.client
+      .from("group_schedules")
+      .upsert(
+        {
+          group_id: groupId,
+          timezone: schedule.timezone,
+          weekly_enabled: schedule.weeklyEnabled,
+        },
+        { onConflict: "group_id" },
+      )
+      .select("timezone, weekly_enabled")
+      .single();
+
+    if (error || !data) {
+      throw new Error(
+        `put schedule failed: ${error?.message ?? "no row returned"}`,
+      );
+    }
+    return mapSchedule(data as ScheduleRow);
   }
 }

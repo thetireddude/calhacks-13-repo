@@ -6,6 +6,7 @@ export type {
   GroupInviteResponse,
   GroupMemberResponse,
   GroupResponse,
+  GroupSchedule,
   JoinInviteResponse,
   MeProfileStub,
   MeResponse,

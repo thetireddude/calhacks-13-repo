@@ -1,7 +1,7 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { Button } from "react-native";
+import { ActivityIndicator, Button, View } from "react-native";
 
 import { useAuth } from "./auth";
 import {
@@ -36,7 +36,12 @@ function AuthenticatedTabs() {
 // Authenticated screens are only mounted while a session exists.
 export function RootNavigator() {
   const { loading, session } = useAuth();
-  if (loading) return null;
+  if (loading)
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator accessibilityLabel="Loading" />
+      </View>
+    );
   return (
     <NavigationContainer>
       {session ? (

@@ -54,3 +54,71 @@ test("sign-in reaches authenticated tabs and logout returns to the email screen"
   expect(screen.queryByText("Groups placeholder")).toBeNull();
   await waitFor(async () => expect(await client.getSession()).toBeNull());
 });
+
+async function toOtp(client: AuthClient) {
+  await renderApp(client);
+  await fireEvent.changeText(await screen.findByLabelText("Email"), "a@example.com");
+  await fireEvent.press(screen.getByText("Send code"));
+  await screen.findByLabelText("Code");
+}
+
+test("invalid code shows its own error, clears on retry, and a retry can succeed", async () => {
+  const client = createMockAuthClient({ verify: "invalid_code" });
+  await toOtp(client);
+  await fireEvent.changeText(screen.getByLabelText("Code"), "111111");
+  await fireEvent.press(screen.getByText("Verify"));
+  await screen.findByText(/not correct/);
+  expect(screen.queryByText(/expired/)).toBeNull();
+  client.setVerifyOutcome("success");
+  await fireEvent.changeText(screen.getByLabelText("Code"), "222222");
+  expect(screen.queryByText(/not correct/)).toBeNull();
+  await fireEvent.press(screen.getByText("Verify"));
+  await screen.findByText("Groups placeholder");
+});
+
+test("expired code shows a distinct error and resend recovers", async () => {
+  const client = createMockAuthClient({ verify: "expired_code" });
+  await toOtp(client);
+  await fireEvent.changeText(screen.getByLabelText("Code"), "111111");
+  await fireEvent.press(screen.getByText("Verify"));
+  await screen.findByText(/expired/);
+  expect(screen.queryByText(/not correct/)).toBeNull();
+  client.setVerifyOutcome("success");
+  await fireEvent.press(screen.getByText("Resend code"));
+  await screen.findByText("A new code was sent.");
+  expect(screen.queryByText(/expired/)).toBeNull();
+  await fireEvent.changeText(screen.getByLabelText("Code"), "333333");
+  await fireEvent.press(screen.getByText("Verify"));
+  await screen.findByText("Groups placeholder");
+});
+
+test("network failure on verify is recoverable", async () => {
+  const client = createMockAuthClient({ verify: "network" });
+  await toOtp(client);
+  await fireEvent.changeText(screen.getByLabelText("Code"), "111111");
+  await fireEvent.press(screen.getByText("Verify"));
+  await screen.findByText(/Network problem/);
+  client.setVerifyOutcome("success");
+  await fireEvent.press(screen.getByText("Verify"));
+  await screen.findByText("Groups placeholder");
+});
+
+test("requestOtp failure on the email screen shows an error and stays retryable", async () => {
+  const client = createMockAuthClient({ request: "network" });
+  await renderApp(client);
+  await fireEvent.changeText(await screen.findByLabelText("Email"), "a@example.com");
+  await fireEvent.press(screen.getByText("Send code"));
+  await screen.findByText(/Network problem/);
+  expect(screen.queryByLabelText("Code")).toBeNull();
+  client.setRequestOutcome("success");
+  await fireEvent.press(screen.getByText("Send code"));
+  expect(await screen.findByLabelText("Code")).toBeTruthy();
+});
+
+test("invalid email is rejected before requesting a code", async () => {
+  await renderApp();
+  await fireEvent.changeText(await screen.findByLabelText("Email"), "not-an-email");
+  await fireEvent.press(screen.getByText("Send code"));
+  await screen.findByText("Enter a valid email address.");
+  expect(screen.queryByLabelText("Code")).toBeNull();
+});

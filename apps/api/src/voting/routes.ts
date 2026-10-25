@@ -21,11 +21,13 @@ export function registerVotingRoutes(
     request: { params: { proposalId: string }; authUser?: { sub: string } },
     reply: { code: (n: number) => { send: (b: unknown) => unknown } },
   ) => {
-    const ctx = planningStore.findProposalContext(request.params.proposalId);
+    const ctx = await planningStore.findProposalContext(
+      request.params.proposalId,
+    );
     if (!ctx) {
       return reply.code(404).send({ error: "not_found" });
     }
-    if (!groupsStore.isMember(ctx.groupId, request.authUser!.sub)) {
+    if (!(await groupsStore.isMember(ctx.groupId, request.authUser!.sub))) {
       return reply.code(403).send({ error: "forbidden" });
     }
   };
@@ -35,10 +37,10 @@ export function registerVotingRoutes(
     reply: { code: (n: number) => { send: (b: unknown) => unknown } },
   ) => {
     const groupId = request.params.groupId;
-    if (!groupsStore.getGroup(groupId)) {
+    if (!(await groupsStore.getGroup(groupId))) {
       return reply.code(404).send({ error: "not_found" });
     }
-    if (!groupsStore.isMember(groupId, request.authUser!.sub)) {
+    if (!(await groupsStore.isMember(groupId, request.authUser!.sub))) {
       return reply.code(403).send({ error: "forbidden" });
     }
   };
@@ -52,20 +54,22 @@ export function registerVotingRoutes(
         return reply.code(400).send({ error: "invalid_choice" });
       }
 
-      const ctx = planningStore.findProposalContext(request.params.proposalId)!;
+      const ctx = (await planningStore.findProposalContext(
+        request.params.proposalId,
+      ))!;
       const userId = request.authUser!.sub;
-      const vote = votingStore.upsertVote(
+      const vote = await votingStore.upsertVote(
         request.params.proposalId,
         userId,
         choice,
       );
 
-      votingStore.tryConfirmFromMajority({
+      await votingStore.tryConfirmFromMajority({
         groupId: ctx.groupId,
         proposalId: ctx.proposal.proposalId,
         planningRunId: ctx.runId,
         summary: ctx.proposal.summary,
-        memberCount: groupsStore.listMembers(ctx.groupId).length,
+        memberCount: (await groupsStore.listMembers(ctx.groupId)).length,
       });
 
       return vote;
@@ -76,14 +80,17 @@ export function registerVotingRoutes(
     "/v1/proposals/:proposalId/veto",
     { preHandler: [requireAuth, memberOnlyForProposal] },
     async (request) =>
-      votingStore.recordVeto(request.params.proposalId, request.authUser!.sub),
+      await votingStore.recordVeto(
+        request.params.proposalId,
+        request.authUser!.sub,
+      ),
   );
 
   app.get<{ Params: { groupId: string } }>(
     "/v1/groups/:groupId/confirmed-event",
     { preHandler: [requireAuth, memberOnlyForGroup] },
     async (request, reply) => {
-      const event = votingStore.getConfirmedEvent(request.params.groupId);
+      const event = await votingStore.getConfirmedEvent(request.params.groupId);
       if (!event) {
         return reply.code(404).send({ error: "not_found" });
       }

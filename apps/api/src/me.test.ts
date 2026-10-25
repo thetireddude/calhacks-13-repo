@@ -3,7 +3,9 @@ import { createSecretKey } from "node:crypto";
 import test from "node:test";
 import { SignJWT } from "jose";
 import { createApp } from "./app.js";
+import { createDefaultMemberSetupStore } from "./me/createMemberSetupStore.js";
 import { InMemoryMemberSetupStore } from "./me/store.js";
+import { SupabaseMemberSetupStore } from "./me/supabaseSetupStore.js";
 
 const TEST_SECRET = "dev-test-jwt-secret-at-least-32-chars!!";
 
@@ -232,4 +234,33 @@ test("privacy: JWT subject scopes preferences and availability to the caller onl
   assert.deepEqual(availB.json(), { windows: [USER_B_WINDOW] });
 
   await app.close();
+});
+
+test("createDefaultMemberSetupStore is env-gated", () => {
+  const prevUrl = process.env.SUPABASE_URL;
+  const prevKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  try {
+    delete process.env.SUPABASE_URL;
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    assert.ok(
+      createDefaultMemberSetupStore() instanceof InMemoryMemberSetupStore,
+    );
+
+    process.env.SUPABASE_URL = "https://example.supabase.co";
+    process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-key";
+    assert.ok(
+      createDefaultMemberSetupStore() instanceof SupabaseMemberSetupStore,
+    );
+  } finally {
+    if (prevUrl === undefined) {
+      delete process.env.SUPABASE_URL;
+    } else {
+      process.env.SUPABASE_URL = prevUrl;
+    }
+    if (prevKey === undefined) {
+      delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    } else {
+      process.env.SUPABASE_SERVICE_ROLE_KEY = prevKey;
+    }
+  }
 });

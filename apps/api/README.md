@@ -5,6 +5,20 @@
 
 Node.js + TypeScript (Fastify) HTTP API and planning orchestration. See [`docs/developers/developer-2-backend.md`](../../docs/developers/developer-2-backend.md) and SPEC §4 / §6.2.
 
+## Local development (Developer 2)
+
+End-to-end setup: [`docs/dev2-local-setup.md`](../../docs/dev2-local-setup.md).
+
+```bash
+pnpm install
+supabase start && supabase db reset   # repo root; requires Docker
+cp .env.example .env                  # fill from supabase status
+pnpm run test:ci                      # 29/29 — no running API required
+pnpm --filter @gather/api run dev     # needs SUPABASE_JWT_SECRET for protected routes
+```
+
+Environment reference: root [`.env.example`](../../.env.example). Supabase schema and migrations: [`supabase/README.md`](../../supabase/README.md).
+
 ## Gate 1 status
 
 Through **DEV2-009**: auth, groups, private member setup, mock planner workflow, vote/veto/confirmed-event skeleton. Persistence for handlers is **in-memory**; Supabase schema lives under `supabase/migrations/`.
@@ -21,10 +35,11 @@ Through **DEV2-009**: auth, groups, private member setup, mock planner workflow,
 From **repo root**, Dev 2 CI parity:
 
 ```bash
-pnpm run test:dev2
+pnpm run test:ci
+# alias: pnpm run test:dev2
 ```
 
-Runs `@gather/contracts` build, API typecheck, and API tests (**27** cases, includes migration smoke).
+Runs `@gather/contracts` build, API typecheck, and API tests (**27** cases, includes migration smoke). Does not require Supabase running or a populated `.env`.
 
 ## Implemented routes (Gate 1)
 

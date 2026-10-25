@@ -6,7 +6,9 @@ import type { Proposal } from "@gather/contracts";
 import { createApp } from "./app.js";
 import { InMemoryGroupsStore } from "./groups/store.js";
 import { InMemoryPlanningStore } from "./planning/store.js";
+import { createDefaultVotingStore } from "./voting/createVotingStore.js";
 import { InMemoryVotingStore } from "./voting/store.js";
+import { SupabaseVotingStore } from "./voting/supabaseStore.js";
 
 const TEST_SECRET = "dev-test-jwt-secret-at-least-32-chars!!";
 
@@ -31,11 +33,11 @@ async function seedGroupWithProposal(
   proposalId = "prop-vote-1",
 ): Promise<{ groupId: string; runId: string; proposalId: string }> {
   const owner = memberIds[0] ?? "owner-vote";
-  const group = groupsStore.createGroup("Vote crew", owner);
+  const group = await groupsStore.createGroup("Vote crew", owner);
   for (const id of memberIds.slice(1)) {
-    groupsStore.joinGroup(group.id, id);
+    await groupsStore.joinGroup(group.id, id);
   }
-  const run = planningStore.createRun(group.id, owner, "dinner");
+  const run = await planningStore.createRun(group.id, owner, "dinner");
   const proposals: Proposal[] = [
     {
       proposalId,
@@ -43,7 +45,7 @@ async function seedGroupWithProposal(
       summary: "Friday tacos",
     },
   ];
-  planningStore.completeRun(run.id, proposals);
+  await planningStore.completeRun(run.id, proposals);
   return { groupId: group.id, runId: run.id, proposalId };
 }
 
@@ -137,7 +139,7 @@ test("PUT vote upserts idempotently per user", async () => {
   assert.equal(second.statusCode, 200);
   const secondBody = second.json() as { choice: string; updatedAt: string };
   assert.equal(secondBody.choice, "approve");
-  assert.equal(votingStore.countApprovals(proposalId), 1);
+  assert.equal(await votingStore.countApprovals(proposalId), 1);
 
   const change = await app.inject({
     method: "PUT",
@@ -150,7 +152,7 @@ test("PUT vote upserts idempotently per user", async () => {
     (change.json() as { choice: string }).choice,
     "cant_make_it",
   );
-  assert.equal(votingStore.countApprovals(proposalId), 0);
+  assert.equal(await votingStore.countApprovals(proposalId), 0);
 
   await app.close();
 });
@@ -175,7 +177,7 @@ test("POST veto is distinct from cant_make_it vote", async () => {
   });
   assert.equal(vetoRes.statusCode, 200);
   assert.deepEqual(vetoRes.json(), {
-    ...votingStore.getVeto(proposalId, "veto-user"),
+    ...(await votingStore.getVeto(proposalId, "veto-user")),
   });
 
   const voteRes = await app.inject({
@@ -185,8 +187,11 @@ test("POST veto is distinct from cant_make_it vote", async () => {
     payload: { choice: "cant_make_it" },
   });
   assert.equal(voteRes.statusCode, 200);
-  assert.ok(votingStore.getVeto(proposalId, "veto-user"));
-  assert.equal(votingStore.getVote(proposalId, "veto-user")?.choice, "cant_make_it");
+  assert.ok(await votingStore.getVeto(proposalId, "veto-user"));
+  assert.equal(
+    (await votingStore.getVote(proposalId, "veto-user"))?.choice,
+    "cant_make_it",
+  );
 
   await app.close();
 });
@@ -250,11 +255,11 @@ test("stub majority confirms once; concurrent approvals do not duplicate", async
   await app.close();
 });
 
-test("tryConfirmFromMajority is idempotent under concurrent calls", () => {
+test("tryConfirmFromMajority is idempotent under concurrent calls", async () => {
   const store = new InMemoryVotingStore();
   const proposalId = "p-concurrent";
-  store.upsertVote(proposalId, "u1", "approve");
-  store.upsertVote(proposalId, "u2", "approve");
+  await store.upsertVote(proposalId, "u1", "approve");
+  await store.upsertVote(proposalId, "u2", "approve");
 
   const input = {
     groupId: "g1",
@@ -264,12 +269,10 @@ test("tryConfirmFromMajority is idempotent under concurrent calls", () => {
     memberCount: 4,
   };
 
-  const results = Array.from({ length: 50 }, () =>
-    store.tryConfirmFromMajority(input),
+  const results = await Promise.all(
+    Array.from({ length: 50 }, () => store.tryConfirmFromMajority(input)),
   );
-  const ids = new Set(
-    results.filter(Boolean).map((r) => r!.id),
-  );
+  const ids = new Set(results.filter(Boolean).map((r) => r!.id));
   assert.equal(ids.size, 1);
 });
 
@@ -283,7 +286,7 @@ test("GET confirmed-event returns 404 for unknown group and when none confirmed"
     votingStore: new InMemoryVotingStore(),
   });
   const token = await signTestToken("reader-1");
-  const group = groupsStore.createGroup("Empty", "reader-1");
+  const group = await groupsStore.createGroup("Empty", "reader-1");
 
   const missingGroup = await app.inject({
     method: "GET",
@@ -300,4 +303,29 @@ test("GET confirmed-event returns 404 for unknown group and when none confirmed"
   assert.equal(noEvent.statusCode, 404);
 
   await app.close();
+});
+
+test("createDefaultVotingStore is env-gated", () => {
+  const prevUrl = process.env.SUPABASE_URL;
+  const prevKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  try {
+    delete process.env.SUPABASE_URL;
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    assert.ok(createDefaultVotingStore() instanceof InMemoryVotingStore);
+
+    process.env.SUPABASE_URL = "https://example.supabase.co";
+    process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-key";
+    assert.ok(createDefaultVotingStore() instanceof SupabaseVotingStore);
+  } finally {
+    if (prevUrl === undefined) {
+      delete process.env.SUPABASE_URL;
+    } else {
+      process.env.SUPABASE_URL = prevUrl;
+    }
+    if (prevKey === undefined) {
+      delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    } else {
+      process.env.SUPABASE_SERVICE_ROLE_KEY = prevKey;
+    }
+  }
 });

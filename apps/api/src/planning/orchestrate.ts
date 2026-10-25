@@ -9,7 +9,7 @@ export async function generateAndPersistProposals(
   runId: string,
   input: Omit<PlannerInput, "planningRunId">,
 ): Promise<{ ok: true; proposals: Proposal[] } | { ok: false }> {
-  const run = planningStore.getRun(runId);
+  const run = await planningStore.getRun(runId);
   if (!run) {
     return { ok: false };
   }
@@ -20,10 +20,10 @@ export async function generateAndPersistProposals(
       planningRunId: runId,
     });
     const proposals = result.proposals.slice(0, MAX_PERSISTED_PROPOSALS);
-    planningStore.completeRun(runId, proposals);
+    await planningStore.completeRun(runId, proposals);
     return { ok: true, proposals };
   } catch {
-    planningStore.markRunFailed(runId);
+    await planningStore.markRunFailed(runId);
     return { ok: false };
   }
 }

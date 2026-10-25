@@ -26,6 +26,7 @@ test("group routes return 401 without JWT", async () => {
   const app = await createApp({ groupsStore: new InMemoryGroupsStore() });
   const cases = [
     { method: "POST" as const, url: "/v1/groups", payload: { name: "G" } },
+    { method: "GET" as const, url: "/v1/groups" },
     { method: "GET" as const, url: "/v1/groups/00000000-0000-4000-8000-000000000001" },
     {
       method: "POST" as const,
@@ -77,6 +78,101 @@ test("POST /v1/groups creates group; non-member GET returns 403", async () => {
   });
   assert.equal(ok.statusCode, 200);
   assert.equal((ok.json() as { id: string }).id, group.id);
+
+  await app.close();
+});
+
+test("GET /v1/groups lists only groups the JWT subject belongs to", async () => {
+  process.env.SUPABASE_JWT_SECRET = TEST_SECRET;
+  const store = new InMemoryGroupsStore();
+  const app = await createApp({ groupsStore: store });
+  const ownerToken = await signTestToken("owner-1");
+  const outsiderToken = await signTestToken("outsider-1");
+  const joinerToken = await signTestToken("joiner-1");
+
+  const emptyRes = await app.inject({
+    method: "GET",
+    url: "/v1/groups",
+    headers: authHeaders(ownerToken),
+  });
+  assert.equal(emptyRes.statusCode, 200);
+  assert.deepEqual(emptyRes.json(), { groups: [] });
+
+  const first = await app.inject({
+    method: "POST",
+    url: "/v1/groups",
+    headers: authHeaders(ownerToken),
+    payload: { name: "Alpha" },
+  });
+  const second = await app.inject({
+    method: "POST",
+    url: "/v1/groups",
+    headers: authHeaders(ownerToken),
+    payload: { name: "Beta" },
+  });
+  const other = await app.inject({
+    method: "POST",
+    url: "/v1/groups",
+    headers: authHeaders(outsiderToken),
+    payload: { name: "Gamma" },
+  });
+  assert.equal(first.statusCode, 201);
+  assert.equal(second.statusCode, 201);
+  assert.equal(other.statusCode, 201);
+  const firstId = (first.json() as { id: string }).id;
+  const secondId = (second.json() as { id: string }).id;
+  const otherId = (other.json() as { id: string }).id;
+
+  const inviteRes = await app.inject({
+    method: "POST",
+    url: `/v1/groups/${firstId}/invites`,
+    headers: authHeaders(ownerToken),
+  });
+  const token = (inviteRes.json() as { token: string }).token;
+  const joinRes = await app.inject({
+    method: "POST",
+    url: `/v1/invites/${token}/join`,
+    headers: authHeaders(joinerToken),
+  });
+  assert.equal(joinRes.statusCode, 200);
+
+  const ownerList = await app.inject({
+    method: "GET",
+    url: "/v1/groups",
+    headers: authHeaders(ownerToken),
+  });
+  assert.equal(ownerList.statusCode, 200);
+  const ownerGroups = (
+    ownerList.json() as { groups: { id: string; name: string }[] }
+  ).groups;
+  assert.deepEqual(
+    ownerGroups.map((g) => g.id).sort(),
+    [firstId, secondId].sort(),
+  );
+  assert.ok(!ownerGroups.some((g) => g.id === otherId));
+
+  const outsiderList = await app.inject({
+    method: "GET",
+    url: "/v1/groups",
+    headers: authHeaders(outsiderToken),
+  });
+  assert.equal(outsiderList.statusCode, 200);
+  assert.deepEqual(
+    (outsiderList.json() as { groups: { id: string }[] }).groups.map((g) => g.id),
+    [otherId],
+  );
+
+  const joinerList = await app.inject({
+    method: "GET",
+    url: "/v1/groups",
+    headers: authHeaders(joinerToken),
+  });
+  assert.equal(joinerList.statusCode, 200);
+  const joinerGroups = (joinerList.json() as { groups: { id: string }[] }).groups;
+  assert.deepEqual(
+    joinerGroups.map((g) => g.id),
+    [firstId],
+  );
 
   await app.close();
 });

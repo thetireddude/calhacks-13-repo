@@ -4,9 +4,21 @@
 
 ## Local setup
 
-1. Install [Supabase CLI](https://supabase.com/docs/guides/cli).
-2. From repo root: `supabase start` (uses `supabase/config.toml`).
-3. Copy JWT secret into `.env` as `SUPABASE_JWT_SECRET` (see root `.env.example`). Local value: `supabase status` → **JWT secret** — required for API bearer verification in `apps/api/src/auth.ts`.
+**Runbook:** [`docs/dev2-local-setup.md`](../docs/dev2-local-setup.md) (install deps → `supabase start` → `supabase db reset` → `.env` from `supabase status` → `pnpm run test:ci`).
+
+1. Install [Supabase CLI](https://supabase.com/docs/guides/cli) and ensure Docker is running.
+2. From repo root: `supabase start` (uses `supabase/config.toml`, project id `gather-local`, API port **54321**).
+3. Apply migrations: `supabase db reset`.
+4. Copy keys from `supabase status` into root `.env` (see [`.env.example`](../.env.example)):
+
+   | Status field | Env var |
+   |--------------|---------|
+   | API URL | `SUPABASE_URL` |
+   | anon key | `SUPABASE_ANON_KEY` |
+   | service_role key | `SUPABASE_SERVICE_ROLE_KEY` |
+   | JWT secret | `SUPABASE_JWT_SECRET` (required for API JWT verification in `apps/api/src/auth.ts`) |
+
+   Gate 2 **DB-backed groups** (DEV2-011): with `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` set, `apps/api` persists groups, memberships, and invites via the service-role client; without them, groups stay in-memory (CI default). JWT `sub` values must exist in `auth.users` (sign in locally) before creating groups in DB mode.
 
 ## Migrations (four files)
 
@@ -45,7 +57,7 @@ Other members and group APIs must **not** expose raw preference or availability 
 
 ## API vs database (Gate 1)
 
-REST handlers in `apps/api` use **in-memory stores** for Gate 1 speed; the schema above is the persistence target for post–Gate 1 wiring.
+REST handlers in `apps/api` use **in-memory stores** by default (CI and Gate 1 tests). When `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set, **groups**, **memberships**, and **invites** persist via the service-role client (`apps/api/src/groups/supabaseStore.ts`). Other domains remain in-memory until later tasks.
 
 ## Docs
 

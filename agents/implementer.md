@@ -33,7 +33,7 @@ Do not optimize for showing off architecture.
 8. State the smallest viable implementation approach internally before editing.
 9. Implement only the requested behavior.
 10. Add focused tests required by the task.
-11. Run relevant checks.
+11. Run **`pnpm run test:ci`** for Developer 2 tasks (or the task’s documented CI command) in the worktree **before** marking candidate; paste pass/fail counts in handoff.
 12. Produce a concise handoff.
 
 ## Anti-bloat rules

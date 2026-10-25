@@ -37,8 +37,8 @@ After gates pass, orchestrator unlocks next ready tasks and dispatches **Impleme
 2. `state/agents/<TASK-ID>.md` — track IMPLEMENTING → CANDIDATE → REVIEWING → TESTING → APPROVED → MERGED.
 3. Implementer → **candidate** only.
 4. Reviewer → record verdict + P0–P3 in `state/agents/<TASK-ID>.md`.
-5. Tester → record gate + commands run.
-6. Merge only if APPROVE (+ PASS when tester required).
+5. Tester → record gate + **must run `pnpm run test:ci`** in the candidate worktree (see `agents/tester.md` CI parity). Paste pass/fail counts; no merge on FAIL or CI-red.
+6. Merge only if APPROVE (+ PASS when tester required) **and** GitHub Actions green on the PR branch (or orchestrator re-runs CI after merge commit).
 7. Task **done**; update `tasks/index.md`, `state/CURRENT.md`.
 
 ## Retroactive gaps

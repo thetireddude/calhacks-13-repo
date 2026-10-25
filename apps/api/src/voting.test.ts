@@ -35,7 +35,7 @@ async function seedGroupWithProposal(
   for (const id of memberIds.slice(1)) {
     await groupsStore.joinGroup(group.id, id);
   }
-  const run = planningStore.createRun(group.id, owner, "dinner");
+  const run = await planningStore.createRun(group.id, owner, "dinner");
   const proposals: Proposal[] = [
     {
       proposalId,
@@ -43,7 +43,7 @@ async function seedGroupWithProposal(
       summary: "Friday tacos",
     },
   ];
-  planningStore.completeRun(run.id, proposals);
+  await planningStore.completeRun(run.id, proposals);
   return { groupId: group.id, runId: run.id, proposalId };
 }
 

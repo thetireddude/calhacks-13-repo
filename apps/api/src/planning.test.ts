@@ -4,7 +4,9 @@ import test from "node:test";
 import { SignJWT } from "jose";
 import { createApp } from "./app.js";
 import { InMemoryGroupsStore } from "./groups/store.js";
+import { createDefaultPlanningStore } from "./planning/createPlanningStore.js";
 import { InMemoryPlanningStore } from "./planning/store.js";
+import { SupabasePlanningStore } from "./planning/supabaseStore.js";
 
 const TEST_SECRET = "dev-test-jwt-secret-at-least-32-chars!!";
 
@@ -250,4 +252,29 @@ test("mock planner persists at most three proposals", async () => {
     3,
   );
   await app.close();
+});
+
+test("createDefaultPlanningStore is env-gated", () => {
+  const prevUrl = process.env.SUPABASE_URL;
+  const prevKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  try {
+    delete process.env.SUPABASE_URL;
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    assert.ok(createDefaultPlanningStore() instanceof InMemoryPlanningStore);
+
+    process.env.SUPABASE_URL = "https://example.supabase.co";
+    process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-key";
+    assert.ok(createDefaultPlanningStore() instanceof SupabasePlanningStore);
+  } finally {
+    if (prevUrl === undefined) {
+      delete process.env.SUPABASE_URL;
+    } else {
+      process.env.SUPABASE_URL = prevUrl;
+    }
+    if (prevKey === undefined) {
+      delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    } else {
+      process.env.SUPABASE_SERVICE_ROLE_KEY = prevKey;
+    }
+  }
 });

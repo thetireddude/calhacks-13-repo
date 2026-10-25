@@ -9,11 +9,9 @@ import type { ProfileStore } from "./me/profileStore.js";
 import { registerMemberSetupRoutes } from "./me/routes.js";
 import type { MemberSetupStore } from "./me/store.js";
 import { createMockPlannerPort } from "./planner/mockPlannerPort.js";
+import { createDefaultPlanningStore } from "./planning/createPlanningStore.js";
 import { registerPlanningRoutes } from "./planning/routes.js";
-import {
-  InMemoryPlanningStore,
-  type PlanningStore,
-} from "./planning/store.js";
+import type { PlanningStore } from "./planning/store.js";
 import { registerVotingRoutes } from "./voting/routes.js";
 import { InMemoryVotingStore, type VotingStore } from "./voting/store.js";
 import type { PlannerPort } from "@gather/contracts";
@@ -33,7 +31,7 @@ export async function createApp(options: CreateAppOptions = {}) {
   const profileStore = options.profileStore ?? createDefaultProfileStore();
   const memberSetupStore =
     options.memberSetupStore ?? createDefaultMemberSetupStore();
-  const planningStore = options.planningStore ?? new InMemoryPlanningStore();
+  const planningStore = options.planningStore ?? createDefaultPlanningStore();
   const votingStore = options.votingStore ?? new InMemoryVotingStore();
   const plannerPort = options.plannerPort ?? createMockPlannerPort();
 

@@ -21,7 +21,9 @@ export function registerVotingRoutes(
     request: { params: { proposalId: string }; authUser?: { sub: string } },
     reply: { code: (n: number) => { send: (b: unknown) => unknown } },
   ) => {
-    const ctx = planningStore.findProposalContext(request.params.proposalId);
+    const ctx = await planningStore.findProposalContext(
+      request.params.proposalId,
+    );
     if (!ctx) {
       return reply.code(404).send({ error: "not_found" });
     }
@@ -52,7 +54,9 @@ export function registerVotingRoutes(
         return reply.code(400).send({ error: "invalid_choice" });
       }
 
-      const ctx = planningStore.findProposalContext(request.params.proposalId)!;
+      const ctx = (await planningStore.findProposalContext(
+        request.params.proposalId,
+      ))!;
       const userId = request.authUser!.sub;
       const vote = votingStore.upsertVote(
         request.params.proposalId,

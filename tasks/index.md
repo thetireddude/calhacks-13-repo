@@ -27,11 +27,11 @@ Core API lane only. Other lanes own their tasks separately.
 | DEV2-018 | merged | DEV2-017 | `.env` load + CORS |
 | DEV2-019 | merged | DEV2-011 | `GET /v1/groups` list mine |
 | DEV2-020 | merged | DEV2-014 | `PUT /v1/me` displayName |
-| DEV2-021 | implementing | DEV2-019 | Group schedule stub (no auto-run) |
-| DEV2-022 | implementing | DEV2-017 | ICS export stub |
-| DEV2-023 | implementing | DEV2-017, DEV2-019 | Notifications feed stub |
-| DEV2-024 | implementing | DEV2-020 | Dev 1 API handoff doc |
-| DEV2-025 | implementing | DEV2-017 | Demo seed notes |
+| DEV2-021 | merged | DEV2-019 | Group schedule stub (no auto-run) |
+| DEV2-022 | merged | DEV2-017 | ICS export stub |
+| DEV2-023 | merged | DEV2-017, DEV2-019 | Notifications feed stub |
+| DEV2-024 | merged | DEV2-020 | Dev 1 API handoff doc |
+| DEV2-025 | merged | DEV2-017 | Demo seed notes |
 
 ## Developer 1 (Mobile)
 

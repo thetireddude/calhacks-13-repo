@@ -2,17 +2,13 @@
 
 ## Milestone
 
-**Lane branch:** `dev-2` / `main` through DEV2-020. **Stub wave in flight:** DEV2-021–025.
+**Lane branch:** `dev-2` through DEV2-025. Stub wave **021–025 complete**. Nothing in flight.
 
 ## In flight
 
 | Task | Deliverable |
 |------|-------------|
-| DEV2-021 | Group schedule GET/PUT (no auto-run) |
-| DEV2-022 | ICS export for confirmed events |
-| DEV2-023 | `GET /v1/me/notifications` feed stub |
-| DEV2-024 | Dev 1 API handoff doc |
-| DEV2-025 | Demo seed notes |
+| *(none)* | Awaiting approved follow-on tasks / SPEC §11 decisions |
 
 ## Shipped (Gate 1)
 
@@ -20,7 +16,7 @@ DEV2-001–010 on `main`. See [`state/GATE1-DEV2-EXIT.md`](GATE1-DEV2-EXIT.md).
 
 ## Tests
 
-`pnpm run test:ci` — **42/42** (Tester gates must use this command).
+`pnpm run test:ci` — **47/47** at `16ba0e9` (Tester gates must use this command).
 
 ## Blockers (SPEC §11)
 

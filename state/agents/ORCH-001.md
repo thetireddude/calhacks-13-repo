@@ -3,7 +3,7 @@
 - **status:** IMPLEMENTING (workflow realigned — see below)
 - **active role:** orchestrator
 - **branch:** main
-- **current activity:** W3 — 3 parallel implementers dispatched (DEV2-002, DEV3-001, DEV1-002)
+- **current activity:** W6 — 4 parallel implementers (DEV1-004, DEV2-006, DEV2-007, DEV3-004)
 
 ## Workflow compliance (honest audit)
 
@@ -33,13 +33,14 @@
 
 | Task | Path | Branch |
 |------|------|--------|
-| DEV1-002 | calhacks-13-wt-DEV1-002 | agent/DEV1-002-navigation-shell |
-| DEV2-002 | calhacks-13-wt-DEV2-002 | agent/DEV2-002-supabase-auth |
-| DEV3-001 | calhacks-13-wt-DEV3-001 | agent/DEV3-001-planner-bootstrap |
+| DEV1-004 | calhacks-13-wt-DEV1-004 | agent/DEV1-004-group-ui-mock |
+| DEV2-006 | calhacks-13-wt-DEV2-006 | agent/DEV2-006-prefs-availability |
+| DEV2-007 | calhacks-13-wt-DEV2-007 | agent/DEV2-007-planning-runs |
+| DEV3-004 | calhacks-13-wt-DEV3-004 | agent/DEV3-004-scoring-stub |
 
 ## Next orchestrator actions
 
-1. Finish DEV1-001 / DEV2-002 / DEV3-001 as **candidate** on agent branches (implementer subagents or human).
-2. Run **reviewer + tester** passes per task file.
-3. Merge to `main` only after gates.
-4. Queue **DEV2-003** with fresh context pack.
+1. Implementers → **candidate** commits on agent branches.
+2. **Reviewer + Tester** per task (parallel across task IDs).
+3. Merge to `main` only after APPROVE + PASS.
+4. Queue **DEV2-008** / **DEV1-005** after W6 merges.

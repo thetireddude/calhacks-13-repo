@@ -2,7 +2,7 @@
 
 ## Milestone
 
-**Gate 1** — autonomous orchestration active (ORCH-001). **Do not wait for user** to name next task.
+**Gate 1** — Wave 6 dispatched (ORCH-001): **DEV1-004** ∥ **DEV2-006** ∥ **DEV2-007** ∥ **DEV3-004**.
 
 ## Completed deliverables (what shipped)
 
@@ -13,31 +13,34 @@
 | GATE0-003 | ADR-002 — Gate 1 may use contract stubs |
 | DEV2-001 | Fastify API + public `/v1/health` |
 | DEV2-002 | JWT auth + protected `/v1/me` + local Supabase config |
-| **DEV2-003** | **SQL migrations: `profiles`, `groups`, `group_memberships`, `group_invitations` + member-only RLS stubs** |
+| DEV2-003 | SQL: profiles, groups, memberships, invitations + RLS |
+| DEV2-004 | SQL: member_preferences + member_availability + owner RLS |
+| DEV2-005 | In-memory groups/invites/join/members REST + group DTOs |
 | DEV1-001 | Expo SDK 58 app |
-| DEV1-002 | React Navigation: Welcome / Home / Groups placeholders |
-| DEV3-001 | `createPlanner()` stub (≤3 proposals, tests) |
+| DEV1-002 | React Navigation shell |
+| DEV1-003 | Email + OTP mock auth |
+| DEV3-001 | `createPlanner()` stub |
+| DEV3-003 | Seeded discovery fallback in planner |
 
-## In flight
+## In flight (implementers dispatched)
 
-| Task | Deliverable expected |
+| Task | Expected deliverable |
 |------|----------------------|
-| DEV2-004 | `member_preferences` + `member_availability` migrations (**candidate on main — finish R/T then mark done**) |
-| **DEV2-005** | **REST groups/invites/join/members (in-memory store stub) + `/v1/me` profile stub — candidate** |
-| DEV1-003 | OTP mock auth screens in mobile app |
-| DEV3-003 | Seeded activity fallback in planner package |
+| DEV1-004 | Group create/list/join UI + mock API client |
+| DEV2-006 | GET/PUT preferences + availability + privacy tests |
+| DEV2-007 | planning_runs/proposals migration + planning route stubs |
+| DEV3-004 | Approved-weight deterministic scoring stub |
 
-## Next auto-queue (Dev 2 spine)
+## Next after W6 gates
 
-1. DEV2-006 — REST: GET/PUT preferences + availability + privacy tests
-2. DEV2-007 — planning_runs + proposals tables + route stubs
-3. DEV2-008 — wire `@gather/planner` mock into API orchestration
-4. DEV2-009 — vote + confirmed-event skeleton routes
+- DEV2-008 — wire planner into API
+- DEV1-005 — member setup UI (after DEV1-004)
+- Parallel W7 per `docs/milestone-dag.md`
 
 ## Blockers (SPEC §11)
 
-Voting majority, scheduler, final DTO enums — stub only until approved.
+Voting majority, scheduler, full score formulas — stub only.
 
 ## Orchestration
 
-[`docs/orchestration-runbook.md`](docs/orchestration-runbook.md) — completion messages must describe **what shipped**.
+[`docs/orchestration-runbook.md`](docs/orchestration-runbook.md)

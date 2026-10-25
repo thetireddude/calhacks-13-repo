@@ -13,7 +13,7 @@ End-to-end setup: [`docs/dev2-local-setup.md`](../../docs/dev2-local-setup.md).
 pnpm install
 supabase start && supabase db reset   # repo root; requires Docker
 cp .env.example .env                  # fill from supabase status
-pnpm run test:ci                      # 27/27 — no running API required
+pnpm run test:ci                      # 29/29 — no running API required
 pnpm --filter @gather/api run dev     # needs SUPABASE_JWT_SECRET for protected routes
 ```
 

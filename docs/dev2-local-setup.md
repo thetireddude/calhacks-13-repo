@@ -36,7 +36,7 @@ cp .env.example .env
 pnpm run test:ci
 ```
 
-Expected test result today: **27/27** passing (`@gather/api` `node:test` suite + contracts build + typecheck). CI does **not** require `supabase start`; tests use in-memory stores and inline JWT secrets unless you opt into DB-backed behavior (Gate 2).
+Expected test result today: **29/29** passing (`@gather/api` `node:test` suite + contracts build + typecheck). CI does **not** require `supabase start`; tests use in-memory stores and inline JWT secrets unless you opt into DB-backed behavior (Gate 2).
 
 ## Environment variables (Gate 2 local dev)
 

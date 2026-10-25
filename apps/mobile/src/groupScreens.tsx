@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Button, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { GroupError, inviteLink } from "./groups";
-import { useGroups, useInviteLinkJoin } from "./groupsState";
+import { useGroups } from "./groupsState";
 
 export type GroupsStackParams = {
   GroupList: undefined;
@@ -35,11 +35,6 @@ export function GroupListScreen({ navigation }: Props<"GroupList">) {
   const [token, setToken] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-
-  useInviteLinkJoin(
-    (g) => navigation.navigate("GroupDashboard", { groupId: g.id }),
-    (e) => setError(groupErrorMessage(e)),
-  );
 
   async function join() {
     setError(null);

@@ -1,5 +1,5 @@
-import { act, fireEvent, render, screen } from "@testing-library/react-native";
-import { Linking, Share } from "react-native";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import { Alert, Linking, Share } from "react-native";
 
 import { AuthProvider, createMockAuthClient } from "./auth";
 import { MOCK_SEED_INVITE_TOKEN, createMockGroupClient, inviteLink } from "./groups";
@@ -125,4 +125,63 @@ test("privacy: rendered group screens never show availability or preference data
   await fireEvent.press(await screen.findByText("Members"));
   await screen.findByText("user-seed");
   expect(JSON.stringify(screen.toJSON())).not.toMatch(/availab|preference|schedule|budget|calendar/i);
+});
+
+function captureListeners() {
+  const listeners: ((e: { url: string }) => void)[] = [];
+  jest.spyOn(Linking, "addEventListener").mockImplementation((_t, l) => {
+    listeners.push(l as (e: { url: string }) => void);
+    return { remove: () => {} };
+  });
+  return (url: string) => listeners.forEach((l) => l({ url }));
+}
+
+test("malformed invite links are ignored at launch and while running", async () => {
+  const bad = "gather://invite/%E0%A4%A";
+  jest.spyOn(Linking, "getInitialURL").mockResolvedValue(bad);
+  const emit = captureListeners();
+  await renderSignedIn();
+  await act(async () => emit(bad));
+  expect(screen.getByText("No groups yet.")).toBeTruthy();
+});
+
+test("a link that arrives while signed out is held and joined after sign-in", async () => {
+  const emit = captureListeners();
+  await render(
+    <AuthProvider client={createMockAuthClient()}>
+      <RootNavigator groupClient={createMockGroupClient()} />
+    </AuthProvider>,
+  );
+  await fireEvent.changeText(await screen.findByLabelText("Email"), "a@example.com");
+  await act(async () => emit(inviteLink(MOCK_SEED_INVITE_TOKEN)));
+  await fireEvent.press(screen.getByText("Send code"));
+  await fireEvent.changeText(await screen.findByLabelText("Code"), "123456");
+  await fireEvent.press(screen.getByText("Verify"));
+  await screen.findByText("Seed Friends");
+});
+
+test("the launch link is consumed once and not replayed after sign-out and sign-in", async () => {
+  jest.spyOn(Linking, "getInitialURL").mockResolvedValue(inviteLink(MOCK_SEED_INVITE_TOKEN));
+  await renderSignedIn(undefined, false);
+  await screen.findByText("Seed Friends");
+  await fireEvent.press(screen.getByText("Sign out"));
+  await fireEvent.changeText(await screen.findByLabelText("Email"), "a@example.com");
+  await fireEvent.press(screen.getByText("Send code"));
+  await fireEvent.changeText(await screen.findByLabelText("Code"), "123456");
+  await fireEvent.press(screen.getByText("Verify"));
+  await screen.findByText("Your groups");
+  expect(screen.getByText("No groups yet.")).toBeTruthy();
+});
+
+test("a link received while another tab is focused opens the group; failures show an alert", async () => {
+  const alert = jest.spyOn(Alert, "alert").mockImplementation(() => {});
+  const emit = captureListeners();
+  await renderSignedIn();
+  await fireEvent.press(screen.getByRole("button", { name: /Planning, tab/ }));
+  await screen.findByText("Planning placeholder");
+  await act(async () => emit(inviteLink("bogus")));
+  await waitFor(() => expect(alert).toHaveBeenCalledWith("Invite", "That invite link is not valid."));
+  await act(async () => emit(inviteLink(MOCK_SEED_INVITE_TOKEN)));
+  await screen.findByText("Seed Friends");
+  expect(screen.queryByText("Planning placeholder")).toBeNull();
 });

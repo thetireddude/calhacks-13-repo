@@ -1,9 +1,15 @@
+import { Linking } from "react-native";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 
 import { AuthProvider, createMockAuthClient } from "./auth";
 import type { AuthClient } from "./auth";
 import { createMockGroupClient } from "./groups";
 import { RootNavigator } from "./RootNavigator";
+
+beforeEach(() => {
+  jest.spyOn(Linking, "getInitialURL").mockResolvedValue(null);
+  jest.spyOn(Linking, "addEventListener").mockReturnValue({ remove: () => {} });
+});
 
 async function renderApp(client: AuthClient = createMockAuthClient()) {
   await render(

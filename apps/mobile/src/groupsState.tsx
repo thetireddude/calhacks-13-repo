@@ -1,9 +1,7 @@
 import type { GroupResponse } from "@gather/contracts";
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { Linking } from "react-native";
 
-import { parseInviteToken } from "./groups";
 import type { GroupClient } from "./groups";
 
 type GroupsState = {
@@ -48,29 +46,4 @@ export function useGroups(): GroupsState {
   const ctx = useContext(GroupsContext);
   if (!ctx) throw new Error("useGroups must be used inside GroupsProvider");
   return ctx;
-}
-
-// Joins from a gather://invite/<token> link, at launch and while running. Mounted only while
-// signed in, so a link opened while signed out is handled after sign-in.
-export function useInviteLinkJoin(onJoined: (group: GroupResponse) => void, onError: (e: unknown) => void) {
-  const { joinByToken } = useGroups();
-  useEffect(() => {
-    let active = true;
-    const handle = (url: string | null | undefined) => {
-      const token = url ? parseInviteToken(url) : null;
-      if (!token) return;
-      joinByToken(token).then(
-        (g) => active && onJoined(g),
-        (e) => active && onError(e),
-      );
-    };
-    void Linking.getInitialURL().then(handle);
-    const sub = Linking.addEventListener("url", (e) => handle(e.url));
-    return () => {
-      active = false;
-      sub.remove();
-    };
-    // Handlers are intentionally excluded: subscribe once per client.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [joinByToken]);
 }

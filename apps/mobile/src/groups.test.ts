@@ -72,6 +72,7 @@ test("invite links round-trip and only token links parse", () => {
   expect(parseInviteToken("https://example.com/invite/abc")).toBeNull();
   expect(parseInviteToken("gather://invite/")).toBeNull();
   expect(parseInviteToken("gather://other/abc")).toBeNull();
+  expect(parseInviteToken("gather://invite/%E0%A4%A")).toBeNull();
 });
 
 test("privacy: fixtures contain no availability or preference fields", async () => {

@@ -34,7 +34,12 @@ export function inviteLink(token: string): string {
 }
 export function parseInviteToken(url: string): string | null {
   const match = INVITE_LINK.exec(url.trim());
-  return match ? decodeURIComponent(match[1]) : null;
+  if (!match) return null;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return null; // malformed percent-escapes
+  }
 }
 
 export const MOCK_USER_ID = "user-me";

@@ -6,9 +6,15 @@ import { createExpoNotificationPermissionClient } from "./src/notifications";
 import { createMockPlanningClient } from "./src/planning";
 import { createMockIcsClient, createMockVotingClient } from "./src/voting";
 import { RootNavigator } from "./src/RootNavigator";
+import { createDefaultSupabaseAuthClient } from "./src/supabaseAuth";
 
-// Replaced by a Supabase-backed AuthClient in DEV1-009.
-const authClient = createMockAuthClient();
+// Real Supabase email OTP when the public env vars are set; mock otherwise (dev/tests without env).
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+const authClient =
+  supabaseUrl && supabaseAnonKey
+    ? createDefaultSupabaseAuthClient(supabaseUrl, supabaseAnonKey)
+    : createMockAuthClient();
 
 // Replaced by the API-backed GroupClient once the backend routes are wired.
 const groupClient = createMockGroupClient();

@@ -1,10 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
-// Opaque, mobile-local session type. The real shape arrives with Supabase auth (DEV1-009).
-export type Session = { readonly kind: "mock" };
+// Mobile-local session type. The Supabase variant carries the access token sent as the API bearer
+// credential; the mock variant has none.
+export type Session = { readonly kind: "mock" } | { readonly kind: "supabase"; readonly accessToken: string };
 
-// Boundary the real Supabase client will implement later.
+// Boundary implemented by the mock and Supabase clients.
 export interface AuthClient {
   getSession(): Promise<Session | null>;
   requestOtp(email: string): Promise<void>;

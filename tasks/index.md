@@ -40,7 +40,7 @@ Core API lane only. Other lanes own their tasks separately.
 | DEV1-006 | done | DEV1-005 | Planning + proposals UI |
 | DEV1-007 | done | DEV1-006 | Voting, veto, confirmed event, notifications mocks |
 | DEV1-008 | done | DEV1-007 | Gate 1 mobile exit |
-| DEV1-009 | blocked | DEV1-008, GATE2-EXIT | HOLD: needs GATE2-EXIT (Dev 2/3 + orchestrator) and §9 contract decisions; not authored in mobile lane |
+| DEV1-009 | candidate | DEV1-008, GATE2-EXIT | Started early with user approval (Supabase auth independent of contract freeze); real-device smoke and live /v1/me not yet run |
 | DEV1-010 | blocked | DEV1-009 | Gate 3: real API groups + setup |
 | DEV1-011 | blocked | DEV1-010 | Gate 3: real API planning/voting/events/notifications |
 | DEV1-012 | blocked | DEV1-011 | Gate 5: mobile demo hardening |

@@ -26,15 +26,26 @@ Use the Expo Go app on a physical device, or an iOS Simulator / Android emulator
 
 ## Environment
 
-Supabase and API URLs will be wired in a follow-up task. Until then, use API mocks matching `packages/contracts` (read-only) once GATE0-002 DTOs are approved.
+Supabase and API URLs will be wired in a follow-up task. Until then, auth uses **`src/api/mockAuth.ts`** (in-memory session, no network). Group and planning mocks will align with `packages/contracts` as backend routes land.
 
-## Navigation shell (DEV1-002)
+## Auth flow (DEV1-003)
 
-React Navigation native stack with placeholder screens. Manual smoke: launch app → **Welcome** → mock sign-in → **Home** → **Groups** → back → mock sign-out → **Welcome**.
+Mock email OTP (no Supabase yet):
+
+1. **Welcome** — enter email → mock `requestEmailOtp`
+2. **OtpVerify** — enter 6-digit code → mock `verifyEmailOtp` (code **`123456`** for any valid email)
+3. **Home** — signed-in hub; mock sign-out clears session
+
+Manual smoke: launch app → **Welcome** → send code → **OtpVerify** → `123456` → **Home** → **Groups** → back → sign out → **Welcome**.
+
+## Navigation shell (DEV1-002 + DEV1-003)
+
+React Navigation native stack with placeholder screens.
 
 | Screen (route) | SPEC §1 journey step | Status |
 |----------------|----------------------|--------|
-| `Welcome` | 1 — Authenticate (email OTP) | Placeholder; mock continue only |
+| `Welcome` | 1 — Authenticate (email) | Email entry + mock send |
+| `OtpVerify` | 1 — Authenticate (OTP) | Code entry + mock verify |
 | `Home` | Signed-in hub before planning/voting | Placeholder |
 | `GroupsList` | 2 — Create or join a group | Placeholder list |
 | — | 3 — Preferences & availability | Not in shell yet |

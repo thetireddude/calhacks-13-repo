@@ -1,6 +1,7 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { clearMockAuthSession } from '../api/mockAuth';
 import type { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
@@ -22,7 +23,10 @@ export function HomeScreen({ navigation }: Props) {
       <Pressable
         accessibilityRole="button"
         style={styles.link}
-        onPress={() => navigation.replace('Welcome')}
+        onPress={() => {
+          clearMockAuthSession();
+          navigation.replace('Welcome');
+        }}
       >
         <Text style={styles.linkLabel}>Sign out (mock)</Text>
       </Pressable>

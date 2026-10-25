@@ -18,7 +18,7 @@
    | service_role key | `SUPABASE_SERVICE_ROLE_KEY` |
    | JWT secret | `SUPABASE_JWT_SECRET` (required for API JWT verification in `apps/api/src/auth.ts`) |
 
-   Gate 2 DB-backed API paths also need `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` when that mode is enabled; CI tests use in-memory stores without a running database.
+   Gate 2 **DB-backed groups** (DEV2-011): with `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` set, `apps/api` persists groups, memberships, and invites via the service-role client; without them, groups stay in-memory (CI default). JWT `sub` values must exist in `auth.users` (sign in locally) before creating groups in DB mode.
 
 ## Migrations (four files)
 
@@ -57,7 +57,7 @@ Other members and group APIs must **not** expose raw preference or availability 
 
 ## API vs database (Gate 1)
 
-REST handlers in `apps/api` use **in-memory stores** for Gate 1 speed; the schema above is the persistence target for post–Gate 1 wiring.
+REST handlers in `apps/api` use **in-memory stores** by default (CI and Gate 1 tests). When `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set, **groups**, **memberships**, and **invites** persist via the service-role client (`apps/api/src/groups/supabaseStore.ts`). Other domains remain in-memory until later tasks.
 
 ## Docs
 

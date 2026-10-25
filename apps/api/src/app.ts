@@ -1,7 +1,8 @@
 import Fastify from "fastify";
 import { requireAuth } from "./auth.js";
 import { registerGroupRoutes } from "./groups/routes.js";
-import { InMemoryGroupsStore, type GroupsStore } from "./groups/store.js";
+import { createDefaultGroupsStore } from "./groups/createGroupsStore.js";
+import type { GroupsStore } from "./groups/store.js";
 import { registerMemberSetupRoutes } from "./me/routes.js";
 import {
   InMemoryMemberSetupStore,
@@ -27,7 +28,7 @@ export type CreateAppOptions = {
 
 export async function createApp(options: CreateAppOptions = {}) {
   const app = Fastify({ logger: false });
-  const groupsStore = options.groupsStore ?? new InMemoryGroupsStore();
+  const groupsStore = options.groupsStore ?? createDefaultGroupsStore();
   const memberSetupStore =
     options.memberSetupStore ?? new InMemoryMemberSetupStore();
   const planningStore = options.planningStore ?? new InMemoryPlanningStore();

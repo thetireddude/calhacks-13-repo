@@ -25,7 +25,7 @@ export function registerVotingRoutes(
     if (!ctx) {
       return reply.code(404).send({ error: "not_found" });
     }
-    if (!groupsStore.isMember(ctx.groupId, request.authUser!.sub)) {
+    if (!(await groupsStore.isMember(ctx.groupId, request.authUser!.sub))) {
       return reply.code(403).send({ error: "forbidden" });
     }
   };
@@ -35,10 +35,10 @@ export function registerVotingRoutes(
     reply: { code: (n: number) => { send: (b: unknown) => unknown } },
   ) => {
     const groupId = request.params.groupId;
-    if (!groupsStore.getGroup(groupId)) {
+    if (!(await groupsStore.getGroup(groupId))) {
       return reply.code(404).send({ error: "not_found" });
     }
-    if (!groupsStore.isMember(groupId, request.authUser!.sub)) {
+    if (!(await groupsStore.isMember(groupId, request.authUser!.sub))) {
       return reply.code(403).send({ error: "forbidden" });
     }
   };
@@ -65,7 +65,7 @@ export function registerVotingRoutes(
         proposalId: ctx.proposal.proposalId,
         planningRunId: ctx.runId,
         summary: ctx.proposal.summary,
-        memberCount: groupsStore.listMembers(ctx.groupId).length,
+        memberCount: (await groupsStore.listMembers(ctx.groupId)).length,
       });
 
       return vote;

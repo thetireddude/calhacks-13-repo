@@ -17,10 +17,10 @@ export function registerPlanningRoutes(
   ) => {
     const userId = request.authUser!.sub;
     const groupId = request.params.groupId;
-    if (!groupsStore.getGroup(groupId)) {
+    if (!(await groupsStore.getGroup(groupId))) {
       return reply.code(404).send({ error: "not_found" });
     }
-    if (!groupsStore.isMember(groupId, userId)) {
+    if (!(await groupsStore.isMember(groupId, userId))) {
       return reply.code(403).send({ error: "forbidden" });
     }
   };
@@ -33,7 +33,7 @@ export function registerPlanningRoutes(
     if (!run) {
       return reply.code(404).send({ error: "not_found" });
     }
-    if (!groupsStore.isMember(run.groupId, request.authUser!.sub)) {
+    if (!(await groupsStore.isMember(run.groupId, request.authUser!.sub))) {
       return reply.code(403).send({ error: "forbidden" });
     }
   };

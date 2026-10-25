@@ -31,9 +31,9 @@ async function seedGroupWithProposal(
   proposalId = "prop-vote-1",
 ): Promise<{ groupId: string; runId: string; proposalId: string }> {
   const owner = memberIds[0] ?? "owner-vote";
-  const group = groupsStore.createGroup("Vote crew", owner);
+  const group = await groupsStore.createGroup("Vote crew", owner);
   for (const id of memberIds.slice(1)) {
-    groupsStore.joinGroup(group.id, id);
+    await groupsStore.joinGroup(group.id, id);
   }
   const run = planningStore.createRun(group.id, owner, "dinner");
   const proposals: Proposal[] = [
@@ -283,7 +283,7 @@ test("GET confirmed-event returns 404 for unknown group and when none confirmed"
     votingStore: new InMemoryVotingStore(),
   });
   const token = await signTestToken("reader-1");
-  const group = groupsStore.createGroup("Empty", "reader-1");
+  const group = await groupsStore.createGroup("Empty", "reader-1");
 
   const missingGroup = await app.inject({
     method: "GET",

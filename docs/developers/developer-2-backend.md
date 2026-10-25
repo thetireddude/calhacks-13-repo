@@ -12,7 +12,8 @@ Supabase schema, session validation, REST API per SPEC §6.2, planning orchestra
 1. [`AGENTS.md`](../../AGENTS.md)
 2. [`SPEC.md`](../../SPEC.md) §4, §6, §7, §10
 3. [`state/CURRENT.md`](../../state/CURRENT.md)
-4. Task: [`tasks/DEV2-001-api-readiness.md`](../../tasks/DEV2-001-api-readiness.md)
+4. Standing orders (auto-drive): [`dev2-standing-orders.md`](dev2-standing-orders.md)
+5. Assigned `tasks/<TASK-ID>.md`
 
 ## Must not edit
 

@@ -2,15 +2,16 @@
 
 ## Milestone
 
-**Gate 1 complete** (merged PR #1). **Gate 2 prep in flight:** DEV2-011 ∥ DEV2-012 ∥ DEV2-013.
+**Gate 1 complete** (merged PR #1). **Gate 2 prep merged:** DEV2-011–013. **Persistence wave in flight:** DEV2-014 ∥ DEV2-015; DEV2-016 → DEV2-017 queued.
 
 ## In flight
 
 | Task | Deliverable |
 |------|-------------|
-| DEV2-011 | Supabase-backed groups when env set; in-memory default for CI |
-| DEV2-012 | Optional Supabase JWT iss/aud validation |
-| DEV2-013 | Local Dev 2 runbook + `.env.example` |
+| DEV2-014 | Env-gated `profiles` for `GET /v1/me` |
+| DEV2-015 | Env-gated prefs + availability |
+| DEV2-016 | queued — planning runs + proposals (after 014+015) |
+| DEV2-017 | queued — votes / vetoes / confirmed events (after 016) |
 
 ## Shipped (Gate 1)
 
@@ -18,7 +19,7 @@ DEV2-001–010 on `main`. See [`state/GATE1-DEV2-EXIT.md`](GATE1-DEV2-EXIT.md).
 
 ## Tests
 
-`pnpm run test:ci` — **27/27** (Tester gates must use this command).
+`pnpm run test:ci` — **29/29** (Tester gates must use this command).
 
 ## Blockers (SPEC §11)
 

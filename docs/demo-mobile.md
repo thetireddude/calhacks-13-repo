@@ -12,10 +12,11 @@ Scope: running the Gather mobile app on a physical phone against the real local 
 
 ## 2. Run the stack
 
-API (from repo root; the script is `tsx --env-file ../../.env watch src/index.ts`):
+API. The `pnpm --filter @gather/api dev` script is currently broken (it runs `tsx --env-file ../../.env watch …`, which tsx reads as a file named `watch`; reported to Dev 2). Run the server directly from `apps/api`:
 
 ```bash
-pnpm --filter @gather/api dev
+cd apps/api
+node_modules/.bin/tsx --env-file ../../.env src/index.ts
 ```
 
 - Reads the root `.env` (never commit it). Variable names are in `.env.example`: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`, `PORT`, `HOST`, and others.
@@ -33,6 +34,19 @@ EXPO_PUBLIC_API_URL=http://<API_IP>:<PORT>
 - API machine (node1): LAN `192.168.1.201`, Tailscale `100.98.78.15`. Use the LAN IP when the phone is on the same Wi-Fi, the Tailscale IP when the phone has Tailscale. Never `localhost`. Include the port (default 3000) unless the API is served on 80.
 - Never put the service-role key or JWT secret in `apps/mobile/.env`.
 - Start: `pnpm --filter @gather/mobile start`, scan the QR code. Restart Metro (`--clear`) after editing `.env` so the `EXPO_PUBLIC_*` values are re-inlined.
+
+### Live backend smoke test (no phone needed)
+
+With the API running as above, this script signs two disposable users in against the real Supabase project and drives the real mobile HTTP clients end to end (me, groups, invite/join, preferences, availability, schedule, planning, vote, confirmed event, notifications, ICS). It prints PASS/FAIL per step, never keys or tokens, and deletes the users and groups it created.
+
+```bash
+cd apps/mobile
+../api/node_modules/.bin/tsx --env-file ../../.env scripts/live-smoke.mts
+```
+
+Requires `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` in the root `.env`. Last run (2026-10-24, against the `gather` project, API from this branch): **19 of 20 PASS**. The one failure is the weekly schedule save, because migration `20261024180400_group_schedules.sql` is not applied on the cloud project. Apply it with `supabase db push` (link first with `supabase link --project-ref <ref>`); do not apply it by pasting SQL, which records a different migration version.
+
+The first live run also found that the cloud project signs tokens with ES256, which the API rejected until DEV2-026 (PR #6) added JWKS verification. Until that is merged into your API branch, every real login gets 401.
 
 ## 3. Physical-device checklist
 

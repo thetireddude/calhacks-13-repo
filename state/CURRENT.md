@@ -28,7 +28,8 @@ Voting rules, scheduler, full DTO freeze — stub until approved.
 
 - Mobile verification: contracts build, typecheck, lint, test — 17 suites / 310 tests pass. Contract-fit runs against the real in-memory API passed for groups/setup (41 checks) and planning/voting (36 of 37; the one note is a design consequence of the 404 mapping).
 - Real after DEV1-011b (candidate, unverified live): weekly schedule, notifications feed, ICS export (real .ics file via the system share sheet; not verified on a device or imported into a real calendar, so SPEC §3 "ICS export works on the demo device" is not yet confirmed). Still unavailable (no API route): vote tally/state, push-device registration.
-- Not verified: live Supabase-backed run, `/v1/me` with a real session token, two-device smoke, visual check on a phone.
+- Live backend smoke (`apps/mobile/scripts/live-smoke.mts`, 2026-10-24, real `gather` Supabase project, API from this branch): 19 of 20 steps pass with real ES256 login tokens (needs DEV2-026 / PR #6). The one failure is the weekly schedule, because migration `…0400_group_schedules` is not applied on the cloud project (`supabase db push`).
+- Not verified: two physical-device sessions, visual check on a phone, share sheet / calendar import of the `.ics`.
 - Integration-owner actions: CI runs only root `typecheck` and `test:ci`, so mobile and planner tests are not covered; add `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `EXPO_PUBLIC_API_URL` to `.env.example`; lockfile gained `@supabase/supabase-js`, `expo-secure-store`, `expo-font`, `@expo-google-fonts/*`.
 - ADR-003 (email + password for the demo) is Proposed and needs Dev 2 / Dev 3 acknowledgment.
 

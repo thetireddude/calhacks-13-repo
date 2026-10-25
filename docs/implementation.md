@@ -49,6 +49,11 @@ It does not create root workspace tooling. Funcheap and DoTheBay remain deferred
 - The configured Facebook venue-events dataset accepts only `{ url }`; its UI label does not imply that `upcoming_events_only` is accepted. The planner no longer sends that unsupported field.
 - A corrected Yelp request was accepted for collection but did not return within the bounded synchronous request window, so its real record schema remains pending. The next completed public response can be replayed through the normalizer without credentials.
 
+### 2026-10-24 — Live Creao API verification
+
+- A Creao app-trigger request returned `202 pending`, then `200 running`, and finally `200 completed` when polled by run ID.
+- The completed API result represented `feasible` as `"true"` and `preferenceTags` as a comma-separated string. The adapter now narrowly normalizes those two documented scalar encodings before applying strict planner validation.
+
 ### Next action after Gate 0
 
 Once Gate 0 supplies the workspace and shared types, export a contract-compatible planner factory and wire these internal modules into it. Live Creao and Bright Data integrations remain disabled until their respective contracts and custom collector IDs are approved.

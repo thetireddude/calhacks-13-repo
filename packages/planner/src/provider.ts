@@ -49,7 +49,7 @@ export class CreaoAppEvaluationProvider implements PersonalEvaluationProvider {
       }
       const run = await polled.json() as { status?: string; result?: { text?: string } };
       if (!polled.ok) throw new ProviderUnavailableError(`Creao run poll failed (${polled.status})`);
-      if (run.status === "completed") return parsePersonalEvaluation(JSON.parse(run.result?.text ?? ""));
+      if (run.status === "completed") return parsePersonalEvaluation(normalizeCreaoEvaluation(JSON.parse(run.result?.text ?? "")));
       if (run.status === "failed" || run.status === "cancelled") throw new ProviderUnavailableError(`Creao run ${run.status}`);
       await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
     }
@@ -59,6 +59,17 @@ export class CreaoAppEvaluationProvider implements PersonalEvaluationProvider {
 
 function isInput(value: unknown): value is { permitted_preferences: string; proposed_activity: string } {
   return typeof value === "object" && value !== null && typeof (value as Record<string, unknown>).permitted_preferences === "string" && typeof (value as Record<string, unknown>).proposed_activity === "string";
+}
+
+/** Converts only the two documented scalar encodings returned by the app UI. */
+function normalizeCreaoEvaluation(value: unknown): unknown {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return value;
+  const record = value as Record<string, unknown>;
+  const feasible = record.feasible === "true" ? true : record.feasible === "false" ? false : record.feasible;
+  const preferenceTags = typeof record.preferenceTags === "string"
+    ? record.preferenceTags.split(",").map((tag) => tag.trim()).filter(Boolean)
+    : record.preferenceTags;
+  return { ...record, feasible, preferenceTags };
 }
 
 export class ProviderUnavailableError extends Error {

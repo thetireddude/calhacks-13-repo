@@ -46,3 +46,18 @@ test("Creao app adapter honors a rate-limited poll", async () => {
   assert.equal(result.feasible, true);
   assert.equal(pollCount, 2);
 });
+
+test("Creao app adapter normalizes the completed live response encoding", async () => {
+  const provider = new CreaoAppEvaluationProvider(
+    { appId: "app-1", apiKey: "capi_test", baseUrl: "https://agent.example", pollIntervalMs: 0 },
+    async (_url, init) => init?.method === "POST"
+      ? new Response(JSON.stringify({ id: "run-1" }), { status: 201 })
+      : new Response(JSON.stringify({ status: "completed", result: { text: JSON.stringify({ feasible: "true", preferenceTags: "outdoors, low-cost", explanation: "The public activity matches the supplied tags." }) } }), { status: 200 }),
+  );
+  const result = await provider.evaluate({ permitted_preferences: "outdoors", proposed_activity: "park walk" });
+  assert.deepEqual(result, {
+    feasible: true,
+    preferenceTags: ["outdoors", "low-cost"],
+    explanation: "The public activity matches the supplied tags.",
+  });
+});

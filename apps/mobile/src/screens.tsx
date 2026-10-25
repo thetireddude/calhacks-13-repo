@@ -19,7 +19,7 @@ function messageFor(e: unknown): string {
       case "weak_password":
         return "That password is too weak. Choose a longer or less common one.";
       case "confirmation_required":
-        return "Account created, but email confirmation is still turned on in Supabase. Turn off Confirm email in the Supabase auth settings and try again.";
+        return "Email confirmation is still turned on in Supabase. Turn off Confirm email in the Supabase auth settings and try again.";
       case "network":
         return "Network problem. Check your connection and try again.";
     }

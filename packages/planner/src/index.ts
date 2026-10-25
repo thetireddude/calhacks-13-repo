@@ -22,3 +22,7 @@ export { selectProposalCandidates } from "./proposal-selection.js";
 export { parseActivityCandidate, parsePersonalEvaluation, PlannerValidationError } from "./validation.js";
 export { BrightDataDatasetClient, BrightDataRequestError } from "./bright-data.js";
 export type { BrightDataClientConfig, BrightDataDatasetRequest, FetchLike } from "./bright-data.js";
+export { calculateApprovedScoreComponents, meetsMinimumFeasibleMembers } from "./scoring.js";
+export type { MemberCandidateAssessment } from "./scoring.js";
+export { createRankingOutcome } from "./tie-resolution.js";
+export type { RankingOutcome } from "./tie-resolution.js";

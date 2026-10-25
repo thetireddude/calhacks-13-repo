@@ -25,6 +25,9 @@ The Bright Data dataset client is present behind an explicit configuration and
 is unit-tested with mocked HTTP. It does not read environment variables or run
 live requests by default.
 
+ADR-002 records the project-owner-approved initial planner rules for eligibility,
+scoring, inclusion debt, tie handling, provider choice, and live discovery.
+
 It does not create root workspace tooling, call Creao or Bright Data, implement scoring, or export the pending backend-facing `PlannerPort`. Those items still require the shared contract and approved rules.
 
 ### Next action after Gate 0

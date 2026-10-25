@@ -30,7 +30,6 @@
 | DEV1-004 | Group create/list/join UI + mock API client |
 | DEV2-006 | GET/PUT preferences + availability + privacy tests |
 | DEV2-007 | planning_runs/proposals migration + planning route stubs |
-| DEV3-004 | *(merged)* |
 
 ## Next after W6 gates
 

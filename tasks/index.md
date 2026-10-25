@@ -22,8 +22,8 @@ Core API lane only. Other lanes own their tasks separately.
 
 | Task | Status | Depends on | Notes |
 |------|--------|------------|-------|
-| DEV1-001 | ready | GATE0-001 | Expo bootstrap |
-| DEV1-002 | backlog | DEV1-001 | Navigation + auth shell + logout |
+| DEV1-001 | done | GATE0-001 | Expo bootstrap |
+| DEV1-002 | ready | DEV1-001 | Navigation + auth shell + logout |
 | DEV1-003 | backlog | DEV1-002 | OTP auth UI + mock AuthClient |
 | DEV1-004 | backlog | DEV1-003 | Groups UI + mock group client |
 | DEV1-005 | backlog | DEV1-004 | Member setup + weekly settings UI |

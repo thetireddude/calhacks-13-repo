@@ -7,7 +7,7 @@ Expo (SDK 58) / React Native / TypeScript client. See [`docs/developers/develope
 
 ## Status
 
-Bootstrap (DEV1-001): one placeholder home screen that type-imports `@gather/contracts`. No API calls, auth, or planning UI yet. Use API mocks matching `packages/contracts` until backend integration (Gate 3).
+Navigation shell (DEV1-002): signed-out stack (email, OTP placeholders) vs authenticated tabs (groups, planning, events, notifications placeholders), with a mock in-memory `AuthClient` (`src/auth.tsx`) that DEV1-009 replaces with Supabase. No API calls or planning UI yet. Use API mocks matching `packages/contracts` until backend integration (Gate 3).
 
 ## Commands
 

@@ -4,6 +4,7 @@ import test from "node:test";
 import { normalizeFacebookEventRecords, normalizeYelpRecords } from "../src/bright-data-discovery.js";
 import { BrightDataCandidateDiscovery } from "../src/bright-data-discovery.js";
 import { BrightDataDatasetClient } from "../src/bright-data.js";
+import { BrightDataRequestError } from "../src/bright-data.js";
 
 test("Yelp normalization retains only complete public records", () => {
   const candidates = normalizeYelpRecords([
@@ -84,4 +85,16 @@ test("Yelp discovery uses Bright Data's discover-by-search-filters method", asyn
   assert.match(requestBody, /"location":"San Francisco, CA"/);
   assert.match(requestUrl, /type=discover_new/);
   assert.match(requestUrl, /discover_by=search_filters/);
+});
+
+test("Yelp discovery fails closed when Bright Data returns only blocked records", async () => {
+  const client = new BrightDataDatasetClient({ apiKey: "test" }, async () => (
+    new Response(JSON.stringify([{ error: "Block was detected", error_code: "detect_block" }]), { status: 200 })
+  ));
+  const discovery = new BrightDataCandidateDiscovery(client, { yelpDatasetId: "gd_yelp" });
+
+  await assert.rejects(
+    discovery.discover({ city: "San Francisco, CA", limit: 1 }),
+    BrightDataRequestError,
+  );
 });

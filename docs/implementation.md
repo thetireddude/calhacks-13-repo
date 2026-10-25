@@ -64,6 +64,7 @@ It does not create root workspace tooling. Funcheap and DoTheBay remain deferred
 - The earlier Yelp discovery snapshot reached `ready` with three public business records and partial provider blocking. A subsequent one-input run reached `ready` with zero records and `detect_block`; the planner treats both cases as source failures rather than fabricating candidates.
 - The Yelp normalizer now matches the observed public fields: `categories` arrays, `price_range`, and nested `address.City`. It deliberately excludes contact details, owner names, descriptions, images, and raw provider payloads.
 - The REST adapter uses the compatible `type=discover_new&discover_by=search_filters` request mode. Its small test fixture covers only the public fields required to form a planner candidate.
+- A direct `discover_by_url` verification reached a Bright Data crawler error, and `collect_by_url` reached `detect_block`. All-error and all-unusable discovery responses now fail closed so `FallbackCandidateDiscovery` selects seeded candidates rather than returning an empty plan.
 
 ### Next action after Gate 0
 

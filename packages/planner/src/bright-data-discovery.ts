@@ -1,5 +1,5 @@
 import type { ActivityCandidate, CandidateDiscoveryPort, DiscoveryQuery } from "./domain.js";
-import { BrightDataDatasetClient } from "./bright-data.js";
+import { BrightDataDatasetClient, BrightDataRequestError } from "./bright-data.js";
 import { parseActivityCandidate } from "./validation.js";
 
 export interface BrightDataDiscoveryConfig {
@@ -104,6 +104,20 @@ export function normalizeYelpRecords(records: readonly unknown[], city: string):
   });
 }
 
+function requireCandidates(
+  records: readonly unknown[],
+  candidates: readonly ActivityCandidate[],
+  source: string,
+): readonly ActivityCandidate[] {
+  if (candidates.length > 0) return candidates;
+  const errors = records
+    .map(asRecord)
+    .flatMap((record) => record ? [firstString(record, ["error", "error_code"])] : [])
+    .filter((message): message is string => message !== null);
+  const detail = errors.length > 0 ? `: ${errors.join("; ")}` : "";
+  throw new BrightDataRequestError(`${source} returned no usable public candidates${detail}`);
+}
+
 /** Normalizes only public Facebook venue-event records returned by Bright Data. */
 export function normalizeFacebookEventRecords(records: readonly unknown[], city: string): readonly ActivityCandidate[] {
   return records.flatMap((record) => {
@@ -160,7 +174,7 @@ export class BrightDataCandidateDiscovery implements CandidateDiscoveryPort {
         input: [{ country: "US", category: "Restaurants", location: city }],
         limitPerInput: limit,
       });
-      return normalizeYelpRecords(records, city).slice(0, limit);
+      return requireCandidates(records, normalizeYelpRecords(records, city), "Yelp").slice(0, limit);
     }
 
     if (this.config.facebookEventsVenueDatasetId && this.config.facebookVenueNames?.length) {
@@ -170,7 +184,7 @@ export class BrightDataCandidateDiscovery implements CandidateDiscoveryPort {
         input: this.config.facebookVenueNames.slice(0, limit).map((venue) => ({ venue })),
         limitPerInput: limit,
       });
-      return normalizeFacebookEventRecords(records, city).slice(0, limit);
+      return requireCandidates(records, normalizeFacebookEventRecords(records, city), "Facebook Events").slice(0, limit);
     }
 
     throw new Error("No approved Bright Data discovery source is configured");

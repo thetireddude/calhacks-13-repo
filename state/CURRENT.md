@@ -20,11 +20,11 @@ This branch state tracks **`apps/api/**`, `supabase/**`, `packages/contracts/**`
 
 ## Next
 
-Post-DEV2-009 review/test gates; Supabase wiring for votes when scheduled.
+Gate 1 Dev 2 spine **complete** through DEV2-009. Follow-on: Supabase persistence wiring, SPEC §11 consensus when approved.
 
 ## Test status
 
-Run `pnpm run test:dev2` after DEV2-009 (includes voting idempotency + concurrency tests). See [`state/DEV2-TEST-STATUS.md`](DEV2-TEST-STATUS.md).
+`pnpm run test:dev2` — **27/27** pass. See [`state/DEV2-TEST-STATUS.md`](DEV2-TEST-STATUS.md).
 
 ## Blockers (SPEC §11)
 

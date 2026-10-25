@@ -1,6 +1,6 @@
 # Developer 2 — test verification matrix
 
-Last run: automated gate on `main` (orchestrator).
+Last run: post DEV2-009 merge on `main`.
 
 | Task | Coverage | Command / artifact |
 |------|----------|-------------------|
@@ -12,13 +12,12 @@ Last run: automated gate on `main` (orchestrator).
 | DEV2-006 | Prefs/availability + privacy | `me.test.ts` |
 | DEV2-007 | Planning routes + SQL smoke | `planning.test.ts`, `migrations.smoke.test.ts` |
 | DEV2-008 | Planner orchestration, cap 3, failure retry | `planning.test.ts` |
+| DEV2-009 | Vote, veto, confirmed event, idempotency | `voting.test.ts`, votes migration smoke |
 
 ## Run all Dev 2 tests
 
 ```bash
-pnpm --filter @gather/contracts build
-pnpm --filter @gather/api typecheck
-pnpm --filter @gather/api test
+pnpm run test:dev2
 ```
 
-Expected: **17** API tests (13 route + 4 migration smoke), **0** failures.
+Expected: **27** API tests, **0** failures (includes 5 migration smoke cases).

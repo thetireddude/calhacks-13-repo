@@ -15,6 +15,6 @@ Core API lane only. Other lanes own their tasks separately.
 | DEV2-006 | done | DEV2-004, DEV2-005 | Prefs + availability API |
 | DEV2-007 | done | DEV2-004 | Planning runs migration + routes |
 | DEV2-008 | done | DEV2-007, GATE0-002 | Mock planner orchestration + ≤3 proposals |
-| DEV2-009 | ready | DEV2-008 | Vote + confirmed-event skeleton |
+| DEV2-009 | done | DEV2-008 | Vote + veto + confirmed-event skeleton (merged) |
 
 Milestone: [`docs/milestone-dag.md`](../docs/milestone-dag.md)

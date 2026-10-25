@@ -7,10 +7,16 @@ import {
   InMemoryMemberSetupStore,
   type MemberSetupStore,
 } from "./me/store.js";
+import { registerPlanningRoutes } from "./planning/routes.js";
+import {
+  InMemoryPlanningStore,
+  type PlanningStore,
+} from "./planning/store.js";
 
 export type CreateAppOptions = {
   groupsStore?: GroupsStore;
   memberSetupStore?: MemberSetupStore;
+  planningStore?: PlanningStore;
 };
 
 export async function createApp(options: CreateAppOptions = {}) {
@@ -18,6 +24,7 @@ export async function createApp(options: CreateAppOptions = {}) {
   const groupsStore = options.groupsStore ?? new InMemoryGroupsStore();
   const memberSetupStore =
     options.memberSetupStore ?? new InMemoryMemberSetupStore();
+  const planningStore = options.planningStore ?? new InMemoryPlanningStore();
 
   app.get("/v1/health", async () => ({ status: "ok" as const }));
 
@@ -30,6 +37,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 
   registerGroupRoutes(app, groupsStore);
   registerMemberSetupRoutes(app, memberSetupStore);
+  registerPlanningRoutes(app, groupsStore, planningStore);
 
   return app;
 }

@@ -8,4 +8,17 @@
 2. From repo root: `supabase start` (uses `supabase/config.toml`).
 3. Set `SUPABASE_JWT_SECRET` in `.env` from `supabase status` JWT secret for API token verification.
 
-Migrations for groups/planning: **DEV2-003** onward.
+## Migrations (DEV2-003)
+
+| Table | Purpose |
+|-------|---------|
+| `profiles` | User profile row keyed to `auth.users` |
+| `groups` | Friend group |
+| `group_memberships` | Member ↔ group |
+| `group_invitations` | Invite token for join flow |
+
+Apply: `supabase db reset` or `supabase migration up` (local CLI).
+
+RLS policies are **Gate 1 stubs** — harden before demo.
+
+Next: **DEV2-004** preferences/availability; **DEV2-005** group API routes.

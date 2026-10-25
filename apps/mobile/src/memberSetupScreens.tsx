@@ -83,6 +83,9 @@ export function PreferencesScreen() {
   const [budgetMax, setBudgetMax] = useState("");
   const [radius, setRadius] = useState("");
   const [learningOptIn, setLearningOptIn] = useState(false);
+  const [savedLearning, setSavedLearning] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -94,11 +97,13 @@ export function PreferencesScreen() {
         setBudgetMax(p.budgetMax === null ? "" : String(p.budgetMax));
         setRadius(p.travelRadiusKm === null ? "" : String(p.travelRadiusKm));
         setLearningOptIn(p.learningOptIn);
+        setSavedLearning(p.learningOptIn);
+        setLoadFailed(false);
         setLoaded(true);
       },
-      () => setError(LOAD_FAILED),
+      () => setLoadFailed(true),
     );
-  }, [member]);
+  }, [member, attempt]);
 
   async function save() {
     setNotice(null);
@@ -109,14 +114,28 @@ export function PreferencesScreen() {
     }
     setError(null);
     try {
-      await member.putPreferences(result.value);
+      const saved = await member.putPreferences(result.value);
+      setSavedLearning(saved.learningOptIn);
       setNotice("Saved.");
     } catch {
       setError(SAVE_FAILED);
     }
   }
 
-  if (!loaded && !error) return <View style={styles.container}><Text>Loading</Text></View>;
+  if (!loaded) {
+    return (
+      <View style={styles.container}>
+        {loadFailed ? (
+          <>
+            <Text accessibilityRole="alert">{LOAD_FAILED}</Text>
+            <Button title="Retry" onPress={() => { setLoadFailed(false); setAttempt((n) => n + 1); }} />
+          </>
+        ) : (
+          <Text>Loading</Text>
+        )}
+      </View>
+    );
+  }
   return (
     <View style={styles.container}>
       <Text>Activities you like (separate with commas)</Text>
@@ -124,13 +143,15 @@ export function PreferencesScreen() {
       <Text>Budget range</Text>
       <TextInput accessibilityLabel="Minimum budget" style={styles.input} value={budgetMin} onChangeText={setBudgetMin} keyboardType="numeric" />
       <TextInput accessibilityLabel="Maximum budget" style={styles.input} value={budgetMax} onChangeText={setBudgetMax} keyboardType="numeric" />
+      <Text>Budget and radius: leave blank for no limit.</Text>
       <Text>Travel radius (km)</Text>
       <TextInput accessibilityLabel="Travel radius" style={styles.input} value={radius} onChangeText={setRadius} keyboardType="numeric" />
       <View style={styles.row}>
         <Text>Learn from my history</Text>
         <Switch accessibilityLabel="Learning opt-in" value={learningOptIn} onValueChange={setLearningOptIn} />
       </View>
-      <Text>{learningOptIn ? "Learning is on." : "Learning is off."}</Text>
+      <Text>{savedLearning ? "Saved: learning is on." : "Saved: learning is off."}</Text>
+      {learningOptIn !== savedLearning ? <Text>Unsaved change.</Text> : null}
       {error ? <Text accessibilityRole="alert">{error}</Text> : null}
       {notice ? <Text>{notice}</Text> : null}
       <Button title="Save preferences" onPress={() => void save()} />
@@ -144,15 +165,22 @@ export function AvailabilityScreen() {
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [label, setLabel] = useState("");
+  const [loaded, setLoaded] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     member.getAvailability().then(
-      (a) => setWindows(a.windows),
-      () => setError(LOAD_FAILED),
+      (a) => {
+        setWindows(a.windows);
+        setLoadFailed(false);
+        setLoaded(true);
+      },
+      () => setLoadFailed(true),
     );
-  }, [member]);
+  }, [member, attempt]);
 
   function add() {
     setNotice(null);
@@ -183,9 +211,25 @@ export function AvailabilityScreen() {
     }
   }
 
+  if (!loaded) {
+    return (
+      <View style={styles.container}>
+        {loadFailed ? (
+          <>
+            <Text accessibilityRole="alert">{LOAD_FAILED}</Text>
+            <Button title="Retry" onPress={() => { setLoadFailed(false); setAttempt((n) => n + 1); }} />
+          </>
+        ) : (
+          <Text>Loading</Text>
+        )}
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Your availability</Text>
+      <Text>Enter start and end like 2026-01-02T18:00 (format not final).</Text>
       {windows.length === 0 ? <Text>No windows yet.</Text> : null}
       {windows.map((w, i) => (
         <View key={`${w.startsAt}-${w.endsAt}-${i}`} style={styles.row}>
@@ -245,7 +289,8 @@ export function WeeklyPlanningScreen({ route }: NativeStackScreenProps<SetupStac
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Weekly planning</Text>
-      <Text>Draft settings, not yet connected to the backend.</Text>
+      <Text>Draft settings, not yet connected to the backend (mobile-local, unapproved).</Text>
+      <Text>Weekday 0 (Sunday) to 6 (Saturday), time like 18:00, deadline in hours.</Text>
       <TextInput accessibilityLabel="Weekday" style={styles.input} value={weekday} onChangeText={setWeekday} keyboardType="number-pad" />
       <TextInput accessibilityLabel="Planning time" style={styles.input} value={time} onChangeText={setTime} autoCapitalize="none" />
       <TextInput accessibilityLabel="Voting deadline hours" style={styles.input} value={deadline} onChangeText={setDeadline} keyboardType="number-pad" />
@@ -255,7 +300,6 @@ export function WeeklyPlanningScreen({ route }: NativeStackScreenProps<SetupStac
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff", padding: 16, gap: 8 },

@@ -48,13 +48,16 @@ test("preferences save, reload, and learning toggle is shown accurately", async 
   const member = createMockMemberSetupClient();
   await renderSignedIn({ member });
   await fireEvent.press(screen.getByText("Activity preferences"));
-  await screen.findByText("Learning is off.");
+  await screen.findByText("Saved: learning is off.");
   await fireEvent.changeText(screen.getByLabelText("Activity preferences"), "hiking, games");
   await fireEvent.changeText(screen.getByLabelText("Maximum budget"), "40");
   await fireEvent(screen.getByLabelText("Learning opt-in"), "valueChange", true);
-  await screen.findByText("Learning is on.");
+  await screen.findByText("Unsaved change.");
+  expect(screen.getByText("Saved: learning is off.")).toBeTruthy();
   await fireEvent.press(screen.getByText("Save preferences"));
   await screen.findByText("Saved.");
+  await screen.findByText("Saved: learning is on.");
+  expect(screen.queryByText("Unsaved change.")).toBeNull();
   expect(await member.getPreferences()).toEqual({
     activityTags: ["hiking", "games"],
     budgetMin: null,
@@ -95,14 +98,66 @@ test("availability editor adds, validates, and saves only the owner's windows", 
   });
 });
 
-test("privacy: setup screens render only the signed-in user's own saved data", async () => {
+test("privacy: setup screens render the owner's own data and nothing from other users", async () => {
   const member = createMockMemberSetupClient();
-  await member.putPreferences({ activityTags: ["mine"], budgetMin: null, budgetMax: null, travelRadiusKm: null, learningOptIn: false });
+  await member.putPreferences({ activityTags: ["mine-tag"], budgetMin: null, budgetMax: null, travelRadiusKm: null, learningOptIn: false });
+  await member.putAvailability({ windows: [{ startsAt: "2026-01-02T18:00", endsAt: "2026-01-02T20:00", label: "mine-window" }] });
   await renderSignedIn({ member });
-  expect(screen.queryByText(/user-seed/)).toBeNull();
+  await fireEvent.press(screen.getByText("Activity preferences"));
+  expect((await screen.findByLabelText("Activity preferences")).props.value).toBe("mine-tag");
+  expect(screen.queryByText(/other-member/)).toBeNull();
+  await fireEvent.press(screen.getByRole("button", { name: /Setup, tab/ }));
+  await fireEvent.press(await screen.findByText("Availability"));
+  await screen.findByText(/mine-window/);
+  expect(screen.queryByText(/other-member/)).toBeNull();
+});
+
+function failingOnce(base: MemberSetupClient): { client: MemberSetupClient; puts: () => number } {
+  let fail = true;
+  let puts = 0;
+  const gate = <T,>(f: () => Promise<T>) => async () => {
+    if (fail) {
+      fail = false;
+      throw new Error("down");
+    }
+    return f();
+  };
+  return {
+    puts: () => puts,
+    client: {
+      getPreferences: gate(() => base.getPreferences()),
+      getAvailability: gate(() => base.getAvailability()),
+      putPreferences: async (r) => { puts++; return base.putPreferences(r); },
+      putAvailability: async (r) => { puts++; return base.putAvailability(r); },
+    },
+  };
+}
+
+test("preferences load failure hides Save, issues no PUT, and recovers on retry", async () => {
+  const base = createMockMemberSetupClient();
+  await base.putPreferences({ activityTags: ["kept"], budgetMin: null, budgetMax: null, travelRadiusKm: null, learningOptIn: true });
+  const { client, puts } = failingOnce(base);
+  await renderSignedIn({ member: client });
+  await fireEvent.press(screen.getByText("Activity preferences"));
+  await screen.findByText("Could not load. Please try again.");
+  expect(screen.queryByText("Save preferences")).toBeNull();
+  await fireEvent.press(screen.getByText("Retry"));
+  await screen.findByText("Saved: learning is on.");
+  expect(screen.getByText("Save preferences")).toBeTruthy();
+  expect(puts()).toBe(0);
+});
+
+test("availability load failure hides Save, issues no PUT, and recovers on retry", async () => {
+  const base = createMockMemberSetupClient();
+  await base.putAvailability({ windows: [{ startsAt: "2026-01-02T18:00", endsAt: "2026-01-02T20:00" }] });
+  const { client, puts } = failingOnce(base);
+  await renderSignedIn({ member: client });
   await fireEvent.press(screen.getByText("Availability"));
-  await screen.findByText("No windows yet.");
-  expect(screen.queryByText(/user-seed/)).toBeNull();
+  await screen.findByText("Could not load. Please try again.");
+  expect(screen.queryByText("Save availability")).toBeNull();
+  await fireEvent.press(screen.getByText("Retry"));
+  await screen.findByText("2026-01-02T18:00 to 2026-01-02T20:00");
+  expect(puts()).toBe(0);
 });
 
 test("weekly planning draft validates and saves per group", async () => {

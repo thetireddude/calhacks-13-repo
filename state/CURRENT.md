@@ -2,55 +2,42 @@
 
 ## Milestone
 
-**Gate 0 → Gate 1** — W1 complete; **W2 in progress** (parallel implementers).
+**Gate 1** — autonomous orchestration active (ORCH-001). **Do not wait for user** to name next task.
 
-## Completed
+## Completed deliverables (what shipped)
 
-- SPEC v1.1 committed as product contract (`SPEC.md`).
-- Vendor-neutral agent workflow installed (`META-001`):
-  - `AGENTS.md`, `agents/*`, `docs/project_execution_contract.md`
-  - `tasks/` index and initial Gate 0 / developer readiness tasks
-  - `state/repo-map.md`, `state/task-context/README.md`
-  - `.agents/skills/token-efficient-coding/`
-- ADR-001: SPEC as authoritative product source.
-- Monorepo directory scaffold (apps, packages, supabase placeholders).
-- **GATE0-001** — pnpm workspace, stub packages, CI workflow (ORCH-001).
-- Integration owner: **Developer 2** (interim).
+| Task | Deliverable |
+|------|-------------|
+| GATE0-001 | pnpm monorepo + CI stub |
+| GATE0-002 | `@gather/contracts` PlannerPort + planner DTO stubs |
+| GATE0-003 | ADR-002 — Gate 1 may use contract stubs |
+| DEV2-001 | Fastify API + public `/v1/health` |
+| DEV2-002 | JWT auth + protected `/v1/me` + local Supabase config |
+| **DEV2-003** | **SQL migrations: `profiles`, `groups`, `group_memberships`, `group_invitations` + member-only RLS stubs** |
+| DEV1-001 | Expo SDK 58 app |
+| DEV1-002 | React Navigation: Welcome / Home / Groups placeholders |
+| DEV3-001 | `createPlanner()` stub (≤3 proposals, tests) |
 
-## Active / next work (ORCH-001)
+## In flight
 
-| Priority | Task | Owner lane | Status |
-|----------|------|------------|--------|
-| — | GATE0-001 | integration | **done** |
-| — | GATE0-002 | core-api | **done** (merged `76a97e7`) |
-| — | DEV2-001 | core-api | **done** (merged `e7adadb`) |
-| — | DEV1-001 | mobile | **done** (merged `9777545`) |
-| — | DEV3-001 | planner | **done** (merged `5d1af3e`) |
-| — | DEV1-002 | mobile | **done** (merged `6b8a2d0`) |
-| — | DEV2-002 | core-api | **done** (merged `8746bf2`) |
-| P0 | DEV2-003 | core-api | **ready** — groups/memberships migrations |
-| Next | GATE0-003 | all | contract tri-review after W3 merges |
-| Next | DEV2-003 | core-api | queued after DEV2-002 merge + R/T |
+| Task | Deliverable expected |
+|------|----------------------|
+| DEV2-004 | `member_preferences` + `member_availability` migrations (**candidate on main — finish R/T then mark done**) |
+| DEV1-003 | OTP mock auth screens in mobile app |
+| DEV3-003 | Seeded activity fallback in planner package |
 
-## Blockers (from SPEC §11 — do not guess)
+## Next auto-queue (Dev 2 spine)
 
-- **Integration owner** unassigned for root manifest, lockfile, CI.
-- **Package manager** and workspace tooling not chosen.
-- **API and planner DTO schemas** not yet frozen (stubs only until GATE0-002 + review).
-- LLM provider, scoring formulas, voting thresholds, scheduler technology — open.
+1. DEV2-005 — REST: create/join group, invites, members (uses DEV2-003 schema)
+2. DEV2-006 — REST: GET/PUT preferences + availability + privacy tests
+3. DEV2-007 — planning_runs + proposals tables + route stubs
+4. DEV2-008 — wire `@gather/planner` mock into API orchestration
+5. DEV2-009 — vote + confirmed-event skeleton routes
 
-## Branches
+## Blockers (SPEC §11)
 
-Create from the same base commit after Gate 0 scaffold merges to `main`:
-
-- `feature/mobile`
-- `feature/core-api`
-- `feature/planner`
+Voting majority, scheduler, final DTO enums — stub only until approved.
 
 ## Orchestration
 
-**ORCH-001** — see `state/agents/ORCH-001.md`, DAG: [`docs/milestone-dag.md`](../docs/milestone-dag.md).
-
-## For agents
-
-Read `tasks/index.md` for status. Pick tasks matching your lane and dependencies.
+[`docs/orchestration-runbook.md`](docs/orchestration-runbook.md) — completion messages must describe **what shipped**.

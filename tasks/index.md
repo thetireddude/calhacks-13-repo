@@ -18,8 +18,13 @@ Human-readable status. Detailed state: [`state/CURRENT.md`](../state/CURRENT.md)
 | DEV2-001 | done | GATE0-001 | core-api | Merged `e7adadb` — Fastify `/v1/health` |
 | DEV1-002 | done | DEV1-001 | mobile | Merged `6b8a2d0` — React Navigation shell |
 | DEV2-002 | done | DEV2-001 | core-api | Merged `8746bf2` — JWT + `/v1/me` |
-| DEV2-003 | ready | DEV2-002 | core-api | Identity/groups migrations |
-| DEV3-001 | done | GATE0-001, GATE0-002 | planner | Merged `5d1af3e` — createPlanner + 4 tests |
+| GATE0-003 | done | GATE0-002 | integration | ADR-002 contract stub ack for Gate 1 |
+| DEV2-003 | done | DEV2-002, GATE0-003 | core-api | **Profiles/groups/memberships/invites SQL + RLS stubs** (`f8c18fb`) |
+| DEV2-004 | candidate | DEV2-003 | core-api | **Private prefs + availability tables** (on main, pending R/T) |
+| DEV3-001 | done | GATE0-001, GATE0-002 | planner | `createPlanner()` stub + 4 tests (`5d1af3e`) |
+| DEV3-002 | done | DEV3-001 | planner | Covered by DEV3-001 PlannerPort impl |
+| DEV1-003 | implementing | DEV1-002 | mobile | OTP mock screens (subagent) |
+| DEV3-003 | implementing | DEV3-002 | planner | Seeded discovery (subagent) |
 
 ## How to pick work
 

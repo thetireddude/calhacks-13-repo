@@ -21,4 +21,7 @@ Apply: `supabase db reset` or `supabase migration up` (local CLI).
 
 RLS policies are **Gate 1 stubs** — harden before demo.
 
-Next: **DEV2-004** preferences/availability; **DEV2-005** group API routes.
+| `member_preferences` | **Private** — owner only (RLS) |
+| `member_availability` | **Private** — owner only (RLS) |
+
+Next: **DEV2-005** group API routes; **DEV2-006** prefs/availability API.

@@ -1,44 +1,46 @@
 # Orchestration runbook (AGENTS.md compliance)
 
-Every task must follow this loop unless the task file sets `review required: no` / `tester required: no`.
+**Non-negotiable:** Each role is a **separate dispatch** (subagent or human). The orchestrator coordinates; it does not substitute for Reviewer or Tester.
+
+## Role dispatch sequence
+
+```text
+Orchestrator → context pack + state/agents/<TASK-ID>.md
+  → Implementer (Task) → candidate + commit on agent branch
+  → Reviewer (Task) → verdict in state/agents/<TASK-ID>.md  [required if task says yes]
+  → Tester (Task) → PASS/FAIL in state/agents/<TASK-ID>.md   [required if task says yes]
+  → Orchestrator merge → done + deliverable message + index/CURRENT
+```
+
+| Role | Reads | Must not |
+|------|--------|----------|
+| Orchestrator | `agents/orchestrator.md`, DAG, `state/CURRENT.md` | Implement feature code; approve own code as Reviewer |
+| Implementer | `agents/implementer.md`, task, context pack | Merge to `main`; skip to done |
+| Reviewer | `agents/reviewer.md`, diff, tests | Commit production fixes unless assigned |
+| Tester | `agents/tester.md`, task test requirements | Weaken tests to pass |
 
 ## Completion messages (user-visible)
 
-When a task moves to **done**, state **what shipped**, not only the task ID:
-
 ```text
-<task-id> complete: <one sentence deliverable> — e.g. "Postgres tables for groups + RLS stubs in supabase/migrations"
+<task-id> complete: <what shipped in plain English> (commit <hash>)
 ```
 
-Also record: commit hash, lane, and what is **explicitly not** included yet.
+Include what is **not** included yet.
 
-## Autonomous orchestration (ORCH-001)
+## Autonomous orchestration
 
-The orchestrator **does not wait** for the user to request the next task. After gates pass:
-
-1. Merge to `main`
-2. Unlock next DAG nodes in `tasks/index.md` + `state/CURRENT.md`
-3. Dispatch or implement the next **ready** wave without prompting
+After gates pass, orchestrator unlocks next ready tasks and dispatches **Implementer** without waiting for the user. **Still runs Reviewer + Tester** before every merge.
 
 ## Per-task checklist
 
-1. **Orchestrator** confirms dependencies in `tasks/index.md` + `state/CURRENT.md`.
-2. Create/update **`state/task-context/<TASK-ID>.md`** before any implementer runs.
-3. Create **`state/agents/<TASK-ID>.md`** → status `IMPLEMENTING`.
-4. **Implementer** works in assigned worktree/branch; only **allowed files**; sets task status → **`candidate`**; writes handoff in task file.
-5. **Reviewer** (separate pass): verdict APPROVE / CHANGES REQUIRED; no open P0/P1.
-6. **Tester** (if required): gate PASS / FAIL.
-7. **Orchestrator** merges only after gates pass; task → **`done`** with deliverable summary; update index/state; archive `state/agents/<TASK-ID>.md`.
+1. Dependencies complete; `state/task-context/<TASK-ID>.md` exists.
+2. `state/agents/<TASK-ID>.md` — track IMPLEMENTING → CANDIDATE → REVIEWING → TESTING → APPROVED → MERGED.
+3. Implementer → **candidate** only.
+4. Reviewer → record verdict + P0–P3 in `state/agents/<TASK-ID>.md`.
+5. Tester → record gate + commands run.
+6. Merge only if APPROVE (+ PASS when tester required).
+7. Task **done**; update `tasks/index.md`, `state/CURRENT.md`.
 
-## Orchestrator must not
+## Retroactive gaps
 
-- Implement feature code in `apps/*`, `packages/*`, `supabase/*` except integration-only root (GATE0-001-class) **unless no implementer is available** — then implement, still run R+T, document in handoff.
-- Merge `candidate` → `main` without recorded review/test when the task requires them.
-
-## Lane ownership (SPEC)
-
-- Dev 2: `apps/api`, `supabase`, `packages/contracts`
-- Dev 1: `apps/mobile`
-- Dev 3: `packages/planner`
-
-Cross-lane merges require contract review (**GATE0-003**).
+Tasks merged without Reviewer/Tester must get **retro R+T** before dependent tasks merge, or be reverted.

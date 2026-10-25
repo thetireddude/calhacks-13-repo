@@ -9,7 +9,6 @@ import { registerProfileRoutes } from "./me/profileRoutes.js";
 import type { ProfileStore } from "./me/profileStore.js";
 import { registerMemberSetupRoutes } from "./me/routes.js";
 import type { MemberSetupStore } from "./me/store.js";
-import { createMockPlannerPort } from "./planner/mockPlannerPort.js";
 import { createDefaultPlanningStore } from "./planning/createPlanningStore.js";
 import { registerPlanningRoutes } from "./planning/routes.js";
 import type { PlanningStore } from "./planning/store.js";
@@ -17,6 +16,7 @@ import { createDefaultVotingStore } from "./voting/createVotingStore.js";
 import { registerVotingRoutes } from "./voting/routes.js";
 import type { VotingStore } from "./voting/store.js";
 import type { PlannerPort } from "@gather/contracts";
+import { createPlanner } from "@gather/planner";
 
 export type CreateAppOptions = {
   groupsStore?: GroupsStore;
@@ -36,7 +36,7 @@ export async function createApp(options: CreateAppOptions = {}) {
     options.memberSetupStore ?? createDefaultMemberSetupStore();
   const planningStore = options.planningStore ?? createDefaultPlanningStore();
   const votingStore = options.votingStore ?? createDefaultVotingStore();
-  const plannerPort = options.plannerPort ?? createMockPlannerPort();
+  const plannerPort = options.plannerPort ?? createPlanner();
 
   app.get("/v1/health", async () => ({ status: "ok" as const }));
 

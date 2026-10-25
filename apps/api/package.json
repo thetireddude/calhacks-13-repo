@@ -8,12 +8,13 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "start": "node --env-file ../../.env dist/index.js",
     "dev": "tsx --env-file ../../.env watch src/index.ts",
-    "test": "pnpm run build && sh -c 'node --test dist/*.test.js'",
+    "test": "pnpm run build && node --test dist/*.test.js",
     "lint": "node -e \"process.exit(0)\""
   },
   "dependencies": {
     "@fastify/cors": "^11.3.1",
     "@gather/contracts": "workspace:*",
+    "@gather/planner": "workspace:*",
     "@supabase/supabase-js": "^2.49.1",
     "fastify": "^5.2.1",
     "jose": "^5.9.6"

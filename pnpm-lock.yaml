@@ -20,6 +20,9 @@ importers:
       '@gather/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@gather/planner':
+        specifier: workspace:*
+        version: link:../../packages/planner
       '@supabase/supabase-js':
         specifier: ^2.49.1
         version: 2.118.0
@@ -119,8 +122,11 @@ importers:
         specifier: workspace:*
         version: link:../contracts
     devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.19.2
       typescript:
-        specifier: ^5.7.2
+        specifier: ^5.8.0
         version: 5.9.3
 
 packages:
@@ -1598,6 +1604,9 @@ packages:
 
   '@types/node@22.20.5':
     resolution: {integrity: sha512-U2+DNr+wSjpsTS/wZGYHq7GcwfuSmKiKvoPvK22zwTlRhU91yOniN4qRR5KhIjvif7ysw/dz/hKmfDH0Ris4aA==}
+
+  '@types/node@24.19.2':
+    resolution: {integrity: sha512-93d49wCWJkCyN87MxLpNN6KXPCwFw7bVUg79mGUV1OS40JGWwVCr8n61DXCSqz7CV6/VfPkb7xec7uP2M+QHWQ==}
 
   '@types/react-reconciler@0.33.1':
     resolution: {integrity: sha512-0kF59ji2mKuHUd5wytHSpmORybMYVerJvq0K10pz9ZFoOlJ3e+w1LBjLshWpCrokeyQOioRodNbO4PH4ddvRfg==}
@@ -4648,6 +4657,9 @@ packages:
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
 
+  undici-types@7.24.6:
+    resolution: {integrity: sha512-WRNW+sJgj5OBN4/0JpHFqtqzhpbnV0GuB+OozA9gCL7a993SmU+1JBZCzLNxYsbMfIeDL+lTsphD5jN5N+n0zg==}
+
   unicode-canonical-property-names-ecmascript@2.0.1:
     resolution: {integrity: sha512-dA8WbNeb2a6oQzAQ55YlT5vQAWGV9WXOsi3SskE3bcCdM0P4SDd+24zS/OCacdRq5BkdsRj9q3Pg6YyQoxIGqg==}
     engines: {node: '>=4'}
@@ -6681,6 +6693,10 @@ snapshots:
   '@types/node@22.20.5':
     dependencies:
       undici-types: 6.21.0
+
+  '@types/node@24.19.2':
+    dependencies:
+      undici-types: 7.24.6
 
   '@types/react-reconciler@0.33.1(@types/react@19.3.0)':
     dependencies:
@@ -10428,6 +10444,8 @@ snapshots:
       which-boxed-primitive: 1.1.1
 
   undici-types@6.21.0: {}
+
+  undici-types@7.24.6: {}
 
   unicode-canonical-property-names-ecmascript@2.0.1: {}
 

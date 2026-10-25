@@ -33,5 +33,5 @@ Voting rules, scheduler, full DTO freeze — stub until approved.
 
 ## Waiting on others (Gate 2+)
 
-- **Dev 3** — real `@gather/planner` for non-mock planning.
+- **Dev 3 integration** — real `@gather/planner` is wired into the API on `feature/planner-integration`; pending review and merge into `main`.
 - **Dev 1** — Gate 3 mobile ↔ API.

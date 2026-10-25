@@ -111,15 +111,21 @@ test("planning run create and fetch; non-member returns 403", async () => {
   });
   assert.equal(proposalsRes.statusCode, 200);
   const proposalsBody = proposalsRes.json() as {
-    proposals: { rank: number; summary: string }[];
+    proposals: { rank: number; summary: string; explanation?: string }[];
   };
   assert.equal(proposalsBody.proposals.length, 3);
+  assert.ok(proposalsBody.proposals.every((p) => p.summary.length > 0));
   assert.ok(
-    proposalsBody.proposals.every((p) => p.summary.includes("weekend hike")),
+    proposalsBody.proposals.every(
+      (p) =>
+        !p.summary.includes("owner-plan") &&
+        !p.summary.includes("@") &&
+        !p.summary.includes("Mock planner"),
+    ),
   );
   assert.ok(
     proposalsBody.proposals.every(
-      (p) => !p.summary.includes("owner-plan") && !p.summary.includes("@"),
+      (p) => p.explanation === "Recommended from available public activities.",
     ),
   );
 

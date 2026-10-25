@@ -11,8 +11,8 @@
     "lint": "pnpm -r run lint",
     "test": "pnpm -r run test",
     "test:dev2": "pnpm run test:ci",
-    "test:ci": "pnpm --filter @gather/contracts build && pnpm --filter @gather/api typecheck && pnpm --filter @gather/api test",
-    "typecheck": "pnpm --filter @gather/contracts build && pnpm --filter @gather/contracts --filter @gather/api run typecheck"
+    "test:ci": "pnpm --filter @gather/contracts build && pnpm --filter @gather/planner build && pnpm --filter @gather/api typecheck && pnpm --filter @gather/api test",
+    "typecheck": "pnpm --filter @gather/contracts build && pnpm --filter @gather/planner build && pnpm --filter @gather/contracts --filter @gather/api run typecheck"
   },
   "dependencies": {
     "supabase": "^2.122.0"

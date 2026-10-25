@@ -1,0 +1,78 @@
+# Implementation Progress
+
+## 2026-10-24 — Developer 3 planner lane
+
+- Active branch: `feature/planner` (based on `origin/main`).
+- Implementation was authorized by the project owner.
+- Local configuration has been prepared for Creao and Bright Data. Secrets remain in the ignored `.env` file; no secret values are recorded here.
+- Planned discovery sources are Google Maps, Yelp, Facebook Events by venue, and future Funcheap/DoTheBay collectors. Until the custom collectors exist and are approved, planner discovery must use seeded data.
+
+### Scope while Gate 0 is incomplete
+
+The project owner authorized contract-independent implementation before `GATE0-001` and `GATE0-002` complete. The initial planner code therefore contains only internal reusable modules:
+
+- deterministic seeded candidate discovery;
+- provider-neutral personal-evaluation boundary and safe unavailable-provider error path;
+- frozen TypeScript tests for seeded discovery.
+
+The package now also provides privacy-safe provider input preparation, a
+fallback-discovery wrapper, and fixed-weight ranking over precomputed score
+components. It rejects score ties instead of assuming an unapproved tie-break.
+Candidate and provider outputs are validated before use; malformed records and
+privacy-unsafe explanation text are rejected.
+
+The Bright Data dataset client is present behind an explicit configuration and
+is unit-tested with mocked HTTP. It does not read environment variables or run
+live requests by default.
+
+ADR-002 records the project-owner-approved initial planner rules for eligibility,
+scoring, inclusion debt, tie handling, provider choice, and live discovery.
+
+It does not create root workspace tooling. Funcheap and DoTheBay remain deferred by product-owner decision; Google Street View is excluded because the configured dataset does not provide activity discovery.
+
+### Completed after the shared PlannerPort landed
+
+- `createPlanner()` now implements the shared `PlannerPort` contract and returns at most three public proposals.
+- Approved deterministic component formulas and the 45/30/15/10 weighted ranker are covered by frozen tests. Exact top ties are surfaced for the backend-owned tie vote.
+- The app-scoped Creao API Trigger adapter creates isolated runs, polls them, and accepts only schema-validated JSON. It does not reuse conversations or send private-history fields.
+- Bright Data has a generic authenticated dataset client plus public-record normalizers for the approved Yelp and Facebook Events sources. Live source failures can fall back to seeded candidates.
+- The focused planner suite now covers provider success/failure, public normalizers, privacy filtering, fallback behavior, scoring, ties, and the `PlannerPort` boundary.
+
+### External verification status
+
+- Creao app-trigger authorization was verified by a live run creation after the app-scoped key was updated. The initial polling window was too short for the asynchronous run, so the adapter now polls for up to one minute by default before failing closed. No secret was displayed or stored.
+- Bright Data source normalization is implemented. Live Yelp/Facebook verification waits for their running snapshots or a fresh small request; Google Street View is intentionally not used.
+
+### 2026-10-24 — Live Bright Data request verification
+
+- The initial collector-method assumptions were incorrect. Bright Data MCP confirmed Yelp's supported `discover_by_search_filters` method and Facebook's `discover_by_venue` method; the REST adapter now uses those matching methods.
+- A first corrected Yelp request did not return within the bounded synchronous request window. Its later completed response was incorporated in the subsequent Yelp verification entry below.
+
+### 2026-10-24 — Live Creao API verification
+
+- A Creao app-trigger request returned `202 pending`, then `200 running`, and finally `200 completed` when polled by run ID.
+- The completed API result represented `feasible` as `"true"` and `preferenceTags` as a comma-separated string. The adapter now narrowly normalizes those two documented scalar encodings before applying strict planner validation.
+
+### 2026-10-24 — Bright Data MCP Facebook verification
+
+- Bright Data MCP successfully ran Facebook Events `discover_by_venue` for a public venue URL. The ready snapshot contained one public event record and no errors.
+- The Facebook normalizer now matches the observed MCP fields, including event identifiers, start/end instants, event URL, and full address. A minimal public fixture excludes description text and contact details.
+- The REST adapter now maps Facebook venue discovery to Bright Data's `type=discover_new&discover_by=venue` method with a public venue name, instead of the incompatible URL collector.
+
+### 2026-10-24 — Bright Data MCP Yelp verification
+
+- The earlier Yelp discovery snapshot reached `ready` with three public business records and partial provider blocking. A subsequent one-input run reached `ready` with zero records and `detect_block`; the planner treats both cases as source failures rather than fabricating candidates.
+- The Yelp normalizer now matches the observed public fields: `categories` arrays, `price_range`, and nested `address.City`. It deliberately excludes contact details, owner names, descriptions, images, and raw provider payloads.
+- The REST adapter uses the compatible `type=discover_new&discover_by=search_filters` request mode. Its small test fixture covers only the public fields required to form a planner candidate.
+- A direct `discover_by_url` verification reached a Bright Data crawler error, and `collect_by_url` reached `detect_block`. All-error and all-unusable discovery responses now fail closed so `FallbackCandidateDiscovery` selects seeded candidates rather than returning an empty plan.
+
+### 2026-10-24 — Mobile/API planner integration
+
+- The API's default `PlannerPort` now uses `createPlanner()` from the planner package's public entry point; callers can still inject a test double explicitly.
+- API planning routes therefore persist real, schema-validated public planner proposals rather than Gate 1 mock proposals. The integration does not add persistence or voting behavior to the planner.
+- Root CI now builds contracts and planner before typechecking/testing the API. The API test script no longer relies on Unix `sh`, so the same CI command runs on Windows.
+- The current mobile app remains mock-backed for authentication and group membership. It cannot use the protected planning endpoints until the separate real-auth and real-group-client mobile tasks are completed.
+
+### Next action after Gate 0
+
+Once Gate 0 supplies the workspace and shared types, export a contract-compatible planner factory and wire these internal modules into it. Live Creao and Bright Data integrations remain disabled until their respective contracts and custom collector IDs are approved.

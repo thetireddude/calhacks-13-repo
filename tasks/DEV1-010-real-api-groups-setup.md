@@ -71,3 +71,8 @@ Swap mock group and member-setup clients for real HTTP clients; preferences and 
 ## Handoff
 
 Commit `DEV1-010:` on `agent/DEV1-010-real-api-groups-setup`, set status `candidate`, no merge. Report files changed, commands run (`pnpm --filter @gather/contracts build`, `pnpm --filter @gather/mobile typecheck`, `pnpm --filter @gather/mobile test`), results, limitations, what is not wired yet, and any SPEC §9 contract change requests.
+
+## Real vs local
+
+- Real via the API: groups (create, list, join, members, invites), member preferences, and member availability.
+- Still a local mock: the weekly schedule (no `/schedule` route yet).

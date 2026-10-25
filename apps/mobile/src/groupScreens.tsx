@@ -39,7 +39,7 @@ export function groupErrorMessage(e: unknown): string {
 }
 
 export function GroupListScreen({ navigation }: Props<"GroupList">) {
-  const { groups, joinByToken } = useGroups();
+  const { groups, loadError, reloadGroups, joinByToken } = useGroups();
   const [token, setToken] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -61,7 +61,13 @@ export function GroupListScreen({ navigation }: Props<"GroupList">) {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Your groups</Text>
-      {groups.length === 0 ? <Text>No groups yet.</Text> : null}
+      {loadError ? (
+        <>
+          <Text accessibilityRole="alert">{groupErrorMessage(loadError)}</Text>
+          <Button title="Retry" onPress={reloadGroups} />
+        </>
+      ) : null}
+      {groups.length === 0 && !loadError ? <Text>No groups yet.</Text> : null}
       {groups.map((g) => (
         <Button key={g.id} title={g.name} onPress={() => navigation.navigate("GroupDashboard", { groupId: g.id })} />
       ))}

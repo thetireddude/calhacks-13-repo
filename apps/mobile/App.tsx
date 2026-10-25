@@ -8,6 +8,7 @@ import { createHttpGroupClient, createHttpMemberSetupClient } from "./src/httpCl
 import { createExpoNotificationPermissionClient } from "./src/notifications";
 import { createMockPlanningClient } from "./src/planning";
 import { createMockIcsClient, createMockVotingClient } from "./src/voting";
+import { selectBackend } from "./src/backendConfig";
 import { RootNavigator } from "./src/RootNavigator";
 import { createDefaultSupabaseAuthClient } from "./src/supabaseAuth";
 
@@ -27,12 +28,12 @@ const authClient =
 // a dev/test fallback; a release build with a missing API URL shows an error instead of mocking.
 // The token comes from the Supabase client (current, auto-refreshed), not the stale session snapshot.
 const apiUrl = process.env.EXPO_PUBLIC_API_URL;
-const realBackend = Boolean(apiUrl && supabaseUrl && supabaseAnonKey);
+const backend = selectBackend({ supabaseUrl, supabaseAnonKey, apiUrl }, allowMock);
 const api =
-  realBackend && authClient && "getAccessToken" in authClient
+  backend === "real" && authClient && "getAccessToken" in authClient
     ? createApiClient({ baseUrl: apiUrl as string, getAccessToken: () => authClient.getAccessToken() })
     : null;
-const apiMissing = !allowMock && !api;
+const apiMissing = backend === "config_error";
 const groupClient = api ? createHttpGroupClient(api) : createMockGroupClient();
 // undefined lets RootNavigator fall back to its in-memory mock. The weekly schedule stays a local
 // mock: the API has no /schedule route yet (SPEC section 9 request in the DEV1-010 handoff).

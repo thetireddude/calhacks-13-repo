@@ -8,10 +8,12 @@ import type {
   MemberPreferencesResponse,
   PutMemberPreferencesRequest,
 } from "@gather/contracts";
-import { render, screen, waitFor } from "@testing-library/react-native";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import { Text } from "react-native";
 
 import { createApiClient } from "./apiClient";
+import { AuthProvider, createMockAuthClient } from "./auth";
+import { RootNavigator } from "./RootNavigator";
 import { GroupError, createMockGroupClient } from "./groups";
 import { GroupsProvider, useGroups } from "./groupsState";
 import { createHttpGroupClient, createHttpMemberSetupClient } from "./httpClients";
@@ -166,14 +168,73 @@ describe("GroupsProvider wiring", () => {
     );
     await waitFor(() => expect(screen.getByText("Climbing")).toBeTruthy());
   });
-  test("a failed load leaves an empty list; the mock client (no listGroups) starts empty", async () => {
-    const { groups } = setup(401);
-    await render(
-      <GroupsProvider client={groups}>
-        <List />
+  test("the mock client (no listGroups) starts empty with no load error", () => {
+    expect(createMockGroupClient().listGroups).toBeUndefined();
+  });
+});
+
+describe("GroupsProvider load errors", () => {
+  function Probe() {
+    const { groups, loadError, reloadGroups, createGroup } = useGroups();
+    return (
+      <>
+        <Text>{groups.map((g) => g.name).join(",") || "none"}</Text>
+        {loadError ? <Text>{`error:${loadError.code}`}</Text> : null}
+        <Text onPress={reloadGroups}>reload</Text>
+        <Text onPress={() => void createGroup("Mid")}>create</Text>
+      </>
+    );
+  }
+  function flaky(failWith: GroupError, list: GroupResponse[]) {
+    let fail = true;
+    const base = createMockGroupClient();
+    const client = {
+      ...base,
+      listGroups: jest.fn(async () => {
+        if (fail) throw failWith;
+        return list;
+      }),
+      createGroup: jest.fn(async () => ({ ...group, id: "mid", name: "Mid" })),
+    };
+    return { client, heal: () => (fail = false) };
+  }
+  test("a failed load surfaces the error code and Retry recovers the list", async () => {
+    const { client, heal } = flaky(new GroupError("network"), [group]);
+    render(
+      <GroupsProvider client={client}>
+        <Probe />
       </GroupsProvider>,
     );
-    await waitFor(() => expect(screen.getByText("none")).toBeTruthy());
-    expect(createMockGroupClient().listGroups).toBeUndefined();
+    await waitFor(() => expect(screen.getByText("error:network")).toBeTruthy());
+    heal();
+    fireEvent.press(screen.getByText("reload"));
+    await waitFor(() => expect(screen.getByText("Climbing")).toBeTruthy());
+    expect(screen.queryByText("error:network")).toBeNull();
+  });
+  test("groups created before a retry survive it, deduped by id", async () => {
+    const { client, heal } = flaky(new GroupError("server"), [group, { ...group, id: "mid", name: "Mid" }]);
+    render(
+      <GroupsProvider client={client}>
+        <Probe />
+      </GroupsProvider>,
+    );
+    await waitFor(() => expect(screen.getByText("error:server")).toBeTruthy());
+    fireEvent.press(screen.getByText("create"));
+    await waitFor(() => expect(screen.getByText("Mid")).toBeTruthy());
+    heal();
+    fireEvent.press(screen.getByText("reload"));
+    await waitFor(() => expect(screen.getByText("Climbing,Mid")).toBeTruthy());
+  });
+  test("a 401 load failure shows the session-expired message on the groups list", async () => {
+    const { groups } = setup(401);
+    const auth = createMockAuthClient();
+    await auth.signIn("a@example.com", "secret1");
+    await render(
+      <AuthProvider client={auth}>
+        <RootNavigator groupClient={groups} />
+      </AuthProvider>,
+    );
+    expect(await screen.findByText("Your session has expired. Please sign out and sign in again.")).toBeTruthy();
+    expect(screen.getByText("Retry")).toBeTruthy();
   });
 });

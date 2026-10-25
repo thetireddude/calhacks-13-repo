@@ -16,6 +16,7 @@
 | DEV2-003 | SQL: profiles, groups, memberships, invitations + RLS |
 | DEV2-004 | SQL: member_preferences + member_availability + owner RLS |
 | DEV2-005 | In-memory groups/invites/join/members REST + group DTOs |
+| DEV2-006 | GET/PUT `/v1/me/preferences` and availability + privacy tests |
 | DEV1-001 | Expo SDK 58 app |
 | DEV1-002 | React Navigation shell |
 | DEV1-003 | Email + OTP mock auth |
@@ -28,7 +29,6 @@
 | Task | Expected deliverable |
 |------|----------------------|
 | DEV1-004 | Group create/list/join UI + mock API client |
-| DEV2-006 | GET/PUT preferences + availability + privacy tests |
 | DEV2-007 | planning_runs/proposals migration + planning route stubs |
 
 ## Next after W6 gates

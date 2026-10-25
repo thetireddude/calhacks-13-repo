@@ -27,7 +27,7 @@ Human-readable status. Detailed state: [`state/CURRENT.md`](../state/CURRENT.md)
 | DEV1-003 | done | DEV1-002 | mobile | **Email + OTP mock auth** (`5769309`; reviewer APPROVE) |
 | DEV3-003 | done | DEV3-002 | planner | Seeded discovery fallback (`1e65ed7`) |
 | DEV1-004 | implementing | DEV1-003 | mobile | Group UI + mock API client |
-| DEV2-006 | implementing | DEV2-004, DEV2-005 | core-api | Prefs + availability API + privacy tests |
+| DEV2-006 | done | DEV2-004, DEV2-005 | core-api | Prefs + availability API + privacy tests (merged) |
 | DEV2-007 | implementing | DEV2-004 | core-api | Planning runs migration + route stubs |
 | DEV3-004 | done | DEV3-003 | planner | Approved-weight scoring stub on `main` (merged) |
 

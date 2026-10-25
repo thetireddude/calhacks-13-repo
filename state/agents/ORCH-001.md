@@ -3,7 +3,7 @@
 - **status:** IMPLEMENTING (workflow realigned — see below)
 - **active role:** orchestrator
 - **branch:** main
-- **current activity:** W3 — enforce Implementer → Reviewer → Tester before merge
+- **current activity:** W3 — 3 parallel implementers dispatched (DEV2-002, DEV3-001, DEV1-002)
 
 ## Workflow compliance (honest audit)
 
@@ -24,13 +24,13 @@
 | W1 | GATE0-001 | done on main |
 | W2 | GATE0-002, DEV2-001 | merged — **retro review recommended** |
 | W2 | DEV1-001 | **merged** (`9777545`) — reviewer APPROVE |
-| W3 | DEV2-002, DEV3-001 | worktrees — **do not merge until R+T** |
+| W3 | DEV2-002, DEV3-001, DEV1-002 | **implementing** (parallel) → R+T → merge |
 
 ## Active worktrees
 
 | Task | Path | Branch |
 |------|------|--------|
-| DEV1-001 | calhacks-13-wt-DEV1-001 | agent/DEV1-001-mobile-bootstrap |
+| DEV1-002 | calhacks-13-wt-DEV1-002 | agent/DEV1-002-navigation-shell |
 | DEV2-002 | calhacks-13-wt-DEV2-002 | agent/DEV2-002-supabase-auth |
 | DEV3-001 | calhacks-13-wt-DEV3-001 | agent/DEV3-001-planner-bootstrap |
 

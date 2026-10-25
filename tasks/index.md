@@ -17,7 +17,8 @@ Human-readable status. Detailed state: [`state/CURRENT.md`](../state/CURRENT.md)
 | DEV1-001 | done | GATE0-001 | mobile | Merged `9777545` — Expo SDK 58 |
 | DEV2-001 | done | GATE0-001 | core-api | Merged `e7adadb` — Fastify `/v1/health` |
 | DEV1-002 | done | DEV1-001 | mobile | Merged `6b8a2d0` — React Navigation shell |
-| DEV2-002 | implementing | DEV2-001 | core-api | Supabase + JWT (W3 worktree) |
+| DEV2-002 | done | DEV2-001 | core-api | Merged `8746bf2` — JWT + `/v1/me` |
+| DEV2-003 | ready | DEV2-002 | core-api | Identity/groups migrations |
 | DEV3-001 | done | GATE0-001, GATE0-002 | planner | Merged `5d1af3e` — createPlanner + 4 tests |
 
 ## How to pick work

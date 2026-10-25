@@ -2,9 +2,10 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AvailabilityWindow } from "@gather/contracts";
 import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { Button, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { View } from "react-native";
 
 import { useGroups } from "./groupsState";
+import { AppText, Banner, Button, Card, Screen, Skeleton, TextField, Toggle } from "./ui";
 import { validatePreferences, validateWeeklySettings, validateWindow } from "./memberSetup";
 import type {
   LocalScheduleClient,
@@ -34,6 +35,7 @@ function useSetup(): SetupDeps {
   return ctx;
 }
 
+const EDGES: ("left" | "right")[] = ["left", "right"];
 const SAVE_FAILED = "Could not save. Please try again.";
 const LOAD_FAILED = "Could not load. Please try again.";
 
@@ -57,21 +59,24 @@ export function SetupHomeScreen({ navigation }: NativeStackScreenProps<SetupStac
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Your setup</Text>
-      <Text>Only you can see these details.</Text>
+    <Screen scroll edges={EDGES}>
+      <AppText variant="display" accessibilityRole="header">
+        Your setup
+      </AppText>
+      <AppText muted>Only you can see these details.</AppText>
       <Button title="Activity preferences" onPress={() => navigation.navigate("Preferences")} />
-      <Button title="Availability" onPress={() => navigation.navigate("Availability")} />
-      <Button title="Allow notifications" onPress={() => void askPermission()} />
-      {notice ? <Text>{notice}</Text> : null}
+      <Button title="Availability" variant="secondary" onPress={() => navigation.navigate("Availability")} />
+      <Button title="Allow notifications" variant="secondary" onPress={() => void askPermission()} />
+      {notice ? <Banner tone="info" message={notice} /> : null}
       {groups.map((g) => (
         <Button
           key={g.id}
           title={`Weekly planning: ${g.name}`}
+          variant="outline"
           onPress={() => navigation.navigate("WeeklyPlanning", { groupId: g.id })}
         />
       ))}
-    </View>
+    </Screen>
   );
 }
 
@@ -124,38 +129,64 @@ export function PreferencesScreen() {
 
   if (!loaded) {
     return (
-      <View style={styles.container}>
+      <Screen edges={EDGES}>
         {loadFailed ? (
-          <>
-            <Text accessibilityRole="alert">{LOAD_FAILED}</Text>
-            <Button title="Retry" onPress={() => { setLoadFailed(false); setAttempt((n) => n + 1); }} />
-          </>
+          <Banner
+            message={LOAD_FAILED}
+            onRetry={() => {
+              setLoadFailed(false);
+              setAttempt((n) => n + 1);
+            }}
+          />
         ) : (
-          <Text>Loading</Text>
+          <View style={{ gap: 12 }}>
+            <Skeleton height={56} radius={16} />
+            <Skeleton height={56} radius={16} />
+            <Skeleton height={56} radius={16} />
+          </View>
         )}
-      </View>
+      </Screen>
     );
   }
   return (
-    <View style={styles.container}>
-      <Text>Activities you like (separate with commas)</Text>
-      <TextInput accessibilityLabel="Activity preferences" style={styles.input} value={tags} onChangeText={setTags} />
-      <Text>Budget range</Text>
-      <TextInput accessibilityLabel="Minimum budget" style={styles.input} value={budgetMin} onChangeText={setBudgetMin} keyboardType="numeric" />
-      <TextInput accessibilityLabel="Maximum budget" style={styles.input} value={budgetMax} onChangeText={setBudgetMax} keyboardType="numeric" />
-      <Text>Budget and radius: leave blank for no limit.</Text>
-      <Text>Travel radius (km)</Text>
-      <TextInput accessibilityLabel="Travel radius" style={styles.input} value={radius} onChangeText={setRadius} keyboardType="numeric" />
-      <View style={styles.row}>
-        <Text>Learn from my history</Text>
-        <Switch accessibilityLabel="Learning opt-in" value={learningOptIn} onValueChange={setLearningOptIn} />
-      </View>
-      <Text>{savedLearning ? "Saved: learning is on." : "Saved: learning is off."}</Text>
-      {learningOptIn !== savedLearning ? <Text>Unsaved change.</Text> : null}
-      {error ? <Text accessibilityRole="alert">{error}</Text> : null}
-      {notice ? <Text>{notice}</Text> : null}
+    <Screen scroll edges={EDGES}>
+      <AppText variant="title" accessibilityRole="header">
+        Make it yours
+      </AppText>
+      <AppText muted>Takes a minute. You can change it anytime.</AppText>
+      <Card tone="peach">
+        <AppText variant="heading">What are you up for?</AppText>
+        <TextField
+          label="Activity preferences"
+          helper="Activities you like (separate with commas)"
+          value={tags}
+          onChangeText={setTags}
+        />
+      </Card>
+      <Card>
+        <AppText variant="heading">Budget per person</AppText>
+        <TextField label="Minimum budget" value={budgetMin} onChangeText={setBudgetMin} keyboardType="numeric" />
+        <TextField label="Maximum budget" value={budgetMax} onChangeText={setBudgetMax} keyboardType="numeric" />
+        <AppText variant="small" muted>
+          Budget and radius: leave blank for no limit.
+        </AppText>
+      </Card>
+      <Card>
+        <AppText variant="heading">How far will you go?</AppText>
+        <TextField label="Travel radius" helper="Travel radius (km)" value={radius} onChangeText={setRadius} keyboardType="numeric" />
+      </Card>
+      <Card tone="lilac">
+        <Toggle label="Learn from my history" value={learningOptIn} onValueChange={setLearningOptIn} />
+        <AppText variant="small" muted>
+          Only you can see your history. Turn this off and Gather will not use it when suggesting plans.
+        </AppText>
+        <AppText variant="small">{savedLearning ? "Saved: learning is on." : "Saved: learning is off."}</AppText>
+        {learningOptIn !== savedLearning ? <AppText variant="small">Unsaved change.</AppText> : null}
+      </Card>
+      {error ? <Banner message={error} /> : null}
+      {notice ? <Banner tone="info" message={notice} /> : null}
       <Button title="Save preferences" onPress={() => void save()} />
-    </View>
+    </Screen>
   );
 }
 
@@ -213,38 +244,58 @@ export function AvailabilityScreen() {
 
   if (!loaded) {
     return (
-      <View style={styles.container}>
+      <Screen edges={EDGES}>
         {loadFailed ? (
-          <>
-            <Text accessibilityRole="alert">{LOAD_FAILED}</Text>
-            <Button title="Retry" onPress={() => { setLoadFailed(false); setAttempt((n) => n + 1); }} />
-          </>
+          <Banner
+            message={LOAD_FAILED}
+            onRetry={() => {
+              setLoadFailed(false);
+              setAttempt((n) => n + 1);
+            }}
+          />
         ) : (
-          <Text>Loading</Text>
+          <View style={{ gap: 12 }}>
+            <Skeleton height={56} radius={16} />
+            <Skeleton height={56} radius={16} />
+            <Skeleton height={56} radius={16} />
+          </View>
         )}
-      </View>
+      </Screen>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Your availability</Text>
-      <Text>Enter start and end like 2026-01-02T18:00 (format not final).</Text>
-      {windows.length === 0 ? <Text>No windows yet.</Text> : null}
+    <Screen scroll edges={EDGES}>
+      <AppText variant="title" accessibilityRole="header">
+        Your availability
+      </AppText>
+      <AppText muted>Enter start and end like 2026-01-02T18:00 (format not final).</AppText>
+      {windows.length === 0 ? (
+        <Card tone="peach">
+          <AppText>No windows yet.</AppText>
+        </Card>
+      ) : null}
       {windows.map((w, i) => (
-        <View key={`${w.startsAt}-${w.endsAt}-${i}`} style={styles.row}>
-          <Text>{`${w.startsAt} to ${w.endsAt}${w.label ? ` (${w.label})` : ""}`}</Text>
-          <Button title="Remove" accessibilityLabel={`Remove window ${i + 1}`} onPress={() => setWindows((p) => p.filter((_, j) => j !== i))} />
-        </View>
+        <Card key={`${w.startsAt}-${w.endsAt}-${i}`} tone="mint">
+          <AppText>{`${w.startsAt} to ${w.endsAt}${w.label ? ` (${w.label})` : ""}`}</AppText>
+          <Button
+            title="Remove"
+            variant="outline"
+            accessibilityLabel={`Remove window ${i + 1}`}
+            onPress={() => setWindows((p) => p.filter((_, j) => j !== i))}
+          />
+        </Card>
       ))}
-      <TextInput accessibilityLabel="Window start" style={styles.input} value={start} onChangeText={setStart} autoCapitalize="none" />
-      <TextInput accessibilityLabel="Window end" style={styles.input} value={end} onChangeText={setEnd} autoCapitalize="none" />
-      <TextInput accessibilityLabel="Window label" style={styles.input} value={label} onChangeText={setLabel} />
-      <Button title="Add window" onPress={add} />
-      {error ? <Text accessibilityRole="alert">{error}</Text> : null}
-      {notice ? <Text>{notice}</Text> : null}
+      <Card>
+        <TextField label="Window start" value={start} onChangeText={setStart} autoCapitalize="none" />
+        <TextField label="Window end" value={end} onChangeText={setEnd} autoCapitalize="none" />
+        <TextField label="Window label" value={label} onChangeText={setLabel} />
+        <Button title="Add window" variant="secondary" onPress={add} />
+      </Card>
+      {error ? <Banner message={error} /> : null}
+      {notice ? <Banner tone="info" message={notice} /> : null}
       <Button title="Save availability" onPress={() => void save()} />
-    </View>
+    </Screen>
   );
 }
 
@@ -287,23 +338,18 @@ export function WeeklyPlanningScreen({ route }: NativeStackScreenProps<SetupStac
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Weekly planning</Text>
-      <Text>Draft settings, not yet connected to the backend (mobile-local, unapproved).</Text>
-      <Text>Weekday 0 (Sunday) to 6 (Saturday), time like 18:00, deadline in hours.</Text>
-      <TextInput accessibilityLabel="Weekday" style={styles.input} value={weekday} onChangeText={setWeekday} keyboardType="number-pad" />
-      <TextInput accessibilityLabel="Planning time" style={styles.input} value={time} onChangeText={setTime} autoCapitalize="none" />
-      <TextInput accessibilityLabel="Voting deadline hours" style={styles.input} value={deadline} onChangeText={setDeadline} keyboardType="number-pad" />
-      {error ? <Text accessibilityRole="alert">{error}</Text> : null}
-      {notice ? <Text>{notice}</Text> : null}
+    <Screen scroll edges={EDGES}>
+      <AppText variant="title" accessibilityRole="header">
+        Weekly planning
+      </AppText>
+      <Banner tone="info" message="Draft settings, not yet connected to the backend (mobile-local, unapproved)." />
+      <AppText muted>Weekday 0 (Sunday) to 6 (Saturday), time like 18:00, deadline in hours.</AppText>
+      <TextField label="Weekday" value={weekday} onChangeText={setWeekday} keyboardType="number-pad" />
+      <TextField label="Planning time" value={time} onChangeText={setTime} autoCapitalize="none" />
+      <TextField label="Voting deadline hours" value={deadline} onChangeText={setDeadline} keyboardType="number-pad" />
+      {error ? <Banner message={error} /> : null}
+      {notice ? <Banner tone="info" message={notice} /> : null}
       <Button title="Save weekly planning" onPress={() => void save()} />
-    </View>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff", padding: 16, gap: 8 },
-  title: { fontSize: 24, fontWeight: "700" },
-  input: { borderWidth: 1, borderColor: "#999", alignSelf: "stretch", padding: 8 },
-  row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-});

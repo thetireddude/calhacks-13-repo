@@ -2,10 +2,12 @@ import type { GroupInviteResponse, GroupMemberResponse } from "@gather/contracts
 import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Button, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native";
+import { Share, View } from "react-native";
 
 import { GroupError, inviteLink } from "./groups";
 import { useGroups } from "./groupsState";
+import { AppText, Banner, Button, Card, EmptyState, Screen, Skeleton, TextField } from "./ui";
+import type { CardTone } from "./ui";
 
 export type GroupsStackParams = {
   GroupList: undefined;
@@ -38,6 +40,9 @@ export function groupErrorMessage(e: unknown): string {
   return "Something went wrong. Please try again.";
 }
 
+const EDGES: ("left" | "right")[] = ["left", "right"];
+const GROUP_TONES: CardTone[] = ["peach", "mint", "sky"];
+
 export function GroupListScreen({ navigation }: Props<"GroupList">) {
   const { groups, loadError, reloadGroups, joinByToken } = useGroups();
   const [token, setToken] = useState("");
@@ -59,34 +64,45 @@ export function GroupListScreen({ navigation }: Props<"GroupList">) {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Your groups</Text>
-      {loadError ? (
-        <>
-          <Text accessibilityRole="alert">{groupErrorMessage(loadError)}</Text>
-          <Button title="Retry" onPress={reloadGroups} />
-        </>
+    <Screen scroll edges={EDGES}>
+      <AppText variant="display" accessibilityRole="header">
+        Your groups
+      </AppText>
+      <Button title="Create group" icon="plus" onPress={() => navigation.navigate("CreateGroup")} />
+      {loadError ? <Banner message={groupErrorMessage(loadError)} onRetry={reloadGroups} /> : null}
+      {groups.length === 0 && !loadError ? (
+        <EmptyState title="No groups yet." message="Create a group or join one with an invite." />
       ) : null}
-      {groups.length === 0 && !loadError ? <Text>No groups yet.</Text> : null}
-      {groups.map((g) => (
-        <Button key={g.id} title={g.name} onPress={() => navigation.navigate("GroupDashboard", { groupId: g.id })} />
+      {groups.length > 0 ? <AppText variant="label" muted>{`${groups.length} ${groups.length === 1 ? "group" : "groups"}`}</AppText> : null}
+      {groups.map((g, i) => (
+        <Card
+          key={g.id}
+          tone={GROUP_TONES[i % GROUP_TONES.length]}
+          accessibilityLabel={g.name}
+          onPress={() => navigation.navigate("GroupDashboard", { groupId: g.id })}
+        >
+          <AppText variant="title">{g.name}</AppText>
+        </Card>
       ))}
-      <Button title="Create group" onPress={() => navigation.navigate("CreateGroup")} />
-      <Text>Have an invite? Open the link, or paste its token.</Text>
-      <TextInput
-        accessibilityLabel="Invite token"
-        style={styles.input}
-        value={token}
-        onChangeText={(t) => {
-          setToken(t);
-          setError(null);
-        }}
-        autoCapitalize="none"
-        editable={!busy}
-      />
-      {error ? <Text accessibilityRole="alert">{error}</Text> : null}
-      <Button title="Join group" onPress={() => void join()} disabled={busy || token.trim() === ""} />
-    </ScrollView>
+      <Card tone="surface">
+        <AppText variant="heading">Join with code</AppText>
+        <AppText variant="small" muted>
+          Have an invite? Open the link, or paste its token.
+        </AppText>
+        <TextField
+          label="Invite token"
+          value={token}
+          onChangeText={(t) => {
+            setToken(t);
+            setError(null);
+          }}
+          autoCapitalize="none"
+          editable={!busy}
+          error={error}
+        />
+        <Button title="Join group" icon="key" variant="secondary" onPress={() => void join()} disabled={busy || token.trim() === ""} />
+      </Card>
+    </Screen>
   );
 }
 
@@ -109,20 +125,20 @@ export function CreateGroupScreen({ navigation }: Props<"CreateGroup">) {
   }
 
   return (
-    <View style={styles.container}>
-      <TextInput
-        accessibilityLabel="Group name"
-        style={styles.input}
+    <Screen scroll edges={EDGES}>
+      <AppText variant="title">Name your group</AppText>
+      <TextField
+        label="Group name"
         value={name}
         onChangeText={(t) => {
           setName(t);
           setError(null);
         }}
         editable={!busy}
+        error={error}
       />
-      {error ? <Text accessibilityRole="alert">{error}</Text> : null}
-      <Button title="Create" onPress={() => void create()} disabled={busy} />
-    </View>
+      <Button title="Create" onPress={() => void create()} busy={busy} />
+    </Screen>
   );
 }
 
@@ -133,16 +149,24 @@ export function GroupDashboardScreen({ navigation, route }: Props<"GroupDashboar
   // Planning, confirmed event and notifications are placeholder tabs until their tasks land.
   const tab = (name: string) => navigation.getParent<NavigationProp<ParamListBase>>()?.navigate(name);
 
-  if (!group) return <View style={styles.container}><Text>Group not found.</Text></View>;
+  if (!group) {
+    return (
+      <Screen edges={EDGES}>
+        <AppText>Group not found.</AppText>
+      </Screen>
+    );
+  }
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{group.name}</Text>
-      <Button title="Members" onPress={() => navigation.navigate("Members", { groupId })} />
-      <Button title="Invite members" onPress={() => navigation.navigate("Invite", { groupId })} />
+    <Screen scroll edges={EDGES}>
+      <AppText variant="display" accessibilityRole="header">
+        {group.name}
+      </AppText>
       <Button title="Open planning" onPress={() => tab("Planning")} />
-      <Button title="View confirmed event" onPress={() => tab("Events")} />
-      <Button title="Open notifications" onPress={() => tab("Notifications")} />
-    </View>
+      <Button title="View confirmed event" variant="secondary" onPress={() => tab("Events")} />
+      <Button title="Open notifications" variant="secondary" onPress={() => tab("Notifications")} />
+      <Button title="Members" variant="outline" onPress={() => navigation.navigate("Members", { groupId })} />
+      <Button title="Invite members" variant="outline" onPress={() => navigation.navigate("Invite", { groupId })} />
+    </Screen>
   );
 }
 
@@ -162,19 +186,36 @@ export function MembersScreen({ route }: Props<"Members">) {
     };
   }, [client, route.params.groupId]);
 
-  if (error) return <View style={styles.container}><Text accessibilityRole="alert">{error}</Text></View>;
-  if (!members) return <View style={styles.container}><ActivityIndicator accessibilityLabel="Loading members" /></View>;
+  if (error) {
+    return (
+      <Screen edges={EDGES}>
+        <Banner message={error} />
+      </Screen>
+    );
+  }
+  if (!members) {
+    return (
+      <Screen edges={EDGES}>
+        <Skeleton height={72} radius={24} />
+        <Skeleton height={72} radius={24} style={{ marginTop: 12 }} />
+      </Screen>
+    );
+  }
   // Only the group-visible GroupMemberResponse fields are rendered.
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      {members.map((m) => (
-        <View key={m.userId} accessibilityLabel={`Member ${m.userId}`}>
-          <Text>{m.userId}</Text>
-          <Text>Role: {m.role}</Text>
-          <Text>Joined: {m.joinedAt}</Text>
-        </View>
+    <Screen scroll edges={EDGES}>
+      {members.map((m, i) => (
+        <Card key={m.userId} tone={GROUP_TONES[i % GROUP_TONES.length]} style={{ gap: 4 }}>
+          <View accessible accessibilityLabel={`Member ${m.userId}`} style={{ gap: 4 }}>
+            <AppText variant="heading">{m.userId}</AppText>
+            <AppText variant="small">Role: {m.role}</AppText>
+            <AppText variant="small" muted>
+              Joined: {m.joinedAt}
+            </AppText>
+          </View>
+        </Card>
       ))}
-    </ScrollView>
+    </Screen>
   );
 }
 
@@ -197,21 +238,16 @@ export function InviteScreen({ route }: Props<"Invite">) {
   }
 
   return (
-    <View style={styles.container}>
-      <Button title="Generate invite link" onPress={() => void generate()} disabled={busy} />
-      {error ? <Text accessibilityRole="alert">{error}</Text> : null}
+    <Screen scroll edges={EDGES}>
+      <AppText variant="title">Invite your people</AppText>
+      <Button title="Generate invite link" icon="key" onPress={() => void generate()} disabled={busy} />
+      {error ? <Banner message={error} /> : null}
       {invite ? (
-        <>
-          <Text selectable>{inviteLink(invite.token)}</Text>
+        <Card tone="mint">
+          <AppText selectable>{inviteLink(invite.token)}</AppText>
           <Button title="Share invite" onPress={() => void Share.share({ message: inviteLink(invite.token) })} />
-        </>
+        </Card>
       ) : null}
-    </View>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flexGrow: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#fff", padding: 16, gap: 8 },
-  title: { fontSize: 24, fontWeight: "700", marginBottom: 8 },
-  input: { borderWidth: 1, borderColor: "#999", alignSelf: "stretch", margin: 12, padding: 8 },
-});

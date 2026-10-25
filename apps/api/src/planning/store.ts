@@ -12,12 +12,12 @@ export type PlanningStore = {
     groupId: string,
     initiatedBy: string,
     activityRequest?: string,
-  ): PlanningRunResponse;
-  getRun(runId: string): PlanningRunResponse | undefined;
-  listProposals(runId: string): Proposal[];
-  findProposalContext(proposalId: string): ProposalContext | undefined;
-  completeRun(runId: string, proposals: Proposal[]): void;
-  markRunFailed(runId: string): void;
+  ): Promise<PlanningRunResponse>;
+  getRun(runId: string): Promise<PlanningRunResponse | undefined>;
+  listProposals(runId: string): Promise<Proposal[]>;
+  findProposalContext(proposalId: string): Promise<ProposalContext | undefined>;
+  completeRun(runId: string, proposals: Proposal[]): Promise<void>;
+  markRunFailed(runId: string): Promise<void>;
 };
 
 export class InMemoryPlanningStore implements PlanningStore {
@@ -28,11 +28,11 @@ export class InMemoryPlanningStore implements PlanningStore {
     { runId: string; groupId: string; proposal: Proposal }
   >();
 
-  createRun(
+  async createRun(
     groupId: string,
     initiatedBy: string,
     activityRequest?: string,
-  ): PlanningRunResponse {
+  ): Promise<PlanningRunResponse> {
     const run: PlanningRunResponse = {
       id: randomUUID(),
       groupId,
@@ -46,18 +46,20 @@ export class InMemoryPlanningStore implements PlanningStore {
     return run;
   }
 
-  getRun(runId: string): PlanningRunResponse | undefined {
+  async getRun(runId: string): Promise<PlanningRunResponse | undefined> {
     return this.runs.get(runId);
   }
 
-  listProposals(runId: string): Proposal[] {
+  async listProposals(runId: string): Promise<Proposal[]> {
     if (!this.runs.has(runId)) {
       return [];
     }
     return [...(this.proposalsByRun.get(runId) ?? [])];
   }
 
-  findProposalContext(proposalId: string): ProposalContext | undefined {
+  async findProposalContext(
+    proposalId: string,
+  ): Promise<ProposalContext | undefined> {
     const hit = this.proposalIndex.get(proposalId);
     if (!hit) {
       return undefined;
@@ -69,7 +71,7 @@ export class InMemoryPlanningStore implements PlanningStore {
     };
   }
 
-  completeRun(runId: string, proposals: Proposal[]): void {
+  async completeRun(runId: string, proposals: Proposal[]): Promise<void> {
     const run = this.runs.get(runId);
     if (!run) {
       return;
@@ -86,7 +88,7 @@ export class InMemoryPlanningStore implements PlanningStore {
     this.runs.set(runId, { ...run, status: "completed" });
   }
 
-  markRunFailed(runId: string): void {
+  async markRunFailed(runId: string): Promise<void> {
     const run = this.runs.get(runId);
     if (!run) {
       return;

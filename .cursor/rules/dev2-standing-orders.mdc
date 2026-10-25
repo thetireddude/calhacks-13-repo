@@ -1,0 +1,8 @@
+---
+description: Developer 2 standing orders — auto-drive, parallelize, stop only for burning questions
+alwaysApply: true
+---
+
+Follow [`docs/developers/dev2-standing-orders.md`](docs/developers/dev2-standing-orders.md).
+
+Default: auto-drive the next legal Dev 2 step (implementer → reviewer → tester `pnpm run test:ci` → merge → next ready task). Parallelize when `AGENTS.md` allows. Ask the human only for a burning question you cannot answer from the repo (SPEC §11, contract break, lane conflict, secrets, undefined gate). Orchestrator dispatches; implementers write code. Do not touch `apps/mobile/**` or `packages/planner/**` unless explicitly told.

@@ -2,15 +2,13 @@
 
 ## Milestone
 
-**Gate 1 complete** (merged PR #1). **Gate 2 prep in flight:** DEV2-011 ∥ DEV2-012 ∥ DEV2-013.
+**Lane branch:** `dev-2` (through DEV2-020). Catch-up batch **018–020 merged**. Nothing in flight.
 
 ## In flight
 
 | Task | Deliverable |
 |------|-------------|
-| DEV2-011 | Supabase-backed groups when env set; in-memory default for CI |
-| DEV2-012 | Optional Supabase JWT iss/aud validation |
-| DEV2-013 | Local Dev 2 runbook + `.env.example` |
+| *(none)* | Waiting on Dev 3 planner / Dev 1 real API / SPEC §11 |
 
 ## Shipped (Gate 1)
 
@@ -18,7 +16,7 @@ DEV2-001–010 on `main`. See [`state/GATE1-DEV2-EXIT.md`](GATE1-DEV2-EXIT.md).
 
 ## Tests
 
-`pnpm run test:ci` — **27/27** (Tester gates must use this command).
+`pnpm run test:ci` — **42/42** (Tester gates must use this command).
 
 ## Blockers (SPEC §11)
 

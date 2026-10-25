@@ -17,6 +17,19 @@ function getJwtSecret(): Uint8Array {
   return new TextEncoder().encode(secret);
 }
 
+function getJwtVerifyOptions(): { issuer?: string; audience?: string } {
+  const options: { issuer?: string; audience?: string } = {};
+  const issuer = process.env.SUPABASE_JWT_ISSUER?.trim();
+  if (issuer) {
+    options.issuer = issuer;
+  }
+  const audience = process.env.SUPABASE_JWT_AUDIENCE?.trim();
+  if (audience) {
+    options.audience = audience;
+  }
+  return options;
+}
+
 export async function verifyBearerToken(
   authorization: string | undefined,
 ): Promise<AuthUser> {
@@ -24,7 +37,8 @@ export async function verifyBearerToken(
     throw new Error("missing_bearer");
   }
   const token = authorization.slice("Bearer ".length).trim();
-  const { payload } = await jwtVerify(token, getJwtSecret());
+  const verifyOptions = getJwtVerifyOptions();
+  const { payload } = await jwtVerify(token, getJwtSecret(), verifyOptions);
   const sub = payload.sub;
   if (!sub || typeof sub !== "string") {
     throw new Error("invalid_sub");

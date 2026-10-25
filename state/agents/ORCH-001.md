@@ -25,7 +25,8 @@
 | W2 | GATE0-002, DEV2-001 | merged — **retro review recommended** |
 | W2 | DEV1-001 | **merged** (`9777545`) — reviewer APPROVE |
 | W3 | DEV3-001 | **merged** (`5d1af3e`) |
-| W3 | DEV2-002, DEV1-002 | implementing → R+T → merge |
+| W3 | DEV1-002 | **merged** (`6b8a2d0`) |
+| W3 | DEV2-002 | implementing → R+T → merge |
 
 ## Active worktrees
 

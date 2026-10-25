@@ -17,10 +17,11 @@ This branch state tracks **`apps/api/**`, `supabase/**`, `packages/contracts/**`
 | DEV2-007 | `planning_runs` / `proposals` migration + planning route stubs |
 | DEV2-008 | Mock `PlannerPort`, persist ≤3 proposals, failed-run retry |
 | DEV2-009 | Vote/veto/confirmed-event skeleton + idempotent stub majority |
+| DEV2-010 | Gate 1 exit docs, CI `test:dev2`, checklist vs SPEC §8 |
 
 ## Next
 
-Gate 1 Dev 2 spine **complete** through DEV2-009. Follow-on: Supabase persistence wiring, SPEC §11 consensus when approved.
+Gate 1 Dev 2 **exit documented** (DEV2-010, status `candidate`). Follow-on: Supabase persistence wiring, SPEC §11 consensus when approved, reviewer/tester gates on DEV2-010.
 
 ## Test status
 

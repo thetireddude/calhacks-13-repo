@@ -1,27 +1,53 @@
 # Supabase
 
-**Owner:** Developer 2
+**Owner:** Developer 2 (`feature/core-api`)
 
-## Local (DEV2-002)
+## Local setup
 
 1. Install [Supabase CLI](https://supabase.com/docs/guides/cli).
 2. From repo root: `supabase start` (uses `supabase/config.toml`).
-3. Set `SUPABASE_JWT_SECRET` in `.env` from `supabase status` JWT secret for API token verification.
+3. Copy JWT secret into `.env` as `SUPABASE_JWT_SECRET` (see root `.env.example`). Local value: `supabase status` → **JWT secret** — required for API bearer verification in `apps/api/src/auth.ts`.
 
-## Migrations (DEV2-003)
+## Migrations (four files)
 
-| Table | Purpose |
-|-------|---------|
-| `profiles` | User profile row keyed to `auth.users` |
-| `groups` | Friend group |
-| `group_memberships` | Member ↔ group |
-| `group_invitations` | Invite token for join flow |
+Apply from repo root: `supabase db reset` or `supabase migration up`.
 
-Apply: `supabase db reset` or `supabase migration up` (local CLI).
+| Migration | Task | Tables |
+|-----------|------|--------|
+| `20261024180000_identity_and_groups.sql` | DEV2-003 | `profiles`, `groups`, `group_memberships`, `group_invitations` |
+| `20261024180100_preferences_availability.sql` | DEV2-004 | `member_preferences`, `member_availability` |
+| `20261024180200_planning_runs.sql` | DEV2-007 | `planning_runs`, `proposals` |
+| `20261024180300_votes_confirmed_events.sql` | DEV2-009 | `proposal_votes`, `proposal_vetoes`, `confirmed_events` |
 
-RLS policies are **Gate 1 stubs** — harden before demo.
+Ordering is enforced by filename timestamps; smoke test: `apps/api/src/migrations.smoke.test.ts`.
 
-| `member_preferences` | **Private** — owner only (RLS) |
-| `member_availability` | **Private** — owner only (RLS) |
+## Row level security (Gate 1)
 
-Next: **DEV2-005** group API routes; **DEV2-006** prefs/availability API.
+All listed tables have RLS enabled. Policies are **Gate 1 stubs** — tighten before production/demo.
+
+### Private (member-owned only)
+
+| Table | Policy intent |
+|-------|----------------|
+| `member_preferences` | `auth.uid() = user_id` for all operations |
+| `member_availability` | `auth.uid() = user_id` for all operations |
+
+Other members and group APIs must **not** expose raw preference or availability rows (API enforces caller scope in tests: `me.test.ts`).
+
+### Group-visible (members of the owning group)
+
+| Table | Policy intent |
+|-------|----------------|
+| `profiles` | Select/update own profile |
+| `groups`, `group_memberships`, `group_invitations` | Select when user is a member (invites: minimal stub) |
+| `planning_runs`, `proposals` | Select (and insert runs) when user is a group member |
+| `proposal_votes`, `proposal_vetoes`, `confirmed_events` | Select when user is member of the proposal’s group; votes/vetoes write own `user_id` |
+
+## API vs database (Gate 1)
+
+REST handlers in `apps/api` use **in-memory stores** for Gate 1 speed; the schema above is the persistence target for post–Gate 1 wiring.
+
+## Docs
+
+- Gate 1 exit checklist: [`docs/gate1-dev2-exit.md`](../docs/gate1-dev2-exit.md)
+- Evidence matrix: [`state/GATE1-DEV2-EXIT.md`](../state/GATE1-DEV2-EXIT.md)

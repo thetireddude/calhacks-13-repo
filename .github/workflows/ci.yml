@@ -20,4 +20,4 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile || pnpm install
       - run: pnpm typecheck
-      - run: pnpm test
+      - run: pnpm run test:dev2

@@ -34,16 +34,16 @@ Core API lane only. Other lanes own their tasks separately.
 |------|--------|------------|-------|
 | DEV1-001 | done | GATE0-001 | Expo bootstrap |
 | DEV1-002 | done | DEV1-001 | Navigation + auth shell + logout |
-| DEV1-003 | done | DEV1-002 | OTP auth UI + mock AuthClient |
+| DEV1-003 | done | DEV1-002 | OTP auth UI + mock AuthClient (OTP UI later replaced by email+password, ADR-003) |
 | DEV1-004 | done | DEV1-003 | Groups UI + mock group client |
 | DEV1-005 | done | DEV1-004 | Member setup + weekly settings UI |
 | DEV1-006 | done | DEV1-005 | Planning + proposals UI |
 | DEV1-007 | done | DEV1-006 | Voting, veto, confirmed event, notifications mocks |
 | DEV1-008 | done | DEV1-007 | Gate 1 mobile exit |
-| DEV1-009 | candidate | DEV1-008, GATE2-EXIT | Started early with user approval (Supabase auth independent of contract freeze); real-device smoke and live /v1/me not yet run |
-| DEV1-010 | candidate | DEV1-009 | Gate 3: real API groups + setup |
-| DEV1-011 | candidate (partial) | DEV1-010 | Gate 3: real API planning/voting/events/notifications |
-| DEV1-012 | blocked | DEV1-011 | Gate 5: mobile demo hardening |
-| DEV1-013 | in progress | DEV1-011 | UI restyle from the Gather design system (visual only) |
+| DEV1-009 | done | DEV1-008 | Supabase auth client + secure session; email+password replaces OTP UI (ADR-003, DEV1-009b); started before GATE2-EXIT with user approval; real sign-up verified on a phone, live /v1/me call not yet run |
+| DEV1-010 | done | DEV1-009 | Real HTTP group + member-setup clients (groups, invites, members, preferences, availability); weekly schedule still local mock; live two-device run pending |
+| DEV1-011 | partial | DEV1-010 | Real planning runs/proposals, vote, veto, confirmed event; notifications, ICS, push, vote tally, schedule remain mock/unavailable pending API routes |
+| DEV1-012 | ready for device run | DEV1-011 | Privacy sweep done (no P0/P1), `docs/demo-mobile.md` written; physical-device checklist still to be run by a human |
+| DEV1-013 | done | DEV1-011 | UI restyle from the Gather design system (visual only); on-device visual check pending |
 
 Milestone: [`docs/milestone-dag.md`](../docs/milestone-dag.md)

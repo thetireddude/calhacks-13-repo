@@ -24,12 +24,13 @@ Voting rules, scheduler, full DTO freeze — stub until approved.
 
 # Developer 1 (Mobile)
 
-**Gate 1 Developer 1 — complete (DEV1-001..008), mock-only.** `apps/mobile` has screens, navigation, and mock-backed onboarding, planning, voting, confirmation. Nothing runs against a real API or on a physical device. Evidence: [`state/GATE1-DEV1-EXIT.md`](GATE1-DEV1-EXIT.md), [`docs/gate1-dev1-exit.md`](../docs/gate1-dev1-exit.md).
+**DEV1-001..011 and DEV1-013 complete or partial; DEV1-012 ready for a device run.** `apps/mobile` signs in with Supabase email + password (ADR-003; OTP flow remains in git history) and uses real HTTP clients for groups, invites, members, preferences, availability, planning runs/proposals, vote, veto and the confirmed event. The UI follows the Gather design system (light/dark). Evidence: [`docs/gate1-dev1-exit.md`](../docs/gate1-dev1-exit.md), [`docs/demo-mobile.md`](../docs/demo-mobile.md), [`docs/dev1-contract-requests.md`](../docs/dev1-contract-requests.md).
 
-- Mobile verification: contracts build, typecheck, lint, test — 10 suites / 167 tests pass (contracts `0.1.1-stub`).
-- Not met (contract gap): aggregate attendance, inclusion-aware alternative, "Suggest another". SPEC §9 change requests are listed in the exit doc.
-- Integration-owner action: CI runs only root `typecheck` (contracts + api) and `test:dev2`, so mobile is not covered.
-- Blocked: DEV1-009..012 need Gate 2 (no `GATE2-EXIT` task defined) and the contract freeze items.
+- Mobile verification: contracts build, typecheck, lint, test — 16 suites / 281 tests pass. Contract-fit runs against the real in-memory API passed for groups/setup (41 checks) and planning/voting (36 of 37; the one note is a design consequence of the 404 mapping).
+- Still mock or unavailable (no API route): weekly schedule, vote tally/state, notifications feed, ICS export, push-device registration.
+- Not verified: live Supabase-backed run, `/v1/me` with a real session token, two-device smoke, visual check on a phone.
+- Integration-owner actions: CI runs only root `typecheck` and `test:ci`, so mobile and planner tests are not covered; add `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `EXPO_PUBLIC_API_URL` to `.env.example`; lockfile gained `@supabase/supabase-js`, `expo-secure-store`, `expo-font`, `@expo-google-fonts/*`.
+- ADR-003 (email + password for the demo) is Proposed and needs Dev 2 / Dev 3 acknowledgment.
 
 ## Waiting on others (Gate 2+)
 

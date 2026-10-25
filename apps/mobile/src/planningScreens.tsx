@@ -1,11 +1,13 @@
 import type { PlanningRunResponse, Proposal } from "@gather/contracts";
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { ActivityIndicator, Button, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { View } from "react-native";
 
 import { useGroups } from "./groupsState";
 import { PlanningError, createMockPlanningClient } from "./planning";
 import type { PlanningClient } from "./planning";
+import { useTheme } from "./theme";
+import { AppText, Banner, Button, Card, EmptyState, Screen, Skeleton, TextField } from "./ui";
 import { VoteSection } from "./votingScreens";
 
 const PlanningContext = createContext<PlanningClient | null>(null);
@@ -27,21 +29,81 @@ export const POLL_INTERVAL_MS = 3000;
 // Spec section 3 / 6.3: show at most three proposals, in backend-provided order. Nothing is re-ranked here.
 const MAX_PROPOSALS = 3;
 
-// Only backend-provided fields are rendered. The Proposal contract has no aggregate attendance counts or
-// inclusion-aware alternative fields yet, so none are shown (SPEC section 9 request recorded in the handoff).
+// Card tones by display position (design: peach, mint, sky). Presentation only; order is the backend's.
+const CARD_TONES = ["peach", "mint", "sky"] as const;
+
+// Only backend-provided fields are rendered. The Proposal contract has no aggregate attendance counts, location,
+// time, cost or inclusion-aware alternative fields yet, so none are shown (SPEC section 9 request recorded in the handoff).
 export function ProposalList({ proposals }: { proposals: Proposal[] }) {
+  const { colors, radius, bold } = useTheme();
   const shown = proposals.slice(0, MAX_PROPOSALS);
-  if (shown.length === 0) return <Text>No proposals are available for this run.</Text>;
+  if (shown.length === 0)
+    return (
+      <EmptyState
+        title="No proposals are available for this run."
+        message="No plans yet. Start one and the group will see it first."
+      />
+    );
   return (
-    <View style={styles.list}>
-      {shown.map((p) => (
-        <View key={p.proposalId} style={styles.card}>
-          <Text style={styles.cardTitle}>{`#${p.rank} ${p.summary}`}</Text>
-          {p.explanation ? <Text>{p.explanation}</Text> : null}
+    <View style={{ gap: 16 }}>
+      {shown.map((p, i) => (
+        <Card key={p.proposalId} tone={CARD_TONES[i]} style={{ gap: 12 }}>
+          <View
+            style={{
+              alignSelf: "flex-start",
+              backgroundColor: colors.surface,
+              borderRadius: radius.pill,
+              paddingHorizontal: 12,
+              paddingVertical: 4,
+            }}
+          >
+            <AppText variant="small" style={bold}>
+              {i === 0 ? "Top pick" : "Also a good fit"}
+            </AppText>
+          </View>
+          <AppText variant="title">{`#${p.rank} ${p.summary}`}</AppText>
+          {p.explanation ? (
+            <View style={{ backgroundColor: colors.surface, borderRadius: radius.input, padding: 12 }}>
+              <AppText variant="small">{p.explanation}</AppText>
+            </View>
+          ) : null}
+          <AppText style={bold}>Vote on this →</AppText>
           <VoteSection proposalId={p.proposalId} />
-        </View>
+        </Card>
       ))}
     </View>
+  );
+}
+
+function PlanningInProgress({ busy, onRefresh }: { busy: boolean; onRefresh: () => void }) {
+  const { colors } = useTheme();
+  return (
+    <Card tone="lilac" style={{ gap: 16, alignItems: "center" }}>
+      <View
+        accessible
+        accessibilityLabel="Planning in progress"
+        style={{
+          width: 96,
+          height: 96,
+          borderRadius: 48,
+          backgroundColor: colors.coral,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <AppText variant="display" color={colors.onCoral}>
+          ✦
+        </AppText>
+      </View>
+      <AppText variant="title" style={{ textAlign: "center" }}>
+        Hang tight, we’re on it
+      </AppText>
+      <AppText style={{ textAlign: "center" }}>Planning is in progress.</AppText>
+      <AppText variant="small" muted style={{ textAlign: "center" }}>
+        Nobody’s private calendar is shared with the group.
+      </AppText>
+      <Button title="Refresh status" variant="secondary" onPress={onRefresh} disabled={busy} />
+    </Card>
   );
 }
 
@@ -62,34 +124,25 @@ function RunView({
 }) {
   switch (run.status) {
     case "pending":
-      return (
-        <View style={styles.list}>
-          <ActivityIndicator accessibilityLabel="Planning in progress" />
-          <Text>Planning is in progress.</Text>
-          <Button title="Refresh status" onPress={onRefresh} disabled={busy} />
-        </View>
-      );
+      return <PlanningInProgress busy={busy} onRefresh={onRefresh} />;
     case "completed":
       return proposals ? (
         <ProposalList proposals={proposals} />
       ) : (
-        <View style={styles.list}>
-          <Text>Loading proposals.</Text>
-          <Button title="Refresh proposals" onPress={onRefresh} disabled={busy} />
+        <View style={{ gap: 12 }}>
+          <AppText>Loading proposals.</AppText>
+          <Skeleton height={120} radius={24} />
+          <Button title="Refresh proposals" variant="secondary" onPress={onRefresh} disabled={busy} />
         </View>
       );
     case "failed":
-      return (
-        <View style={styles.list}>
-          <Text accessibilityRole="alert">Planning did not finish. You can try again.</Text>
-          <Button title="Try again" onPress={onRetry} disabled={busy} />
-        </View>
-      );
+      // onRetry stays wired while busy: the work() ref guard drops double presses (tested).
+      return <Banner message="Planning did not finish. You can try again." retryLabel="Try again" onRetry={onRetry} />;
     default:
       return (
-        <View style={styles.list}>
-          <Text>{`Status: ${run.status}`}</Text>
-          <Button title="Refresh status" onPress={onRefresh} disabled={busy} />
+        <View style={{ gap: 12 }}>
+          <AppText>{`Status: ${run.status}`}</AppText>
+          <Button title="Refresh status" variant="secondary" onPress={onRefresh} disabled={busy} />
         </View>
       );
   }
@@ -190,41 +243,44 @@ export function PlanningScreen() {
     };
   }, [client, pollRunId]);
 
+  // Screens sit under the navigation header, so no top safe-area edge; bottom padding clears the floating tab bar.
   if (!group)
     return (
-      <View style={styles.container}>
-        <Text>Create or join a group to start planning.</Text>
-      </View>
+      <Screen edges={[]}>
+        <AppText>Create or join a group to start planning.</AppText>
+      </Screen>
     );
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Plan an activity</Text>
-      {groups.length > 1
-        ? groups.map((g) => (
-            <Button
-              key={g.id}
-              title={g.id === group.id ? `${g.name} (selected)` : g.name}
-              disabled={busy}
-              onPress={() => {
-                setGroupId(g.id);
-                setRun(null);
-                setProposals(null);
-              }}
-            />
-          ))
-        : <Text>{group.name}</Text>}
-      <Text>What would you like to do? (optional)</Text>
-      <TextInput
+    <Screen scroll edges={[]} contentStyle={{ paddingBottom: 120 }}>
+      <AppText variant="display">Plan an activity</AppText>
+      {groups.length > 1 ? (
+        groups.map((g) => (
+          <Button
+            key={g.id}
+            title={g.id === group.id ? `${g.name} (selected)` : g.name}
+            variant={g.id === group.id ? "secondary" : "outline"}
+            disabled={busy}
+            onPress={() => {
+              setGroupId(g.id);
+              setRun(null);
+              setProposals(null);
+            }}
+          />
+        ))
+      ) : (
+        <AppText variant="heading">{group.name}</AppText>
+      )}
+      <TextField
+        label="What would you like to do? (optional)"
         accessibilityLabel="Activity request"
-        style={styles.input}
         value={request}
         onChangeText={setRequest}
         multiline
         editable={!busy}
       />
       <Button title="Start planning" onPress={() => void start()} disabled={busy} />
-      {error ? <Text accessibilityRole="alert">{error}</Text> : null}
+      {error ? <Banner message={error} /> : null}
       {run && run.groupId === group.id ? (
         <RunView
           run={run}
@@ -234,15 +290,6 @@ export function PlanningScreen() {
           onRetry={() => void retry(run.id)}
         />
       ) : null}
-    </ScrollView>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flexGrow: 1, backgroundColor: "#fff", padding: 16, gap: 8 },
-  title: { fontSize: 24, fontWeight: "700" },
-  input: { borderWidth: 1, borderColor: "#999", alignSelf: "stretch", padding: 8, minHeight: 60 },
-  list: { gap: 8 },
-  card: { borderWidth: 1, borderColor: "#ccc", padding: 8, gap: 4 },
-  cardTitle: { fontWeight: "600" },
-});

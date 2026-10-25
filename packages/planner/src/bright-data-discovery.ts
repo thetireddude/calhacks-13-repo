@@ -23,6 +23,24 @@ function firstString(record: RawRecord, keys: readonly string[]): string | null 
   return null;
 }
 
+function firstCategory(record: RawRecord): string | null {
+  const direct = firstString(record, ["category", "event_type"]);
+  if (direct) return direct;
+
+  const categories = record.categories;
+  if (typeof categories === "string" && categories.trim()) return categories.trim();
+  if (Array.isArray(categories)) {
+    const values = categories.filter((value): value is string => typeof value === "string" && value.trim().length > 0);
+    return values.length > 0 ? values.join(", ") : null;
+  }
+  return null;
+}
+
+function nestedCity(record: RawRecord): string | null {
+  const address = asRecord(record.address);
+  return address ? firstString(address, ["City", "city"]) : null;
+}
+
 function firstBoolean(record: RawRecord, keys: readonly string[]): boolean | null {
   for (const key of keys) {
     const value = record[key];
@@ -51,18 +69,20 @@ function normalizeRecord(record: RawRecord, source: "yelp" | "facebook_events", 
   const sourceUrl = firstString(record, ["url", "link", "event_url", "business_url"]);
   if (!title || !sourceUrl) return null;
 
-  const city = firstString(record, ["city", "location", "location_city"]) ?? fallbackCity;
+  const city = firstString(record, ["city", "location", "location_city"])
+    ?? nestedCity(record)
+    ?? addressCity(record.full_address ?? record.location, fallbackCity);
   const isFree = firstBoolean(record, ["is_free", "free"]);
   const priceText = firstString(record, ["price", "price_text", "ticket_price"]);
   const candidate = {
     id: stableId(source, sourceUrl, title),
     title,
-    category: firstString(record, ["category", "categories", "event_type"]) ?? "activity",
+    category: firstCategory(record) ?? "activity",
     startsAt: firstString(record, ["start_date", "start_time", "date", "datetime"]),
     endsAt: firstString(record, ["end_date", "end_time"]),
-    venueName: firstString(record, ["venue_name", "venue", "business_name"]),
+    venueName: firstString(record, ["venue_name", "venue", "business_name"]) ?? (source === "yelp" ? title : null),
     city,
-    priceText,
+    priceText: priceText ?? firstString(record, ["price_range"]),
     isFree: isFree ?? (priceText?.toLocaleLowerCase("en-US") === "free" ? true : null),
     sourceUrl,
     source,

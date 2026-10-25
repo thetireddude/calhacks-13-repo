@@ -15,6 +15,29 @@ test("Yelp normalization retains only complete public records", () => {
   assert.equal(candidates[0]?.title, "Neighborhood Cafe");
 });
 
+test("Yelp normalization accepts the observed discovery response shape without retaining contact data", () => {
+  const candidates = normalizeYelpRecords([{
+    name: "Cafe Canela Restaurant",
+    url: "https://www.yelp.com/biz/cafe-canela-restaurant-galveston-2",
+    categories: ["Mexican"],
+    price_range: "$$",
+    address: { City: "Galveston", Country: "US" },
+    full_address: "6105 Stewart Rd, Ste C, Galveston, TX 77551",
+    phone_number: "(409) 443-5307",
+    owner_name: "Excluded",
+  }], "San Francisco, CA");
+
+  assert.equal(candidates.length, 1);
+  assert.equal(candidates[0]?.title, "Cafe Canela Restaurant");
+  assert.equal(candidates[0]?.category, "Mexican");
+  assert.equal(candidates[0]?.venueName, "Cafe Canela Restaurant");
+  assert.equal(candidates[0]?.city, "Galveston");
+  assert.equal(candidates[0]?.priceText, "$$");
+  assert.equal(candidates[0]?.source, "yelp");
+  assert.equal("phone_number" in (candidates[0] ?? {}), false);
+  assert.equal("owner_name" in (candidates[0] ?? {}), false);
+});
+
 test("Facebook venue-event normalization retains public event details", () => {
   const candidates = normalizeFacebookEventRecords([{
     event_id: "1112502747940932",

@@ -45,9 +45,8 @@ It does not create root workspace tooling. Funcheap and DoTheBay remain deferred
 
 ### 2026-10-24 — Live Bright Data request verification
 
-- The configured Yelp dataset is a collect-by-URL endpoint, not a search-filter endpoint. The planner now creates a public Yelp search URL and sends only `{ url }`.
-- The configured Facebook venue-events dataset accepts only `{ url }`; its UI label does not imply that `upcoming_events_only` is accepted. The planner no longer sends that unsupported field.
-- A corrected Yelp request was accepted for collection but did not return within the bounded synchronous request window, so its real record schema remains pending. The next completed public response can be replayed through the normalizer without credentials.
+- The initial collector-method assumptions were incorrect. Bright Data MCP confirmed Yelp's supported `discover_by_search_filters` method and Facebook's `discover_by_venue` method; the REST adapter now uses those matching methods.
+- A first corrected Yelp request did not return within the bounded synchronous request window. Its later completed response was incorporated in the subsequent Yelp verification entry below.
 
 ### 2026-10-24 — Live Creao API verification
 
@@ -59,6 +58,12 @@ It does not create root workspace tooling. Funcheap and DoTheBay remain deferred
 - Bright Data MCP successfully ran Facebook Events `discover_by_venue` for a public venue URL. The ready snapshot contained one public event record and no errors.
 - The Facebook normalizer now matches the observed MCP fields, including event identifiers, start/end instants, event URL, and full address. A minimal public fixture excludes description text and contact details.
 - The REST adapter now maps Facebook venue discovery to Bright Data's `type=discover_new&discover_by=venue` method with a public venue name, instead of the incompatible URL collector.
+
+### 2026-10-24 — Bright Data MCP Yelp verification
+
+- The earlier Yelp discovery snapshot reached `ready` with three public business records and partial provider blocking. A subsequent one-input run reached `ready` with zero records and `detect_block`; the planner treats both cases as source failures rather than fabricating candidates.
+- The Yelp normalizer now matches the observed public fields: `categories` arrays, `price_range`, and nested `address.City`. It deliberately excludes contact details, owner names, descriptions, images, and raw provider payloads.
+- The REST adapter uses the compatible `type=discover_new&discover_by=search_filters` request mode. Its small test fixture covers only the public fields required to form a planner candidate.
 
 ### Next action after Gate 0
 

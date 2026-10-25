@@ -39,6 +39,6 @@ export async function requireAuth(
   try {
     request.authUser = await verifyBearerToken(request.headers.authorization);
   } catch {
-    reply.code(401).send({ error: "unauthorized" });
+    return reply.code(401).send({ error: "unauthorized" });
   }
 }

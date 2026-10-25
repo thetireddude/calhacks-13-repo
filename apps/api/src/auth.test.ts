@@ -21,6 +21,20 @@ test("GET /v1/me without token returns 401", async () => {
   const app = await createApp();
   const res = await app.inject({ method: "GET", url: "/v1/me" });
   assert.equal(res.statusCode, 401);
+  assert.deepEqual(res.json(), { error: "unauthorized" });
+  await app.close();
+});
+
+test("GET /v1/me with invalid token returns 401", async () => {
+  process.env.SUPABASE_JWT_SECRET = TEST_SECRET;
+  const app = await createApp();
+  const res = await app.inject({
+    method: "GET",
+    url: "/v1/me",
+    headers: { authorization: "Bearer not-a-valid-jwt" },
+  });
+  assert.equal(res.statusCode, 401);
+  assert.deepEqual(res.json(), { error: "unauthorized" });
   await app.close();
 });
 

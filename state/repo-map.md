@@ -14,6 +14,9 @@ Compact index; update when structure changes materially.
 | `tasks/index.md` | Task status table |
 | `docs/architecture.md` | Stack and boundaries |
 | `docs/roadmap.md` | Gates 0–5 |
+| `docs/project-dag.md` | Task lifecycle, parallelism, handoff locations |
+| `docs/milestone-dag.md` | Gate 0→1 executable DAG (approval draft) |
+| `docs/project_execution_contract.md` | Harness-neutral execution contract |
 | `docs/developers/` | Per-developer briefs |
 
 ## Application code (scaffold)

@@ -23,7 +23,7 @@ references:
 
 invariants:
   - important requirement
-  - temporal or data safety constraint
+  - privacy, auth, or contract constraint
 
 expected_tests:
   - tests/exact_test.py
@@ -69,7 +69,7 @@ If exploration exceeds soft budgets, perform it and **record why** in the pack.
 
 **Implementer**: context pack → task → listed files → targeted search → minimal change → targeted tests.
 
-**Reviewer**: context pack → task → `git diff --stat` → per-file diffs → invariants → broaden for leakage/security as needed.
+**Reviewer**: context pack → task → `git diff --stat` → per-file diffs → invariants → broaden for privacy/security as needed.
 
 **Tester**: context pack → changed behavior → associated tests first → expand by risk.
 
@@ -79,7 +79,7 @@ Each role appends **material discoveries** only (new callers, missed invariant, 
 
 - New affected files discovered during implementation
 - Caller sites for interface changes
-- Leakage risks identified
+- Privacy or contract risks identified
 - Tests that must run before merge
 - Worktree/branch/commit if relevant
 
@@ -93,22 +93,21 @@ Each role appends **material discoveries** only (new callers, missed invariant, 
 ## Example dispatch (good)
 
 ```text
-Implement FEAT-002.
+Implement GATE0-002.
 
-Objective: Add shift-before-roll to starter rolling features.
+Objective: Stub PlannerPort and core DTOs in packages/contracts.
 
 Read first:
-- src/features/starter.py
-- tests/leakage/test_starter_leakage.py
-- tasks/FEAT-002-starter-features.md
+- packages/contracts/
+- tasks/GATE0-002-contract-stubs.md
+- SPEC.md §6
 
 Invariants:
-- shift before rolling; current appearance excluded
-- prediction timestamp precedes first pitch
+- no unapproved SPEC §11 voting/planning enums
+- PlannerPort does not imply persistence
 
 Expected tests:
-- tests/unit/features/test_starter.py
-- tests/leakage/test_starter_leakage.py
+- packages/contracts contract/type tests once added
 
 Use targeted discovery only if this context is insufficient.
 ```

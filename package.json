@@ -1,0 +1,19 @@
+{
+  "name": "gather",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "pnpm -r run build",
+    "lint": "pnpm -r run lint",
+    "test": "pnpm -r run test",
+    "test:dev2": "pnpm --filter @gather/contracts build && pnpm --filter @gather/api typecheck && pnpm --filter @gather/api test",
+    "typecheck": "pnpm --filter @gather/contracts build && pnpm --filter @gather/contracts --filter @gather/api run typecheck"
+  },
+  "dependencies": {
+    "supabase": "^2.122.0"
+  }
+}

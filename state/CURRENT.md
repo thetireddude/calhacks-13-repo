@@ -2,14 +2,13 @@
 
 ## Milestone
 
-**Lane branch:** `dev-2` (all Dev 2 work through DEV2-018). **Catch-up in flight:** DEV2-019 ∥ DEV2-020.
+**Lane branch:** `dev-2` (through DEV2-020). Catch-up batch **018–020 merged**. Nothing in flight.
 
 ## In flight
 
 | Task | Deliverable |
 |------|-------------|
-| DEV2-019 | `GET /v1/groups` (membership-scoped) |
-| DEV2-020 | `PUT /v1/me` displayName |
+| *(none)* | Waiting on Dev 3 planner / Dev 1 real API / SPEC §11 |
 
 ## Shipped (Gate 1)
 
@@ -17,7 +16,7 @@ DEV2-001–010 on `main`. See [`state/GATE1-DEV2-EXIT.md`](GATE1-DEV2-EXIT.md).
 
 ## Tests
 
-`pnpm run test:ci` — **37/37** (Tester gates must use this command).
+`pnpm run test:ci` — **42/42** (Tester gates must use this command).
 
 ## Blockers (SPEC §11)
 

@@ -219,6 +219,26 @@ export class SupabaseVotingStore implements VotingStore {
     return mapConfirmed(data as ConfirmedRow);
   }
 
+  async getConfirmedEventById(
+    eventId: string,
+  ): Promise<ConfirmedEventResponse | undefined> {
+    const { data, error } = await this.client
+      .from("confirmed_events")
+      .select(
+        "id, group_id, proposal_id, planning_run_id, summary, confirmed_at",
+      )
+      .eq("id", eventId)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(`get confirmed event by id failed: ${error.message}`);
+    }
+    if (!data) {
+      return undefined;
+    }
+    return mapConfirmed(data as ConfirmedRow);
+  }
+
   async tryConfirmFromMajority(input: {
     groupId: string;
     proposalId: string;

@@ -28,6 +28,9 @@ export type VotingStore = {
   getConfirmedEvent(
     groupId: string,
   ): Promise<ConfirmedEventResponse | undefined>;
+  getConfirmedEventById(
+    eventId: string,
+  ): Promise<ConfirmedEventResponse | undefined>;
   /**
    * Gate 1 stub (SPEC §11): confirm when approve votes >= ceil(memberCount / 2).
    * Idempotent: at most one confirmed event per group.
@@ -103,6 +106,17 @@ export class InMemoryVotingStore implements VotingStore {
     groupId: string,
   ): Promise<ConfirmedEventResponse | undefined> {
     return this.confirmedByGroup.get(groupId);
+  }
+
+  async getConfirmedEventById(
+    eventId: string,
+  ): Promise<ConfirmedEventResponse | undefined> {
+    for (const event of this.confirmedByGroup.values()) {
+      if (event.id === eventId) {
+        return event;
+      }
+    }
+    return undefined;
   }
 
   async tryConfirmFromMajority(input: {

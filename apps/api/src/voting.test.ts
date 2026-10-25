@@ -67,6 +67,10 @@ test("voting routes return 401 without JWT", async () => {
       method: "GET" as const,
       url: "/v1/groups/00000000-0000-4000-8000-000000000099/confirmed-event",
     },
+    {
+      method: "GET" as const,
+      url: "/v1/events/00000000-0000-4000-8000-000000000077/calendar.ics",
+    },
   ];
   for (const c of cases) {
     const res = await app.inject({ ...c });
@@ -301,6 +305,73 @@ test("GET confirmed-event returns 404 for unknown group and when none confirmed"
     headers: authHeaders(token),
   });
   assert.equal(noEvent.statusCode, 404);
+
+  await app.close();
+});
+
+test("GET calendar.ics is member-only and privacy-safe", async () => {
+  process.env.SUPABASE_JWT_SECRET = TEST_SECRET;
+  const groupsStore = new InMemoryGroupsStore();
+  const planningStore = new InMemoryPlanningStore();
+  const votingStore = new InMemoryVotingStore();
+  const app = await createApp({ groupsStore, planningStore, votingStore });
+
+  const members = ["ics-a", "ics-b"];
+  const { groupId, proposalId } = await seedGroupWithProposal(
+    groupsStore,
+    planningStore,
+    members,
+  );
+  const memberToken = await signTestToken("ics-a");
+  const outsiderToken = await signTestToken("ics-outsider");
+
+  await app.inject({
+    method: "PUT",
+    url: `/v1/proposals/${proposalId}/vote`,
+    headers: authHeaders(memberToken),
+    payload: { choice: "approve" },
+  });
+
+  const event = await votingStore.getConfirmedEvent(groupId);
+  assert.ok(event);
+
+  const byId = await votingStore.getConfirmedEventById(event.id);
+  assert.equal(byId?.id, event.id);
+
+  const missing = await app.inject({
+    method: "GET",
+    url: "/v1/events/00000000-0000-4000-8000-000000000066/calendar.ics",
+    headers: authHeaders(memberToken),
+  });
+  assert.equal(missing.statusCode, 404);
+
+  const forbidden = await app.inject({
+    method: "GET",
+    url: `/v1/events/${event.id}/calendar.ics`,
+    headers: authHeaders(outsiderToken),
+  });
+  assert.equal(forbidden.statusCode, 403);
+
+  const icsRes = await app.inject({
+    method: "GET",
+    url: `/v1/events/${event.id}/calendar.ics`,
+    headers: authHeaders(memberToken),
+  });
+  assert.equal(icsRes.statusCode, 200);
+  assert.match(icsRes.headers["content-type"] ?? "", /^text\/calendar/);
+
+  const body = icsRes.body;
+  assert.match(body, /BEGIN:VCALENDAR/);
+  assert.match(body, /BEGIN:VEVENT/);
+  assert.match(body, /END:VEVENT/);
+  assert.match(body, /END:VCALENDAR/);
+  assert.match(body, new RegExp(`UID:${event.id}`));
+  assert.match(body, /SUMMARY:Friday tacos/);
+  assert.match(body, /DTSTAMP:/);
+  assert.match(body, /DTSTART:/);
+  assert.match(body, /DTEND:/);
+  assert.doesNotMatch(body, /ics-a|ics-b|ics-outsider|@/i);
+  assert.doesNotMatch(body, /ATTENDEE|ORGANIZER|availability/i);
 
   await app.close();
 });

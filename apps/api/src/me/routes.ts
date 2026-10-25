@@ -89,7 +89,7 @@ export function registerMemberSetupRoutes(
   app.get(
     "/v1/me/preferences",
     { preHandler: requireAuth },
-    async (request) => store.getPreferences(request.authUser!.sub),
+    async (request) => await store.getPreferences(request.authUser!.sub),
   );
 
   app.put<{ Body: PutMemberPreferencesRequest }>(
@@ -100,14 +100,14 @@ export function registerMemberSetupRoutes(
       if (!parsed) {
         return reply.code(400).send({ error: "invalid_body" });
       }
-      return store.putPreferences(request.authUser!.sub, parsed);
+      return await store.putPreferences(request.authUser!.sub, parsed);
     },
   );
 
   app.get(
     "/v1/me/availability",
     { preHandler: requireAuth },
-    async (request) => store.getAvailability(request.authUser!.sub),
+    async (request) => await store.getAvailability(request.authUser!.sub),
   );
 
   app.put<{ Body: PutMemberAvailabilityRequest }>(
@@ -118,7 +118,7 @@ export function registerMemberSetupRoutes(
       if (!parsed) {
         return reply.code(400).send({ error: "invalid_body" });
       }
-      return store.putAvailability(request.authUser!.sub, parsed);
+      return await store.putAvailability(request.authUser!.sub, parsed);
     },
   );
 }

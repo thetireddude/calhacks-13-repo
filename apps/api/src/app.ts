@@ -3,11 +3,9 @@ import { requireAuth } from "./auth.js";
 import { registerGroupRoutes } from "./groups/routes.js";
 import { createDefaultGroupsStore } from "./groups/createGroupsStore.js";
 import type { GroupsStore } from "./groups/store.js";
+import { createDefaultMemberSetupStore } from "./me/createMemberSetupStore.js";
 import { registerMemberSetupRoutes } from "./me/routes.js";
-import {
-  InMemoryMemberSetupStore,
-  type MemberSetupStore,
-} from "./me/store.js";
+import type { MemberSetupStore } from "./me/store.js";
 import { createMockPlannerPort } from "./planner/mockPlannerPort.js";
 import { registerPlanningRoutes } from "./planning/routes.js";
 import {
@@ -30,7 +28,7 @@ export async function createApp(options: CreateAppOptions = {}) {
   const app = Fastify({ logger: false });
   const groupsStore = options.groupsStore ?? createDefaultGroupsStore();
   const memberSetupStore =
-    options.memberSetupStore ?? new InMemoryMemberSetupStore();
+    options.memberSetupStore ?? createDefaultMemberSetupStore();
   const planningStore = options.planningStore ?? new InMemoryPlanningStore();
   const votingStore = options.votingStore ?? new InMemoryVotingStore();
   const plannerPort = options.plannerPort ?? createMockPlannerPort();

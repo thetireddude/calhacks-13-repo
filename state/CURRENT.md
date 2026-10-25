@@ -16,14 +16,15 @@ This branch state tracks **`apps/api/**`, `supabase/**`, `packages/contracts/**`
 | DEV2-006 | GET/PUT preferences + availability + privacy tests |
 | DEV2-007 | `planning_runs` / `proposals` migration + planning route stubs |
 | DEV2-008 | Mock `PlannerPort`, persist ≤3 proposals, failed-run retry |
+| DEV2-009 | Vote/veto/confirmed-event skeleton + idempotent stub majority |
 
 ## Next
 
-**DEV2-009** — vote + confirmed-event route skeleton.
+Post-DEV2-009 review/test gates; Supabase wiring for votes when scheduled.
 
 ## Test status
 
-All **DEV2-001 → DEV2-007** tasks covered; run `pnpm run test:dev2` — **17/17** pass. See [`state/DEV2-TEST-STATUS.md`](DEV2-TEST-STATUS.md).
+Run `pnpm run test:dev2` after DEV2-009 (includes voting idempotency + concurrency tests). See [`state/DEV2-TEST-STATUS.md`](DEV2-TEST-STATUS.md).
 
 ## Blockers (SPEC §11)
 

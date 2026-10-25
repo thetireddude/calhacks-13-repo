@@ -47,6 +47,18 @@ test("DEV2-007: planning runs and proposals migration with member policies", () 
   }
 });
 
+test("DEV2-009: votes, vetoes, and confirmed events migration with member policies", () => {
+  const sql = migrationSql("votes_confirmed_events");
+  for (const token of [
+    "proposal_votes",
+    "proposal_vetoes",
+    "confirmed_events",
+    "enable row level security",
+  ]) {
+    assert.match(sql, new RegExp(token, "i"), `expected ${token} in DEV2-009 SQL`);
+  }
+});
+
 test("migrations apply in chronological order (filename timestamps)", () => {
   const files = readdirSync(migrationsDir)
     .filter((f) => f.endsWith(".sql"))

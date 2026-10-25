@@ -13,12 +13,15 @@ import {
   InMemoryPlanningStore,
   type PlanningStore,
 } from "./planning/store.js";
+import { registerVotingRoutes } from "./voting/routes.js";
+import { InMemoryVotingStore, type VotingStore } from "./voting/store.js";
 import type { PlannerPort } from "@gather/contracts";
 
 export type CreateAppOptions = {
   groupsStore?: GroupsStore;
   memberSetupStore?: MemberSetupStore;
   planningStore?: PlanningStore;
+  votingStore?: VotingStore;
   plannerPort?: PlannerPort;
 };
 
@@ -28,6 +31,7 @@ export async function createApp(options: CreateAppOptions = {}) {
   const memberSetupStore =
     options.memberSetupStore ?? new InMemoryMemberSetupStore();
   const planningStore = options.planningStore ?? new InMemoryPlanningStore();
+  const votingStore = options.votingStore ?? new InMemoryVotingStore();
   const plannerPort = options.plannerPort ?? createMockPlannerPort();
 
   app.get("/v1/health", async () => ({ status: "ok" as const }));
@@ -42,6 +46,7 @@ export async function createApp(options: CreateAppOptions = {}) {
   registerGroupRoutes(app, groupsStore);
   registerMemberSetupRoutes(app, memberSetupStore);
   registerPlanningRoutes(app, groupsStore, planningStore, plannerPort);
+  registerVotingRoutes(app, groupsStore, planningStore, votingStore);
 
   return app;
 }

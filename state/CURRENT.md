@@ -21,6 +21,7 @@
 | DEV1-003 | Email + OTP mock auth |
 | DEV3-001 | `createPlanner()` stub |
 | DEV3-003 | Seeded discovery fallback in planner |
+| DEV3-004 | Approved-weight scoring stub wired in `createPlanner` |
 
 ## In flight (implementers dispatched)
 
@@ -29,7 +30,7 @@
 | DEV1-004 | Group create/list/join UI + mock API client |
 | DEV2-006 | GET/PUT preferences + availability + privacy tests |
 | DEV2-007 | planning_runs/proposals migration + planning route stubs |
-| DEV3-004 | Approved-weight deterministic scoring stub |
+| DEV3-004 | *(merged)* |
 
 ## Next after W6 gates
 

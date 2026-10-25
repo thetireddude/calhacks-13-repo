@@ -29,7 +29,7 @@ Human-readable status. Detailed state: [`state/CURRENT.md`](../state/CURRENT.md)
 | DEV1-004 | implementing | DEV1-003 | mobile | Group UI + mock API client |
 | DEV2-006 | implementing | DEV2-004, DEV2-005 | core-api | Prefs + availability API + privacy tests |
 | DEV2-007 | implementing | DEV2-004 | core-api | Planning runs migration + route stubs |
-| DEV3-004 | implementing | DEV3-003 | planner | Approved-weight scoring stub |
+| DEV3-004 | done | DEV3-003 | planner | Approved-weight scoring stub on `main` (merged) |
 
 ## How to pick work
 

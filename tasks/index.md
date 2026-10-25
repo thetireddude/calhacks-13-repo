@@ -24,7 +24,7 @@ Human-readable status. Detailed state: [`state/CURRENT.md`](../state/CURRENT.md)
 | DEV2-005 | implementing | DEV2-003 | core-api | Group CRUD + invite/join routes (auto-dispatch) |
 | DEV3-001 | done | GATE0-001, GATE0-002 | planner | `createPlanner()` stub + 4 tests (`5d1af3e`) |
 | DEV3-002 | done | DEV3-001 | planner | Covered by DEV3-001 PlannerPort impl |
-| DEV1-003 | implementing | DEV1-002 | mobile | OTP mock screens (subagent) |
+| DEV1-003 | done | DEV1-002 | mobile | **Email + OTP mock auth** (`5769309`; reviewer APPROVE) |
 | DEV3-003 | implementing | DEV3-002 | planner | Seeded discovery (subagent) |
 
 ## How to pick work

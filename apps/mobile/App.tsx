@@ -3,6 +3,7 @@ import { StatusBar } from "expo-status-bar";
 import { AuthProvider, createMockAuthClient } from "./src/auth";
 import { createMockGroupClient } from "./src/groups";
 import { createExpoNotificationPermissionClient } from "./src/notifications";
+import { createMockPlanningClient } from "./src/planning";
 import { RootNavigator } from "./src/RootNavigator";
 
 // Replaced by a Supabase-backed AuthClient in DEV1-009.
@@ -13,11 +14,13 @@ const groupClient = createMockGroupClient();
 
 // Replaced by the API-backed MemberSetupClient later; push permission uses Expo for real.
 const notificationClient = createExpoNotificationPermissionClient();
+// Replaced by the API-backed PlanningClient once the backend routes are wired.
+const planningClient = createMockPlanningClient();
 
 export default function App() {
   return (
     <AuthProvider client={authClient}>
-      <RootNavigator groupClient={groupClient} notificationClient={notificationClient} />
+      <RootNavigator groupClient={groupClient} notificationClient={notificationClient} planningClient={planningClient} />
       <StatusBar style="auto" />
     </AuthProvider>
   );

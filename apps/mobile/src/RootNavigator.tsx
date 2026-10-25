@@ -11,7 +11,6 @@ import {
   EventsScreen,
   NotificationsScreen,
   OtpScreen,
-  PlanningScreen,
 } from "./screens";
 import type { SignedOutParams } from "./screens";
 import { parseInviteToken } from "./groups";
@@ -44,6 +43,8 @@ import {
   WeeklyPlanningScreen,
 } from "./memberSetupScreens";
 import type { SetupStackParams } from "./memberSetupScreens";
+import { PlanningProvider, PlanningScreen } from "./planningScreens";
+import type { PlanningClient } from "./planning";
 
 const SignedOutStack = createNativeStackNavigator<SignedOutParams>();
 const GroupsStack = createNativeStackNavigator<GroupsStackParams>();
@@ -113,11 +114,13 @@ export function RootNavigator({
   memberSetupClient,
   scheduleClient,
   notificationClient,
+  planningClient,
 }: {
   groupClient: GroupClient;
   memberSetupClient?: MemberSetupClient;
   scheduleClient?: LocalScheduleClient;
   notificationClient?: NotificationPermissionClient;
+  planningClient?: PlanningClient;
 }) {
   const [defaults] = useState(() => ({
     member: createMockMemberSetupClient(),
@@ -153,7 +156,9 @@ export function RootNavigator({
             schedule={scheduleClient ?? defaults.schedule}
             notifications={notificationClient ?? defaults.notifications}
           >
-            <AuthenticatedTabs />
+            <PlanningProvider client={planningClient}>
+              <AuthenticatedTabs />
+            </PlanningProvider>
           </MemberSetupProvider>
           <InviteJoiner token={pendingToken} onDone={clearPending} />
         </GroupsProvider>

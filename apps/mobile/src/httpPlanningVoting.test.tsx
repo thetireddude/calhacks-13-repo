@@ -310,7 +310,7 @@ describe("screens with real clients and polling", () => {
     await screen.findByText("#1 Option 1: Saturday hike");
     expect(screen.queryByText(/Interested: /)).toBeNull();
     expect(screen.getAllByText("Vote counts are not available yet.").length).toBeGreaterThan(0);
-    await fireEvent.press((await screen.findAllByText("Interested"))[0]!);
+    await fireEvent.press((await screen.findAllByText("Yes"))[0]!);
     await screen.findByText("Your vote: Interested");
   });
 

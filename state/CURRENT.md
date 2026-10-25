@@ -2,14 +2,13 @@
 
 ## Milestone
 
-**Gate 1 complete** (merged PR #1). **Gate 2 persistence:** DEV2-014 (`bb6f49a`) and DEV2-015 (`bb45d4e`) merged. **DEV2-016 in flight.**
+**Gate 1 complete** (merged PR #1). **Gate 2 persistence:** DEV2-014–016 merged. **DEV2-017 in flight.**
 
 ## In flight
 
 | Task | Deliverable |
 |------|-------------|
-| DEV2-016 | Env-gated planning runs + proposals |
-| DEV2-017 | queued — votes / vetoes / confirmed events (after 016) |
+| DEV2-017 | Env-gated votes / vetoes / confirmed events |
 
 ## Shipped (Gate 1)
 
@@ -17,7 +16,7 @@ DEV2-001–010 on `main`. See [`state/GATE1-DEV2-EXIT.md`](GATE1-DEV2-EXIT.md).
 
 ## Tests
 
-`pnpm run test:ci` — **33/33** (Tester gates must use this command).
+`pnpm run test:ci` — **34/34** (Tester gates must use this command).
 
 ## Blockers (SPEC §11)
 

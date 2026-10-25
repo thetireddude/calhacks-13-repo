@@ -135,19 +135,6 @@ export function OtpScreen({ route }: NativeStackScreenProps<SignedOutParams, "Ot
   );
 }
 
-function placeholder(label: string) {
-  return function PlaceholderScreen() {
-    return (
-      <View style={styles.container}>
-        <Text>{label} placeholder</Text>
-      </View>
-    );
-  };
-}
-
-export const EventsScreen = placeholder("Events");
-export const NotificationsScreen = placeholder("Notifications");
-
 const styles = StyleSheet.create({
   container: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#fff", padding: 16 },
   title: { fontSize: 32, fontWeight: "700", marginBottom: 8 },

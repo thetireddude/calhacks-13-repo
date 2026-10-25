@@ -6,12 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Button, Linking, View } from "react-native";
 
 import { useAuth } from "./auth";
-import {
-  EmailScreen,
-  EventsScreen,
-  NotificationsScreen,
-  OtpScreen,
-} from "./screens";
+import { EmailScreen, OtpScreen } from "./screens";
 import type { SignedOutParams } from "./screens";
 import { parseInviteToken } from "./groups";
 import type { GroupClient } from "./groups";
@@ -45,6 +40,8 @@ import {
 import type { SetupStackParams } from "./memberSetupScreens";
 import { PlanningProvider, PlanningScreen } from "./planningScreens";
 import type { PlanningClient } from "./planning";
+import { EventsScreen, NotificationsScreen, VotingProvider } from "./votingScreens";
+import type { IcsClient, VotingClient } from "./voting";
 
 const SignedOutStack = createNativeStackNavigator<SignedOutParams>();
 const GroupsStack = createNativeStackNavigator<GroupsStackParams>();
@@ -115,12 +112,16 @@ export function RootNavigator({
   scheduleClient,
   notificationClient,
   planningClient,
+  votingClient,
+  icsClient,
 }: {
   groupClient: GroupClient;
   memberSetupClient?: MemberSetupClient;
   scheduleClient?: LocalScheduleClient;
   notificationClient?: NotificationPermissionClient;
   planningClient?: PlanningClient;
+  votingClient?: VotingClient;
+  icsClient?: IcsClient;
 }) {
   const [defaults] = useState(() => ({
     member: createMockMemberSetupClient(),
@@ -157,7 +158,9 @@ export function RootNavigator({
             notifications={notificationClient ?? defaults.notifications}
           >
             <PlanningProvider client={planningClient}>
-              <AuthenticatedTabs />
+              <VotingProvider voting={votingClient} ics={icsClient}>
+                <AuthenticatedTabs />
+              </VotingProvider>
             </PlanningProvider>
           </MemberSetupProvider>
           <InviteJoiner token={pendingToken} onDone={clearPending} />

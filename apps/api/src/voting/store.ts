@@ -11,12 +11,23 @@ export type VotingStore = {
     proposalId: string,
     userId: string,
     choice: VoteChoice,
-  ): ProposalVoteResponse;
-  getVote(proposalId: string, userId: string): ProposalVoteResponse | undefined;
-  countApprovals(proposalId: string): number;
-  recordVeto(proposalId: string, userId: string): ProposalVetoResponse;
-  getVeto(proposalId: string, userId: string): ProposalVetoResponse | undefined;
-  getConfirmedEvent(groupId: string): ConfirmedEventResponse | undefined;
+  ): Promise<ProposalVoteResponse>;
+  getVote(
+    proposalId: string,
+    userId: string,
+  ): Promise<ProposalVoteResponse | undefined>;
+  countApprovals(proposalId: string): Promise<number>;
+  recordVeto(
+    proposalId: string,
+    userId: string,
+  ): Promise<ProposalVetoResponse>;
+  getVeto(
+    proposalId: string,
+    userId: string,
+  ): Promise<ProposalVetoResponse | undefined>;
+  getConfirmedEvent(
+    groupId: string,
+  ): Promise<ConfirmedEventResponse | undefined>;
   /**
    * Gate 1 stub (SPEC §11): confirm when approve votes >= ceil(memberCount / 2).
    * Idempotent: at most one confirmed event per group.
@@ -27,7 +38,7 @@ export type VotingStore = {
     planningRunId: string;
     summary: string;
     memberCount: number;
-  }): ConfirmedEventResponse | undefined;
+  }): Promise<ConfirmedEventResponse | undefined>;
 };
 
 type VoteKey = `${string}:${string}`;
@@ -37,11 +48,11 @@ export class InMemoryVotingStore implements VotingStore {
   private vetoes = new Map<VoteKey, ProposalVetoResponse>();
   private confirmedByGroup = new Map<string, ConfirmedEventResponse>();
 
-  upsertVote(
+  async upsertVote(
     proposalId: string,
     userId: string,
     choice: VoteChoice,
-  ): ProposalVoteResponse {
+  ): Promise<ProposalVoteResponse> {
     const record: ProposalVoteResponse = {
       proposalId,
       userId,
@@ -52,25 +63,22 @@ export class InMemoryVotingStore implements VotingStore {
     return record;
   }
 
-  getVote(
+  async getVote(
     proposalId: string,
     userId: string,
-  ): ProposalVoteResponse | undefined {
+  ): Promise<ProposalVoteResponse | undefined> {
     return this.votes.get(`${proposalId}:${userId}`);
   }
 
-  countApprovals(proposalId: string): number {
-    let count = 0;
-    for (const vote of this.votes.values()) {
-      if (vote.proposalId === proposalId && vote.choice === "approve") {
-        count += 1;
-      }
-    }
-    return count;
+  async countApprovals(proposalId: string): Promise<number> {
+    return this.countApprovalsSync(proposalId);
   }
 
-  recordVeto(proposalId: string, userId: string): ProposalVetoResponse {
-    const existing = this.getVeto(proposalId, userId);
+  async recordVeto(
+    proposalId: string,
+    userId: string,
+  ): Promise<ProposalVetoResponse> {
+    const existing = this.vetoes.get(`${proposalId}:${userId}`);
     if (existing) {
       return existing;
     }
@@ -84,31 +92,34 @@ export class InMemoryVotingStore implements VotingStore {
     return record;
   }
 
-  getVeto(
+  async getVeto(
     proposalId: string,
     userId: string,
-  ): ProposalVetoResponse | undefined {
+  ): Promise<ProposalVetoResponse | undefined> {
     return this.vetoes.get(`${proposalId}:${userId}`);
   }
 
-  getConfirmedEvent(groupId: string): ConfirmedEventResponse | undefined {
+  async getConfirmedEvent(
+    groupId: string,
+  ): Promise<ConfirmedEventResponse | undefined> {
     return this.confirmedByGroup.get(groupId);
   }
 
-  tryConfirmFromMajority(input: {
+  async tryConfirmFromMajority(input: {
     groupId: string;
     proposalId: string;
     planningRunId: string;
     summary: string;
     memberCount: number;
-  }): ConfirmedEventResponse | undefined {
+  }): Promise<ConfirmedEventResponse | undefined> {
+    // Stay synchronous until the write so concurrent callers cannot duplicate.
     const existing = this.confirmedByGroup.get(input.groupId);
     if (existing) {
       return existing;
     }
 
     const threshold = Math.ceil(input.memberCount / 2);
-    if (this.countApprovals(input.proposalId) < threshold) {
+    if (this.countApprovalsSync(input.proposalId) < threshold) {
       return undefined;
     }
 
@@ -127,5 +138,15 @@ export class InMemoryVotingStore implements VotingStore {
     };
     this.confirmedByGroup.set(input.groupId, confirmed);
     return confirmed;
+  }
+
+  private countApprovalsSync(proposalId: string): number {
+    let count = 0;
+    for (const vote of this.votes.values()) {
+      if (vote.proposalId === proposalId && vote.choice === "approve") {
+        count += 1;
+      }
+    }
+    return count;
   }
 }

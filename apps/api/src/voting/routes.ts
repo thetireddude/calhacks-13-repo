@@ -58,13 +58,13 @@ export function registerVotingRoutes(
         request.params.proposalId,
       ))!;
       const userId = request.authUser!.sub;
-      const vote = votingStore.upsertVote(
+      const vote = await votingStore.upsertVote(
         request.params.proposalId,
         userId,
         choice,
       );
 
-      votingStore.tryConfirmFromMajority({
+      await votingStore.tryConfirmFromMajority({
         groupId: ctx.groupId,
         proposalId: ctx.proposal.proposalId,
         planningRunId: ctx.runId,
@@ -80,14 +80,17 @@ export function registerVotingRoutes(
     "/v1/proposals/:proposalId/veto",
     { preHandler: [requireAuth, memberOnlyForProposal] },
     async (request) =>
-      votingStore.recordVeto(request.params.proposalId, request.authUser!.sub),
+      await votingStore.recordVeto(
+        request.params.proposalId,
+        request.authUser!.sub,
+      ),
   );
 
   app.get<{ Params: { groupId: string } }>(
     "/v1/groups/:groupId/confirmed-event",
     { preHandler: [requireAuth, memberOnlyForGroup] },
     async (request, reply) => {
-      const event = votingStore.getConfirmedEvent(request.params.groupId);
+      const event = await votingStore.getConfirmedEvent(request.params.groupId);
       if (!event) {
         return reply.code(404).send({ error: "not_found" });
       }

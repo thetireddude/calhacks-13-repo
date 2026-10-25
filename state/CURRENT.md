@@ -25,7 +25,8 @@
 | — | GATE0-002 | core-api | **done** (merged `76a97e7`) |
 | — | DEV2-001 | core-api | **done** (merged `e7adadb`) |
 | — | DEV1-001 | mobile | **done** (merged `9777545`) |
-| W3 | DEV2-002, DEV3-001, DEV1-002 | all lanes | **implementing** (3 parallel implementers) |
+| — | DEV3-001 | planner | **done** (merged `5d1af3e`) |
+| W3 | DEV2-002, DEV1-002 | core-api, mobile | **implementing** |
 | Next | GATE0-003 | all | contract tri-review after W3 merges |
 | Next | DEV2-003 | core-api | queued after DEV2-002 merge + R/T |
 

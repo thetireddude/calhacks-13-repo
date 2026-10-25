@@ -18,7 +18,7 @@ Human-readable status. Detailed state: [`state/CURRENT.md`](../state/CURRENT.md)
 | DEV2-001 | done | GATE0-001 | core-api | Merged `e7adadb` — Fastify `/v1/health` |
 | DEV1-002 | implementing | DEV1-001 | mobile | Navigation shell (W3) |
 | DEV2-002 | implementing | DEV2-001 | core-api | Supabase + JWT (W3 worktree) |
-| DEV3-001 | implementing | GATE0-001, GATE0-002 | planner | PlannerPort stub (W3 worktree) |
+| DEV3-001 | done | GATE0-001, GATE0-002 | planner | Merged `5d1af3e` — createPlanner + 4 tests |
 
 ## How to pick work
 

@@ -2,6 +2,10 @@
 
 **Owner:** Developer 2
 
-Migrations and local Supabase configuration live here. Schema must cover logical resources in SPEC §4 (profiles, groups, planning runs, votes, notifications, etc.).
+## Local (DEV2-002)
 
-Initialize with Supabase CLI after GATE0-001 documents tooling choices.
+1. Install [Supabase CLI](https://supabase.com/docs/guides/cli).
+2. From repo root: `supabase start` (uses `supabase/config.toml`).
+3. Set `SUPABASE_JWT_SECRET` in `.env` from `supabase status` JWT secret for API token verification.
+
+Migrations for groups/planning: **DEV2-003** onward.

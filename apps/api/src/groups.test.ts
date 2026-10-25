@@ -3,7 +3,8 @@ import { createSecretKey } from "node:crypto";
 import test from "node:test";
 import { SignJWT } from "jose";
 import { createApp } from "./app.js";
-import { InMemoryGroupsStore } from "./groups/store.js";
+import { DEFAULT_GROUP_SCHEDULE, InMemoryGroupsStore } from "./groups/store.js";
+import { SupabaseGroupsStore } from "./groups/supabaseStore.js";
 
 const TEST_SECRET = "dev-test-jwt-secret-at-least-32-chars!!";
 
@@ -36,6 +37,15 @@ test("group routes return 401 without JWT", async () => {
     {
       method: "GET" as const,
       url: "/v1/groups/00000000-0000-4000-8000-000000000001/members",
+    },
+    {
+      method: "GET" as const,
+      url: "/v1/groups/00000000-0000-4000-8000-000000000001/schedule",
+    },
+    {
+      method: "PUT" as const,
+      url: "/v1/groups/00000000-0000-4000-8000-000000000001/schedule",
+      payload: { timezone: "UTC", weeklyEnabled: false },
     },
   ];
   for (const c of cases) {
@@ -224,4 +234,135 @@ test("invite, join, and list members flow", async () => {
   assert.deepEqual(userIds, ["joiner-b", "owner-a"]);
 
   await app.close();
+});
+
+test("GET/PUT /v1/groups/:groupId/schedule is config-only with defaults", async () => {
+  process.env.SUPABASE_JWT_SECRET = TEST_SECRET;
+  const store = new InMemoryGroupsStore();
+  const app = await createApp({ groupsStore: store });
+  const ownerToken = await signTestToken("owner-s");
+  const outsiderToken = await signTestToken("outsider-s");
+
+  const missing = await app.inject({
+    method: "GET",
+    url: "/v1/groups/00000000-0000-4000-8000-000000000099/schedule",
+    headers: authHeaders(ownerToken),
+  });
+  assert.equal(missing.statusCode, 404);
+
+  const createRes = await app.inject({
+    method: "POST",
+    url: "/v1/groups",
+    headers: authHeaders(ownerToken),
+    payload: { name: "Schedule crew" },
+  });
+  const groupId = (createRes.json() as { id: string }).id;
+
+  const defaultRes = await app.inject({
+    method: "GET",
+    url: `/v1/groups/${groupId}/schedule`,
+    headers: authHeaders(ownerToken),
+  });
+  assert.equal(defaultRes.statusCode, 200);
+  assert.deepEqual(defaultRes.json(), DEFAULT_GROUP_SCHEDULE);
+
+  const forbidden = await app.inject({
+    method: "PUT",
+    url: `/v1/groups/${groupId}/schedule`,
+    headers: authHeaders(outsiderToken),
+    payload: { timezone: "America/Los_Angeles", weeklyEnabled: true },
+  });
+  assert.equal(forbidden.statusCode, 403);
+
+  const invalid = await app.inject({
+    method: "PUT",
+    url: `/v1/groups/${groupId}/schedule`,
+    headers: authHeaders(ownerToken),
+    payload: { timezone: "  ", weeklyEnabled: true },
+  });
+  assert.equal(invalid.statusCode, 400);
+  assert.deepEqual(invalid.json(), { error: "invalid_schedule" });
+
+  const putRes = await app.inject({
+    method: "PUT",
+    url: `/v1/groups/${groupId}/schedule`,
+    headers: authHeaders(ownerToken),
+    payload: { timezone: " America/Los_Angeles ", weeklyEnabled: true },
+  });
+  assert.equal(putRes.statusCode, 200);
+  assert.deepEqual(putRes.json(), {
+    timezone: "America/Los_Angeles",
+    weeklyEnabled: true,
+  });
+
+  const getRes = await app.inject({
+    method: "GET",
+    url: `/v1/groups/${groupId}/schedule`,
+    headers: authHeaders(ownerToken),
+  });
+  assert.equal(getRes.statusCode, 200);
+  assert.deepEqual(getRes.json(), {
+    timezone: "America/Los_Angeles",
+    weeklyEnabled: true,
+  });
+
+  await app.close();
+});
+
+test("SupabaseGroupsStore getSchedule defaults and putSchedule upserts", async () => {
+  const upserts: unknown[] = [];
+  const client = {
+    from(table: string) {
+      if (table !== "group_schedules") {
+        throw new Error(`unexpected table ${table}`);
+      }
+      return {
+        select() {
+          return {
+            eq() {
+              return {
+                async maybeSingle() {
+                  return { data: null, error: null };
+                },
+              };
+            },
+          };
+        },
+        upsert(row: unknown) {
+          upserts.push(row);
+          return {
+            select() {
+              return {
+                async single() {
+                  return {
+                    data: {
+                      timezone: "America/New_York",
+                      weekly_enabled: true,
+                    },
+                    error: null,
+                  };
+                },
+              };
+            },
+          };
+        },
+      };
+    },
+  };
+  const store = new SupabaseGroupsStore(client as never);
+  assert.deepEqual(await store.getSchedule("g1"), DEFAULT_GROUP_SCHEDULE);
+  assert.deepEqual(
+    await store.putSchedule("g1", {
+      timezone: "America/New_York",
+      weeklyEnabled: true,
+    }),
+    { timezone: "America/New_York", weeklyEnabled: true },
+  );
+  assert.deepEqual(upserts, [
+    {
+      group_id: "g1",
+      timezone: "America/New_York",
+      weekly_enabled: true,
+    },
+  ]);
 });

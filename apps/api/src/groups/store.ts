@@ -3,7 +3,13 @@ import type {
   GroupInviteResponse,
   GroupMemberResponse,
   GroupResponse,
+  GroupSchedule,
 } from "@gather/contracts";
+
+export const DEFAULT_GROUP_SCHEDULE: GroupSchedule = {
+  timezone: "UTC",
+  weeklyEnabled: false,
+};
 
 export type GroupsStore = {
   createGroup(name: string, createdBy: string): Promise<GroupResponse>;
@@ -18,6 +24,8 @@ export type GroupsStore = {
   ): Promise<GroupInviteResponse>;
   getInviteByToken(token: string): Promise<GroupInviteResponse | undefined>;
   joinGroup(groupId: string, userId: string): Promise<GroupMemberResponse>;
+  getSchedule(groupId: string): Promise<GroupSchedule>;
+  putSchedule(groupId: string, schedule: GroupSchedule): Promise<GroupSchedule>;
 };
 
 type StoredInvite = GroupInviteResponse & { createdBy: string };
@@ -26,6 +34,7 @@ export class InMemoryGroupsStore implements GroupsStore {
   private groups = new Map<string, GroupResponse>();
   private memberships = new Map<string, GroupMemberResponse[]>();
   private invites = new Map<string, StoredInvite>();
+  private schedules = new Map<string, GroupSchedule>();
 
   async createGroup(name: string, createdBy: string): Promise<GroupResponse> {
     const group: GroupResponse = {
@@ -128,5 +137,21 @@ export class InMemoryGroupsStore implements GroupsStore {
     members.push(membership);
     this.memberships.set(groupId, members);
     return membership;
+  }
+
+  async getSchedule(groupId: string): Promise<GroupSchedule> {
+    return this.schedules.get(groupId) ?? { ...DEFAULT_GROUP_SCHEDULE };
+  }
+
+  async putSchedule(
+    groupId: string,
+    schedule: GroupSchedule,
+  ): Promise<GroupSchedule> {
+    const stored: GroupSchedule = {
+      timezone: schedule.timezone,
+      weeklyEnabled: schedule.weeklyEnabled,
+    };
+    this.schedules.set(groupId, stored);
+    return { ...stored };
   }
 }

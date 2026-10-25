@@ -43,6 +43,12 @@ It does not create root workspace tooling. Funcheap and DoTheBay remain deferred
 - Creao app-trigger authorization was verified by a live run creation after the app-scoped key was updated. The initial polling window was too short for the asynchronous run, so the adapter now polls for up to one minute by default before failing closed. No secret was displayed or stored.
 - Bright Data source normalization is implemented. Live Yelp/Facebook verification waits for their running snapshots or a fresh small request; Google Street View is intentionally not used.
 
+### 2026-10-24 — Live Bright Data request verification
+
+- The configured Yelp dataset is a collect-by-URL endpoint, not a search-filter endpoint. The planner now creates a public Yelp search URL and sends only `{ url }`.
+- The configured Facebook venue-events dataset accepts only `{ url }`; its UI label does not imply that `upcoming_events_only` is accepted. The planner no longer sends that unsupported field.
+- A corrected Yelp request was accepted for collection but did not return within the bounded synchronous request window, so its real record schema remains pending. The next completed public response can be replayed through the normalizer without credentials.
+
 ### Next action after Gate 0
 
 Once Gate 0 supplies the workspace and shared types, export a contract-compatible planner factory and wire these internal modules into it. Live Creao and Bright Data integrations remain disabled until their respective contracts and custom collector IDs are approved.

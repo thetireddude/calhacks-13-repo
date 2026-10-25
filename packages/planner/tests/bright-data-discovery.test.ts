@@ -41,5 +41,18 @@ test("Facebook discovery sends only explicitly supplied public venue URLs", asyn
   const candidates = await discovery.discover({ city: "San Francisco", limit: 1 });
   assert.equal(candidates.length, 1);
   assert.match(requestBody, /example-venue\/events/);
-  assert.match(requestBody, /upcoming_events_only/);
+  assert.doesNotMatch(requestBody, /upcoming_events_only/);
+});
+
+test("Yelp discovery sends a public search URL to the configured URL collector", async () => {
+  let requestBody = "";
+  const client = new BrightDataDatasetClient({ apiKey: "test" }, async (_url, init) => {
+    requestBody = String(init?.body);
+    return new Response(JSON.stringify([{ name: "Cafe", url: "https://www.yelp.com/biz/cafe" }]), { status: 200 });
+  });
+  const discovery = new BrightDataCandidateDiscovery(client, { yelpDatasetId: "gd_yelp" });
+  const candidates = await discovery.discover({ city: "San Francisco, CA", limit: 1 });
+  assert.equal(candidates.length, 1);
+  assert.match(requestBody, /www\.yelp\.com\/search/);
+  assert.match(requestBody, /find_desc=Restaurants/);
 });

@@ -25,6 +25,14 @@ export function groupErrorMessage(e: unknown): string {
         return "That invite link is not valid.";
       case "not_found":
         return "That group could not be found.";
+      case "forbidden":
+        return "You are not a member of that group.";
+      case "unauthenticated":
+        return "Your session has expired. Please sign out and sign in again.";
+      case "network":
+        return "Could not reach Gather. Check your connection and try again.";
+      case "server":
+        return "Something went wrong. Please try again.";
     }
   }
   return "Something went wrong. Please try again.";

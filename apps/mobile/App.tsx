@@ -2,7 +2,9 @@ import { Text } from "react-native";
 import { StatusBar } from "expo-status-bar";
 
 import { AuthProvider, createMockAuthClient } from "./src/auth";
+import { createApiClient } from "./src/apiClient";
 import { createMockGroupClient } from "./src/groups";
+import { createHttpGroupClient, createHttpMemberSetupClient } from "./src/httpClients";
 import { createExpoNotificationPermissionClient } from "./src/notifications";
 import { createMockPlanningClient } from "./src/planning";
 import { createMockIcsClient, createMockVotingClient } from "./src/voting";
@@ -21,8 +23,20 @@ const authClient =
       ? createMockAuthClient()
       : null;
 
-// Replaced by the API-backed GroupClient once the backend routes are wired.
-const groupClient = createMockGroupClient();
+// Real group and member-setup clients need the API URL and real Supabase session tokens. Mocks are only
+// a dev/test fallback; a release build with a missing API URL shows an error instead of mocking.
+// The token comes from the Supabase client (current, auto-refreshed), not the stale session snapshot.
+const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+const realBackend = Boolean(apiUrl && supabaseUrl && supabaseAnonKey);
+const api =
+  realBackend && authClient && "getAccessToken" in authClient
+    ? createApiClient({ baseUrl: apiUrl as string, getAccessToken: () => authClient.getAccessToken() })
+    : null;
+const apiMissing = !allowMock && !api;
+const groupClient = api ? createHttpGroupClient(api) : createMockGroupClient();
+// undefined lets RootNavigator fall back to its in-memory mock. The weekly schedule stays a local
+// mock: the API has no /schedule route yet (SPEC section 9 request in the DEV1-010 handoff).
+const memberSetupClient = api ? createHttpMemberSetupClient(api) : undefined;
 
 // Replaced by the API-backed MemberSetupClient later; push permission uses Expo for real.
 const notificationClient = createExpoNotificationPermissionClient();
@@ -37,10 +51,14 @@ export default function App() {
   if (!authClient) {
     return <Text>Configuration error: Supabase URL and anon key are not set.</Text>;
   }
+  if (apiMissing) {
+    return <Text>Configuration error: API URL is not set.</Text>;
+  }
   return (
     <AuthProvider client={authClient}>
       <RootNavigator
         groupClient={groupClient}
+        memberSetupClient={memberSetupClient}
         notificationClient={notificationClient}
         planningClient={planningClient}
         votingClient={votingClient}

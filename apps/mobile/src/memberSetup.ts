@@ -16,6 +16,16 @@ export interface MemberSetupClient {
   putAvailability(req: PutMemberAvailabilityRequest): Promise<MemberAvailabilityResponse>;
 }
 
+// Mobile-local error shape for the real client (contract error schema not frozen, SPEC section 11).
+// unauthenticated = 401 (sign in again); invalid = 400 body rejected; network/server are retry types.
+export type MemberSetupErrorCode = "unauthenticated" | "invalid" | "network" | "server";
+export class MemberSetupError extends Error {
+  constructor(readonly code: MemberSetupErrorCode) {
+    super(code);
+    this.name = "MemberSetupError";
+  }
+}
+
 // In-memory mock. Defaults are placeholders, not approved product defaults. Nothing is logged.
 export function createMockMemberSetupClient(): MemberSetupClient {
   let preferences: MemberPreferencesResponse = {

@@ -3,12 +3,10 @@
 **Owner:** Developer 3  
 **Branch:** `feature/planner`
 
-Importable planning engine: personal-agent evaluations, discovery, deterministic scoring, explanations. See SPEC §5 and §6.3.
+## DEV3-001
 
-## Status
+`createPlanner()` returns a stub `PlannerPort` (≤3 proposals). Seeded discovery and Bright Data: Gate 1 follow-ups per `docs/milestone-dag.md`.
 
-Implement **DEV3-001** after GATE0-001 and contract stubs.
-
-## Public API
-
-Export a factory implementing `PlannerPort` from shared contracts. No database or vote persistence.
+```bash
+pnpm --filter @gather/planner run test
+```

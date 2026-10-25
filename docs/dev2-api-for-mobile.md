@@ -41,6 +41,7 @@ JSON body is always `{ "error": "<code>" }`.
 | 400 | `invalid_body` | Bad PUT `/v1/me`, preferences, or availability |
 | 400 | `invalid_name` | POST `/v1/groups` empty `name` |
 | 400 | `invalid_choice` | Vote not `approve` \| `cant_make_it` |
+| 400 | `invalid_schedule` | Schedule body lacks a non-empty `timezone` or boolean `weeklyEnabled` |
 | 409 | `already_completed` | POST generate on a completed run |
 | 410 | `invite_expired` | Join after `expiresAt` |
 
@@ -59,6 +60,7 @@ Auth column: JWT required unless noted.
 | POST | `/v1/groups/:groupId/invites` | Member → 201 |
 | POST | `/v1/invites/:token/join` | JWT; 200 membership |
 | GET | `/v1/groups/:groupId/members` | Member |
+| GET/PUT | `/v1/groups/:groupId/schedule` | Member; `{ timezone, weeklyEnabled }`; defaults to `{ timezone: "UTC", weeklyEnabled: false }`; PUT is config only (no auto-planning) |
 | GET/PUT | `/v1/me/preferences` | Private to caller (`learningOptIn`, tags, budget, travel) |
 | GET/PUT | `/v1/me/availability` | Private to caller (`windows[]`) |
 | POST | `/v1/groups/:groupId/planning-runs` | Member; mock generate → 201 |
@@ -68,18 +70,10 @@ Auth column: JWT required unless noted.
 | PUT | `/v1/proposals/:proposalId/vote` | `{ "choice": "approve" \| "cant_make_it" }` |
 | POST | `/v1/proposals/:proposalId/veto` | Distinct from vote |
 | GET | `/v1/groups/:groupId/confirmed-event` | 404 if none |
+| GET | `/v1/events/:eventId/calendar.ics` | Member of the confirmed event’s group; `text/calendar`; 404 unknown event, 403 non-member |
+| GET | `/v1/me/notifications` | `{ notifications }`; confirmed-event items for the caller’s groups only; no push or private preference/availability data |
 
 Do not send another member’s preferences or availability in any request. Responses must not include those private fields for other users.
-
-## If present on branch (parallel stubs)
-
-Not registered in `apps/api/src/app.ts` on this checkout. Probe or pull the matching task branch / later `main`:
-
-| Method | Path | Task | Expected |
-|--------|------|------|----------|
-| GET/PUT | `/v1/groups/:groupId/schedule` | DEV2-021 | Config only `{ timezone, weeklyEnabled }`; no weekly auto-run |
-| GET | `/v1/events/:eventId/calendar.ics` | DEV2-022 | `text/calendar` for a **confirmed** event; member JWT |
-| GET | `/v1/me/notifications` | DEV2-023 | Group-visible feed; no push; no private prefs/availability |
 
 `POST /v1/me/push-devices` is SPEC inventory only — not implemented here.
 

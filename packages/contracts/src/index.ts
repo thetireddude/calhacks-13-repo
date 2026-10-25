@@ -16,3 +16,8 @@ export type {
   PlannerResult,
   Proposal,
 } from "./planner.js";
+export type {
+  CreatePlanningRunRequest,
+  PlanningRunProposalsResponse,
+  PlanningRunResponse,
+} from "./planning.js";

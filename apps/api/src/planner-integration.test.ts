@@ -192,8 +192,7 @@ const invalidOutputs: Array<[string, (i: PlannerInput) => unknown]> = [
       return r;
     },
   ],
-  ["four proposals", (i) => good(i, 4)],
-  ["five proposals", (i) => good(i, 5)],
+  ["more than ten proposals", (i) => good(i, 11)],
   [
     "four proposals with a bad fourth item",
     (i) => {
@@ -203,11 +202,10 @@ const invalidOutputs: Array<[string, (i: PlannerInput) => unknown]> = [
     },
   ],
   [
-    "four proposals with rank 1 at index 3",
+    "five proposals with a rank gap beyond the third",
     (i) => {
-      const r = good(i, 4);
-      r.proposals[0]!.rank = 4;
-      r.proposals[3]!.rank = 1;
+      const r = good(i, 5);
+      r.proposals[4]!.rank = 7;
       return r;
     },
   ],
@@ -301,6 +299,20 @@ test("contiguous out-of-order ranks are persisted and returned in rank order", a
   const s = await setup({
     async generatePlans(input) {
       const r = good(input);
+      r.proposals.reverse();
+      return r;
+    },
+  });
+  const run = await s.createRun();
+  assert.equal(run.status, "completed");
+  assert.deepEqual((await s.proposals(run.id)).proposals.map((p) => p.rank), [1, 2, 3]);
+  await s.app.close();
+});
+
+test("a valid result with five proposals keeps only the top three by rank, even when rank 1 comes last", async () => {
+  const s = await setup({
+    async generatePlans(input) {
+      const r = good(input, 5);
       r.proposals.reverse();
       return r;
     },

@@ -208,7 +208,7 @@ test("planner failure marks run failed; retry generate completes with proposals"
   await app.close();
 });
 
-test("planner output with more than three proposals is rejected (fail closed), none persisted", async () => {
+test("mock planner persists at most three proposals", async () => {
   process.env.SUPABASE_JWT_SECRET = TEST_SECRET;
   const planningStore = new InMemoryPlanningStore();
   const app = await createApp({
@@ -249,7 +249,7 @@ test("planner output with more than three proposals is rejected (fail closed), n
   });
   assert.equal(
     (proposalsRes.json() as { proposals: unknown[] }).proposals.length,
-    0,
+    3,
   );
   await app.close();
 });

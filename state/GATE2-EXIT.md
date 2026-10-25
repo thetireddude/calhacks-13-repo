@@ -13,7 +13,7 @@ Branch `agent/GATE2-001-planner-integration`.
 
 - API imports the planner through `@gather/planner` public entry only.
 - Real planner output through `POST /v1/groups/:id/planning-runs` completes with 1..3 ranked proposals, persisted and returned.
-- Backend validation rejects mismatched run id, empty/non-array output, more than 3 proposals (fail closed, no truncation), duplicate/gapped/zero ranks, duplicate ids, malformed items, empty/oversize fields, unsafe summary or explanation, bad revisionId: run `failed`, no proposals stored, retry route completes.
+- Backend validation rejects mismatched run id, empty/non-array output, more than 10 proposals (fail closed), any invalid item including beyond the third, duplicate/gapped/zero ranks (a valid result with more than 3 keeps the top three by rank), duplicate ids, malformed items, empty/oversize fields, unsafe summary or explanation, bad revisionId: run `failed`, no proposals stored, retry route completes.
 - Planner timeout (recoverable), per-run in-flight guard (concurrent `/generate`: planner called once, others 409), log lines carry only run id and reason code / error class name (tested).
 - Real planner with a rejecting discovery fails closed; run recoverable.
 - Privacy: markers from saved preferences/availability absent from run, listing and stored proposals; planner input contains only groupId/planningRunId/activityRequest.

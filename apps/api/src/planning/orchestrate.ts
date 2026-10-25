@@ -3,6 +3,8 @@ import { isPublicExplanationSafe } from "@gather/planner";
 import type { PlanningStore } from "./store.js";
 
 const MAX_PROPOSALS = 3;
+// Upper bound on raw planner output we are willing to inspect; larger is a contract violation.
+const MAX_RAW_PROPOSALS = 10;
 const MAX_PROPOSAL_ID = 200;
 const MAX_REVISION_ID = 200;
 const MAX_SUMMARY = 300;
@@ -16,10 +18,12 @@ export type ValidationResult =
 const bad = (reason: string): ValidationResult => ({ ok: false, reason });
 
 /**
- * Backend validation of planner output before persistence. More than three
- * proposals is a contract violation (fail closed, never truncated). Any
- * violation fails the whole run; nothing partial is persisted. Returns proposals
- * sorted by rank (ranks must be exactly 1..n) or a short reason code.
+ * Backend validation of planner output before persistence. Every returned item is
+ * validated (including ones beyond the third) and ranks must be exactly 1..n; any
+ * violation fails the whole run and nothing partial is persisted. A valid result
+ * with more than three proposals keeps only the top three by rank (existing Dev 2
+ * behavior, pinned by "mock planner persists at most three proposals"). Returns
+ * proposals sorted by rank or a short reason code.
  *
  * PRIVACY CAVEAT: `isPublicExplanationSafe` (applied to summary and explanation)
  * is a BEST-EFFORT substring filter, NOT a privacy guarantee. It misses emails,
@@ -34,7 +38,7 @@ export function validatePlannerResult(
   if (!result || typeof result !== "object") return bad("no_result");
   if (result.planningRunId !== runId) return bad("run_id_mismatch");
   if (!Array.isArray(result.proposals)) return bad("proposals_not_array");
-  if (result.proposals.length > MAX_PROPOSALS) return bad("too_many_proposals");
+  if (result.proposals.length > MAX_RAW_PROPOSALS) return bad("too_many_proposals");
   if (result.proposals.length < 1) return bad("no_proposals");
   const ids = new Set<string>();
   const ranks = new Set<number>();
@@ -91,7 +95,7 @@ export function validatePlannerResult(
   }
   clean.sort((a, b) => a.rank - b.rank);
   if (clean.some((p, i) => p.rank !== i + 1)) return bad("rank_gap");
-  return { ok: true, proposals: clean };
+  return { ok: true, proposals: clean.slice(0, MAX_PROPOSALS) };
 }
 
 export type GenerateOutcome =

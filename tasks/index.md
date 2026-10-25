@@ -29,7 +29,7 @@ Core API lane only. Other lanes own their tasks separately.
 | DEV1-005 | done | DEV1-004 | Member setup + weekly settings UI |
 | DEV1-006 | done | DEV1-005 | Planning + proposals UI |
 | DEV1-007 | ready | DEV1-006 | Voting, veto, confirmed event, notifications mocks |
-| DEV1-008 | backlog | DEV1-007 | Gate 1 mobile exit |
+| DEV1-008 | ready | DEV1-007 | Gate 1 mobile exit |
 | DEV1-009 | backlog | DEV1-008, GATE2-EXIT | Gate 3: real OTP/session (GATE2-EXIT not yet defined) |
 | DEV1-010 | backlog | DEV1-009 | Gate 3: real API groups + setup |
 | DEV1-011 | backlog | DEV1-010 | Gate 3: real API planning/voting/events/notifications |

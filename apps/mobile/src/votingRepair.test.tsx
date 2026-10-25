@@ -220,11 +220,11 @@ describe("proposal-switch races and unmount", () => {
     const r = await render(view("p1"));
     await fireEvent.press(await screen.findByTestId("vote-approve-p1"));
     await r.rerender(view("p2"));
-    await screen.findByText("Interested: 7 | Can't make it: 8");
+    await screen.findByText("Yes: 7 | Can't make it: 8");
     await act(async () => vote.resolve(VOTE_OK));
     await act(async () => refresh.resolve(st({ proposalId: "p1", approveCount: 99, cantMakeItCount: 99 })));
     expect(screen.queryByText(/99/)).toBeNull();
-    expect(screen.getByText("Interested: 7 | Can't make it: 8")).toBeTruthy();
+    expect(screen.getByText("Yes: 7 | Can't make it: 8")).toBeTruthy();
     expect(screen.queryByText(GENERIC)).toBeNull();
     // p2 controls are live (not stuck busy from p1)
     expect(screen.getByTestId("vote-approve-p2").props.accessibilityState?.disabled ?? false).toBeFalsy();
@@ -274,7 +274,7 @@ describe("proposal-switch races and unmount", () => {
     const view = (id: string) => wrap(v, <VoteSection proposalId={id} />);
     const r = await render(view("p1"));
     await r.rerender(view("p2"));
-    await screen.findByText("Interested: 5 | Can't make it: 6");
+    await screen.findByText("Yes: 5 | Can't make it: 6");
     await act(async () => d.resolve(st({ proposalId: "p1", approveCount: 42, cantMakeItCount: 42 })));
     expect(screen.queryByText(/42/)).toBeNull();
   });
@@ -373,8 +373,8 @@ describe("action vs refresh failure messaging", () => {
     );
     await render(wrap(client({ getVoteState }), <VoteSection proposalId="p1" />));
     await fireEvent.press(await screen.findByTestId("vote-approve-p1"));
-    await screen.findByText("Your vote: Interested");
-    expect(screen.getByText("Interested: 4 | Can't make it: 1")).toBeTruthy();
+    await screen.findByText("Your vote: Yes");
+    expect(screen.getByText("Yes: 4 | Can't make it: 1")).toBeTruthy();
     expect(screen.queryByText(GENERIC)).toBeNull();
     expect(screen.queryByText(RECORDED_BUT)).toBeNull();
   });
@@ -400,7 +400,7 @@ describe("voteAllowed independent of status strings", () => {
   ];
   test.each(cases)("status=%s voteAllowed=%s => vote controls shown=%s", async (status, voteAllowed, shown) => {
     await render(wrap(client({ getVoteState: async (id) => st({ proposalId: id, status, voteAllowed }) }), <VoteSection proposalId="p1" />));
-    await screen.findByText(/Interested: 3/);
+    await screen.findByText(/Yes: 3/);
     expect(!!screen.queryByTestId("vote-approve-p1")).toBe(shown);
     expect(!!screen.queryByTestId("vote-cant-make-it-p1")).toBe(shown);
     // veto is gated by voteAllowed && vetoAllowed
@@ -418,7 +418,7 @@ describe("voteAllowed independent of status strings", () => {
     await render(wrap(client({ getVoteState: async (id) => st({ proposalId: id, status: "confirmed", voteAllowed: false }) }), <VoteSection proposalId="p1" />));
     await screen.findByText("This plan is confirmed.");
     expect(screen.getByText(/Voting closes:/)).toBeTruthy();
-    expect(screen.getByText("Interested: 3 | Can't make it: 1")).toBeTruthy();
+    expect(screen.getByText("Yes: 3 | Can't make it: 1")).toBeTruthy();
   });
 
   test("voteAllowed flips to false after an action: controls disappear, confirm UI cannot linger", async () => {
@@ -525,7 +525,7 @@ describe("React StrictMode", () => {
     await render(
       <StrictMode>{wrap(client({ getVoteState, putVote, veto }), <VoteSection proposalId="p1" />)}</StrictMode>,
     );
-    await screen.findByText("Interested: 3 | Can't make it: 1");
+    await screen.findByText("Yes: 3 | Can't make it: 1");
     // harmless double fetch allowed (dev double-effect), but bounded
     expect(getVoteState.mock.calls.length).toBeLessThanOrEqual(2);
     await fireEvent.press(screen.getByTestId("vote-approve-p1"));
@@ -560,9 +560,9 @@ describe("React StrictMode", () => {
     const v = client({ getVoteState: async (id) => st({ proposalId: id, approveCount: id === "p1" ? 1 : 2 }) });
     const view = (id: string) => <StrictMode>{wrap(v, <VoteSection proposalId={id} />)}</StrictMode>;
     const r = await render(view("p1"));
-    await screen.findByText("Interested: 1 | Can't make it: 1");
+    await screen.findByText("Yes: 1 | Can't make it: 1");
     await r.rerender(view("p2"));
-    await screen.findByText("Interested: 2 | Can't make it: 1");
+    await screen.findByText("Yes: 2 | Can't make it: 1");
     expect(screen.queryByTestId("vote-approve-p1")).toBeNull();
   });
 

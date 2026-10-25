@@ -12,6 +12,8 @@ type GroupsState = {
   groups: GroupResponse[];
   // Error from the last failed listGroups (code only, no body or token); null when the load succeeded.
   loadError: GroupError | null;
+  // True until the first listGroups attempt settles; always false for clients without listGroups.
+  loading: boolean;
   reloadGroups: () => void;
   createGroup: (name: string) => Promise<GroupResponse>;
   joinByToken: (token: string) => Promise<GroupResponse>;
@@ -23,6 +25,7 @@ export function GroupsProvider({ client, children }: { client: GroupClient; chil
   const [groups, setGroups] = useState<GroupResponse[]>([]);
   const [loadError, setLoadError] = useState<GroupError | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
+  const [loading, setLoading] = useState(!!client.listGroups);
   const reloadGroups = useCallback(() => {
     setLoadError(null);
     setLoadAttempt((n) => n + 1);
@@ -38,11 +41,14 @@ export function GroupsProvider({ client, children }: { client: GroupClient; chil
     client.listGroups().then(
       (list) => {
         if (!active) return;
+        setLoading(false);
         setLoadError(null);
         setGroups((prev) => [...list, ...prev.filter((p) => !list.some((g) => g.id === p.id))]);
       },
       (e) => {
-        if (active) setLoadError(e instanceof GroupError ? e : new GroupError("server"));
+        if (!active) return;
+        setLoading(false);
+        setLoadError(e instanceof GroupError ? e : new GroupError("server"));
       },
     );
     return () => {
@@ -68,8 +74,8 @@ export function GroupsProvider({ client, children }: { client: GroupClient; chil
   );
 
   const value = useMemo(
-    () => ({ client, groups, loadError, reloadGroups, createGroup, joinByToken }),
-    [client, groups, loadError, reloadGroups, createGroup, joinByToken],
+    () => ({ client, groups, loadError, loading, reloadGroups, createGroup, joinByToken }),
+    [client, groups, loadError, loading, reloadGroups, createGroup, joinByToken],
   );
   return <GroupsContext.Provider value={value}>{children}</GroupsContext.Provider>;
 }

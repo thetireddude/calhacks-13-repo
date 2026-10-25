@@ -1,6 +1,9 @@
 import { BricolageGrotesque_700Bold, BricolageGrotesque_800ExtraBold } from "@expo-google-fonts/bricolage-grotesque";
 import { DMSans_400Regular, DMSans_500Medium, DMSans_700Bold } from "@expo-google-fonts/dm-sans";
 import { useFonts } from "expo-font";
+import { useEffect, useState } from "react";
+
+export const FONT_LOAD_TIMEOUT_MS = 4000;
 
 export type FontState = "loading" | "loaded" | "failed";
 
@@ -13,5 +16,11 @@ export function useAppFonts(): FontState {
     DMSans_500Medium,
     DMSans_700Bold,
   });
-  return loaded ? "loaded" : error ? "failed" : "loading";
+  const [timedOut, setTimedOut] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setTimedOut(true), FONT_LOAD_TIMEOUT_MS);
+    return () => clearTimeout(t);
+  }, []);
+  // If loading never settles, proceed with system fonts rather than rendering nothing forever.
+  return loaded ? "loaded" : error || timedOut ? "failed" : "loading";
 }

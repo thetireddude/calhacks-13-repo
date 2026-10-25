@@ -1,8 +1,7 @@
 import type { ConfirmedEventResponse } from "@gather/contracts";
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { Pressable, View } from "react-native";
-import type { StyleProp, ViewStyle } from "react-native";
+import { View } from "react-native";
 
 import { useGroups } from "./groupsState";
 import { AppText, Banner, Button, Card, Chip, EmptyState, Screen, VoteButton } from "./ui";
@@ -45,35 +44,6 @@ const GENERIC_ERROR = "Something went wrong. Please try again.";
 const SESSION_EXPIRED = "Your session has expired. Please sign out and sign in again.";
 const errorText = (e: unknown) =>
   e instanceof VotingError && e.code === "unauthenticated" ? SESSION_EXPIRED : GENERIC_ERROR;
-
-// The shared Button/VoteButton take no testID, so this wrapper carries the testID and disabled state while
-// the real control inside (accessible, labelled) takes the touch. Both fire the same handler.
-function Tap({
-  testID,
-  disabled,
-  onPress,
-  children,
-  style,
-}: {
-  testID: string;
-  disabled: boolean;
-  onPress: () => void;
-  children: ReactNode;
-  style?: StyleProp<ViewStyle>;
-}) {
-  return (
-    <Pressable
-      accessible={false}
-      testID={testID}
-      disabled={disabled}
-      accessibilityState={{ disabled }}
-      onPress={onPress}
-      style={style}
-    >
-      {children}
-    </Pressable>
-  );
-}
 
 // Renders backend-provided vote state for one proposal. Statuses are SPEC section 11 stubs; nothing here
 // computes majority, deadlines, veto scope, revision or confirmation. Veto is its own control and its own
@@ -192,57 +162,67 @@ function VoteSectionBody({ proposalId }: { proposalId: string }) {
       {state.approveCount !== undefined && state.cantMakeItCount !== undefined ? (
         <Card tone="sky" style={{ gap: 4 }}>
           <AppText variant="label">Group so far</AppText>
-          <AppText>{`Interested: ${state.approveCount} | Can't make it: ${state.cantMakeItCount}`}</AppText>
+          <AppText>{`Yes: ${state.approveCount} | Can't make it: ${state.cantMakeItCount}`}</AppText>
         </Card>
       ) : (
         <AppText variant="small" muted>Vote counts are not available yet.</AppText>
       )}
       {state.myVeto ? <AppText>You vetoed this proposal.</AppText> : null}
       {state.myChoice ? (
-        <AppText>{`Your vote: ${state.myChoice === "approve" ? "Interested" : "Can't make it"}`}</AppText>
+        <AppText>{`Your vote: ${state.myChoice === "approve" ? "Yes" : "Can't make it"}`}</AppText>
       ) : null}
       {canVote ? (
         <View style={{ gap: 8 }}>
           <View style={{ flexDirection: "row", gap: 12 }}>
-            <Tap testID={`vote-approve-${proposalId}`} disabled={busy} style={{ flex: 1, flexDirection: "row" }} onPress={approve}>
-              <VoteButton kind="yes" selected={state.myChoice === "approve"} disabled={busy} onPress={approve} />
-            </Tap>
-            <Tap
-              testID={`vote-cant-make-it-${proposalId}`}
+            <VoteButton
+              testID={`vote-approve-${proposalId}`}
+              kind="yes"
+              selected={state.myChoice === "approve"}
               disabled={busy}
-              style={{ flex: 1, flexDirection: "row" }}
+              onPress={approve}
+            />
+            <VoteButton
+              testID={`vote-cant-make-it-${proposalId}`}
+              kind="cant_make_it"
+              selected={state.myChoice === "cant_make_it"}
+              disabled={busy}
               onPress={cantMakeIt}
-            >
-              <VoteButton
-                kind="cant_make_it"
-                selected={state.myChoice === "cant_make_it"}
-                disabled={busy}
-                onPress={cantMakeIt}
-              />
-            </Tap>
+            />
           </View>
-          <AppText variant="small" muted>
-            {"'Can't make it' is just a timing note. The plan can still go ahead."}
-          </AppText>
+          {/* VoteChoice has no "suggest another"; shown disabled until a SPEC section 9 change lands. */}
+          <Button
+            title="Suggest another (not available yet)"
+            variant="outline"
+            testID={`vote-suggest-${proposalId}`}
+            disabled
+            onPress={() => {}}
+          />
         </View>
       ) : null}
       {canVote && state.vetoAllowed ? (
         <Card tone="peach" style={{ gap: 8 }}>
-          <AppText variant="small">A veto is an objection. It sends the plan back for a revise, nothing personal.</AppText>
+          <AppText variant="small">A veto is separate from your vote.</AppText>
           {confirmingVeto ? (
             <View style={{ gap: 8 }}>
               <AppText>Veto this proposal? This is not the same as Can&apos;t make it.</AppText>
-              <Tap testID={`veto-confirm-${proposalId}`} disabled={busy} onPress={veto}>
-                <Button title="Confirm veto" icon="stop" disabled={busy} onPress={veto} />
-              </Tap>
-              <Tap testID={`veto-cancel-${proposalId}`} disabled={busy} onPress={cancelVeto}>
-                <Button title="Cancel" variant="secondary" disabled={busy} onPress={cancelVeto} />
-              </Tap>
+              <Button testID={`veto-confirm-${proposalId}`} title="Confirm veto" icon="stop" disabled={busy} onPress={veto} />
+              <Button
+                testID={`veto-cancel-${proposalId}`}
+                title="Cancel"
+                variant="secondary"
+                disabled={busy}
+                onPress={cancelVeto}
+              />
             </View>
           ) : (
-            <Tap testID={`veto-${proposalId}`} disabled={busy} onPress={askVeto}>
-              <Button title="Veto this proposal" variant="outline" icon="stop" disabled={busy} onPress={askVeto} />
-            </Tap>
+            <Button
+              testID={`veto-${proposalId}`}
+              title="Veto this proposal"
+              variant="outline"
+              icon="stop"
+              disabled={busy}
+              onPress={askVeto}
+            />
           )}
         </Card>
       ) : null}

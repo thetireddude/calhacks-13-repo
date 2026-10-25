@@ -5,7 +5,7 @@
  * Screen        { scroll?, edges?, style?, contentStyle?, children }  cream/night bg, 24 padding, safe area.
  *                 edges defaults to ["top","left","right"]; pass [] (or ["left","right"]) under a navigation header.
  * AppText       { variant?: display|title|heading|body|small|label (default body), muted?, color?, ...TextProps }
- * Button        { title, onPress, variant?: primary|secondary|outline (default primary), disabled?, busy?,
+ * Button        { title, onPress, testID?, variant?: primary|secondary|outline (default primary), disabled?, busy?,
  *                 accessibilityLabel? (defaults to title), icon?: IconName, style? }  56 high pill; busy shows a spinner and blocks presses.
  * TextField     { label, error?, helper?, ...TextInputProps }  16 radius peach border; accessibilityLabel defaults to label;
  *                 the error renders with role "alert".
@@ -13,10 +13,10 @@
  *                 24 radius. With onPress it is a button.
  * Chip          { tone: voting|vetoed|confirmed|planning, label? (defaults to the status name) }
  * AvatarStack   { names: string[], max?: number (default 5) }  pastel initial circles, then "+N" for the rest.
- * Banner        { tone?: error|info (default error), message, onRetry?, retryLabel? (default "Retry") }  info is butter.
+ * Banner        { tone?: error|info (default error), message, onRetry?, retryLabel? (default "Retry"), retryBusy? }  info is butter.
  * EmptyState    { title, message?, action?: ReactNode }
  * Skeleton      { height?, width?, radius?, style? }  placeholder block (accessibilityLabel "Loading").
- * VoteButton    { kind: yes|cant_make_it|veto, selected?, disabled?, onPress, accessibilityLabel? }
+ * VoteButton    { kind: yes|cant_make_it|veto, selected?, disabled?, onPress, accessibilityLabel?, testID? }
  *                 Labels "Yes", "Can't make it", "Veto". Veto = solid outline + stop icon; cant_make_it = dashed, calm.
  *                 There is deliberately no "maybe" kind (no contract support).
  * Toggle        { label, value, onValueChange, disabled? }  switch row.
@@ -130,9 +130,11 @@ export function Button({
   accessibilityLabel,
   icon,
   style,
+  testID,
 }: {
   title: string;
   onPress: () => void;
+  testID?: string;
   variant?: ButtonVariant;
   disabled?: boolean;
   busy?: boolean;
@@ -147,6 +149,7 @@ export function Button({
   const border = variant === "outline" && !inactive ? colors.ink : "transparent";
   return (
     <Pressable
+      testID={testID}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? title}
       accessibilityState={{ disabled: inactive, busy: !!busy }}
@@ -199,7 +202,7 @@ export function TextField({
             minHeight: tap.button,
             borderRadius: radius.input,
             borderWidth: 2,
-            borderColor: error ? colors.danger : colors.peach,
+            borderColor: error ? colors.danger : colors.muted,
             backgroundColor: colors.surface,
             color: colors.ink,
             paddingHorizontal: 16,
@@ -332,18 +335,18 @@ export function Banner({
   message,
   onRetry,
   retryLabel = "Retry",
+  retryBusy = false,
 }: {
   tone?: "error" | "info";
   message: string;
   onRetry?: () => void;
   retryLabel?: string;
+  retryBusy?: boolean;
 }) {
   const { colors, type, bold, radius } = useTheme();
   const isError = tone === "error";
   return (
     <View
-      accessible={isError}
-      accessibilityRole={isError ? "alert" : undefined}
       style={{
         flexDirection: "row",
         alignItems: "center",
@@ -355,18 +358,26 @@ export function Banner({
       }}
     >
       <Icon name={isError ? "alert" : "refresh"} color={isError ? colors.danger : colors.ink} />
-      <Text style={[type.small, { color: colors.ink, flex: 1 }]}>{message}</Text>
+      <Text
+        accessibilityRole="alert"
+        accessibilityLiveRegion="polite"
+        style={[type.small, { color: colors.ink, flex: 1 }]}
+      >
+        {message}
+      </Text>
       {onRetry ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={retryLabel}
+          accessibilityState={{ disabled: retryBusy, busy: retryBusy }}
+          disabled={retryBusy}
           onPress={onRetry}
           style={{
             minHeight: 48,
             minWidth: 48,
             justifyContent: "center",
             borderRadius: radius.pill,
-            backgroundColor: colors.ink,
+            backgroundColor: retryBusy ? colors.muted : colors.ink,
             paddingHorizontal: 18,
           }}
         >
@@ -398,16 +409,18 @@ export function Skeleton({
   width = "100%",
   radius: r = 8,
   style,
+  accessibilityLabel = "Loading",
 }: {
   height?: number;
   width?: number | `${number}%`;
   radius?: number;
   style?: StyleProp<ViewStyle>;
+  accessibilityLabel?: string;
 }) {
   const { colors } = useTheme();
   return (
     <View
-      accessibilityLabel="Loading"
+      accessibilityLabel={accessibilityLabel}
       style={[{ height, width, borderRadius: r, backgroundColor: colors.peach }, style]}
     />
   );
@@ -432,7 +445,9 @@ export function VoteButton({
   disabled = false,
   onPress,
   accessibilityLabel,
+  testID,
 }: {
+  testID?: string;
   kind: VoteKind;
   selected?: boolean;
   disabled?: boolean;
@@ -443,6 +458,7 @@ export function VoteButton({
   const v = disabled ? { bg: colors.peach, fg: colors.muted, border: colors.peach } : voteColors(kind, selected, colors);
   return (
     <Pressable
+      testID={testID}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? voteLabels[kind]}
       accessibilityState={{ selected, disabled }}
@@ -485,14 +501,16 @@ export function Toggle({
   const { colors } = useTheme();
   return (
     <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 48, gap: 12 }}>
-      <AppText style={{ flex: 1 }}>{label}</AppText>
+      <AppText style={{ flex: 1 }} accessibilityElementsHidden importantForAccessibility="no">
+        {label}
+      </AppText>
       <Switch
         accessibilityLabel={label}
         value={value}
         onValueChange={onValueChange}
         disabled={disabled}
-        trackColor={{ true: colors.coral, false: colors.peach }}
-        thumbColor="#FFFFFF"
+        trackColor={{ true: colors.coral, false: colors.muted }}
+        thumbColor={value ? "#FFFFFF" : colors.surface}
       />
     </View>
   );

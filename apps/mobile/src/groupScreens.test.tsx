@@ -183,3 +183,15 @@ test("a link received while another tab is focused opens the group; failures sho
   await screen.findByText("Seed Friends");
   expect(screen.queryByText("Planning placeholder")).toBeNull();
 });
+
+test("groups list shows loading skeletons until the first listGroups settles", async () => {
+  let resolve: (g: never[]) => void = () => {};
+  const base = createMockGroupClient();
+  const client: GroupClient = { ...base, listGroups: () => new Promise((r) => (resolve = r)) };
+  await renderSignedIn(client, false);
+  expect((await screen.findAllByLabelText("Loading groups")).length).toBeGreaterThan(0);
+  expect(screen.queryByText("No groups yet.")).toBeNull();
+  await act(async () => resolve([]));
+  await screen.findByText("No groups yet.");
+  expect(screen.queryByLabelText("Loading groups")).toBeNull();
+});

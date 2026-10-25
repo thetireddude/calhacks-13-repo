@@ -113,7 +113,38 @@ test("Banner shows retry only when provided and calls it", async () => {
   await fireEvent.press(screen.getByRole("button", { name: "Retry" }));
   expect(onRetry).toHaveBeenCalledTimes(1);
   await rerender(<Banner tone="info" message="Reconnecting." />);
-  expect(screen.queryByRole("alert")).toBeNull();
+  expect(screen.getByRole("alert")).toBeTruthy();
+});
+
+test("Banner: message is the alert and Retry is its own focusable element, not swallowed by a parent", async () => {
+  await render(<Banner message="Planning did not finish." onRetry={() => {}} retryLabel="Try again" />);
+  expect(screen.getByRole("alert")).toHaveTextContent("Planning did not finish.");
+  const retry = screen.getByRole("button", { name: "Try again" });
+  expect(retry.props.accessible).not.toBe(false);
+  for (let n = retry.parent; n; n = n.parent) expect(n.props.accessible).not.toBe(true);
+});
+
+function luminance(hex: string): number {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) =>
+    v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4,
+  );
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+const contrast = (a: string, b: string) => {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+};
+
+test("input border and toggle off-track (muted) reach 3:1 against bg and surface in both schemes", () => {
+  for (const c of [lightColors, darkColors]) {
+    expect(contrast(c.muted, c.bg)).toBeGreaterThanOrEqual(3);
+    expect(contrast(c.muted, c.surface)).toBeGreaterThanOrEqual(3);
+  }
+});
+
+test("Toggle exposes the label once (visible label hidden from accessibility)", async () => {
+  await render(<Toggle label="Learn my patterns" value onValueChange={() => {}} />);
+  expect(screen.getAllByLabelText("Learn my patterns")).toHaveLength(1);
 });
 
 test("Card, EmptyState, Skeleton, Toggle, AppText render", async () => {

@@ -308,10 +308,10 @@ describe("screens with real clients and polling", () => {
     await open(createMockPlanningClient("three"), voting);
     await fireEvent.press(screen.getByText("Start planning"));
     await screen.findByText("#1 Option 1: Saturday hike");
-    expect(screen.queryByText(/Interested: /)).toBeNull();
+    expect(screen.queryByText(/Yes: /)).toBeNull();
     expect(screen.getAllByText("Vote counts are not available yet.").length).toBeGreaterThan(0);
     await fireEvent.press((await screen.findAllByText("Yes"))[0]!);
-    await screen.findByText("Your vote: Interested");
+    await screen.findByText("Your vote: Yes");
   });
 
   // Last on purpose: unmounting the whole navigation tree leaves state that breaks later renders.

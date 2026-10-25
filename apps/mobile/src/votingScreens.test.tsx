@@ -50,9 +50,10 @@ test("open voting shows deadline, aggregate counts, vote and separate veto contr
   await setup({ vote: "open" });
   await openProposals();
   await screen.findAllByText(`Voting closes: ${FIXTURE_DEADLINE}`);
-  expect(screen.getAllByText("Interested: 3 | Can't make it: 1")).toHaveLength(3);
+  expect(screen.getAllByText("Yes: 3 | Can't make it: 1")).toHaveLength(3);
   expect(screen.getByTestId("vote-approve-proposal-1")).toBeTruthy();
   expect(screen.getByTestId("veto-proposal-1")).toBeTruthy();
+  expect(screen.getByTestId("vote-suggest-proposal-1").props.accessibilityState?.disabled).toBe(true);
   expect(screen.queryByTestId("vote-banner-proposal-1")).toBeNull();
 });
 
@@ -90,13 +91,13 @@ test("veto and Can't make it are distinct controls that make distinct client cal
   expect(veto).toHaveBeenCalledTimes(1);
 });
 
-test("Interested sends the approve choice only", async () => {
+test("Yes sends the approve choice only", async () => {
   const base = createMockVotingClient();
   const putVote = jest.fn(base.putVote);
   await setup({ ...base, putVote });
   await openProposals();
   await fireEvent.press(await screen.findByTestId("vote-approve-proposal-2"));
-  await screen.findByText("Your vote: Interested");
+  await screen.findByText("Your vote: Yes");
   expect(putVote).toHaveBeenCalledWith("proposal-2", { choice: "approve" });
 });
 
@@ -170,7 +171,7 @@ test("empty notification feed shows a neutral message", async () => {
 test("only aggregate counts are rendered: no per-member votes or private data", async () => {
   await setup({ vote: "open" });
   await openProposals();
-  await screen.findAllByText("Interested: 3 | Can't make it: 1");
+  await screen.findAllByText("Yes: 3 | Can't make it: 1");
   expect(screen.queryByText(/user-me|availability|preference/i)).toBeNull();
   expect(screen.queryByText(/voted (for|approve)/i)).toBeNull();
 });

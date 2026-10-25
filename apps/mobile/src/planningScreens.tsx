@@ -67,7 +67,6 @@ export function ProposalList({ proposals }: { proposals: Proposal[] }) {
               <AppText variant="small">{p.explanation}</AppText>
             </View>
           ) : null}
-          <AppText style={bold}>Vote on this →</AppText>
           <VoteSection proposalId={p.proposalId} />
         </Card>
       ))}
@@ -136,8 +135,8 @@ function RunView({
         </View>
       );
     case "failed":
-      // onRetry stays wired while busy: the work() ref guard drops double presses (tested).
-      return <Banner message="Planning did not finish. You can try again." retryLabel="Try again" onRetry={onRetry} />;
+      // retryBusy disables the button while in flight; the work() ref guard also drops double presses (tested).
+      return <Banner message="Planning did not finish. You can try again." retryLabel="Try again" retryBusy={busy} onRetry={onRetry} />;
     default:
       return (
         <View style={{ gap: 12 }}>

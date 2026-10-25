@@ -44,7 +44,7 @@ const EDGES: ("left" | "right")[] = ["left", "right"];
 const GROUP_TONES: CardTone[] = ["peach", "mint", "sky"];
 
 export function GroupListScreen({ navigation }: Props<"GroupList">) {
-  const { groups, loadError, reloadGroups, joinByToken } = useGroups();
+  const { groups, loadError, loading, reloadGroups, joinByToken } = useGroups();
   const [token, setToken] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -70,7 +70,13 @@ export function GroupListScreen({ navigation }: Props<"GroupList">) {
       </AppText>
       <Button title="Create group" icon="plus" onPress={() => navigation.navigate("CreateGroup")} />
       {loadError ? <Banner message={groupErrorMessage(loadError)} onRetry={reloadGroups} /> : null}
-      {groups.length === 0 && !loadError ? (
+      {loading && groups.length === 0 && !loadError ? (
+        <>
+          <Skeleton height={72} radius={24} accessibilityLabel="Loading groups" />
+          <Skeleton height={72} radius={24} accessibilityLabel="Loading groups" />
+        </>
+      ) : null}
+      {!loading && groups.length === 0 && !loadError ? (
         <EmptyState title="No groups yet." message="Create a group or join one with an invite." />
       ) : null}
       {groups.length > 0 ? <AppText variant="label" muted>{`${groups.length} ${groups.length === 1 ? "group" : "groups"}`}</AppText> : null}

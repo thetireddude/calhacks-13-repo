@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { Linking } from "react-native";
 
 import { AuthProvider, createMockAuthClient } from "./auth";
@@ -137,4 +137,23 @@ test("proposal fetch failure shows an error and Refresh proposals recovers witho
   await screen.findByText("#1 Option 1: Saturday hike");
   expect(screen.queryByText("Something went wrong. Please try again.")).toBeNull();
   expect(createRun).toHaveBeenCalledTimes(1);
+});
+
+test("double-pressing Try again issues exactly one retryRun and shows the retry as busy", async () => {
+  const base = createMockPlanningClient("failed");
+  let finish: () => void = () => {};
+  const retryRun = jest.fn(
+    (id: string) =>
+      new Promise<Awaited<ReturnType<PlanningClient["getRun"]>>>((resolve) => {
+        finish = () => void base.getRun(id).then(resolve);
+      }),
+  );
+  await openPlanning({ ...base, retryRun });
+  await fireEvent.press(screen.getByText("Start planning"));
+  await screen.findByText("Planning did not finish. You can try again.");
+  await fireEvent.press(screen.getByText("Try again"));
+  await fireEvent.press(screen.getByText("Try again"));
+  expect(retryRun).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole("button", { name: "Try again" }).props.accessibilityState).toMatchObject({ busy: true });
+  await act(async () => finish());
 });

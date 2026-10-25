@@ -25,7 +25,8 @@
 | — | GATE0-002 | core-api | **done** (merged `76a97e7`) |
 | P0 | DEV2-001 | core-api | **implementing** (subagent) |
 | P0 | DEV1-001 | mobile | **implementing** (subagent) |
-| Next | DEV2-002, DEV3-001, DEV1-002 | — | queued after W2 |
+| Next | GATE0-003 tri-review, DEV3-001 | — | ready after Dev 1/3 pull main |
+| Next | DEV2-002 | core-api | queued after DEV2-001 merges |
 
 ## Blockers (from SPEC §11 — do not guess)
 

@@ -6,17 +6,32 @@ import { createApp } from "./app.js";
 
 const TEST_SECRET = "dev-test-jwt-secret-at-least-32-chars!!";
 
-async function signTestToken(sub: string): Promise<string> {
+async function signTestToken(
+  sub: string,
+  opts?: { issuer?: string; audience?: string },
+): Promise<string> {
   const key = createSecretKey(Buffer.from(TEST_SECRET, "utf8"));
-  return new SignJWT({ role: "authenticated" })
+  let jwt = new SignJWT({ role: "authenticated" })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(sub)
     .setIssuedAt()
-    .setExpirationTime("2h")
-    .sign(key);
+    .setExpirationTime("2h");
+  if (opts?.issuer) {
+    jwt = jwt.setIssuer(opts.issuer);
+  }
+  if (opts?.audience) {
+    jwt = jwt.setAudience(opts.audience);
+  }
+  return jwt.sign(key);
+}
+
+function clearJwtClaimEnv(): void {
+  delete process.env.SUPABASE_JWT_ISSUER;
+  delete process.env.SUPABASE_JWT_AUDIENCE;
 }
 
 test("GET /v1/me without token returns 401", async () => {
+  clearJwtClaimEnv();
   process.env.SUPABASE_JWT_SECRET = TEST_SECRET;
   const app = await createApp();
   const res = await app.inject({ method: "GET", url: "/v1/me" });
@@ -26,6 +41,7 @@ test("GET /v1/me without token returns 401", async () => {
 });
 
 test("GET /v1/me with invalid token returns 401", async () => {
+  clearJwtClaimEnv();
   process.env.SUPABASE_JWT_SECRET = TEST_SECRET;
   const app = await createApp();
   const res = await app.inject({
@@ -39,8 +55,50 @@ test("GET /v1/me with invalid token returns 401", async () => {
 });
 
 test("GET /v1/me with valid token returns user id", async () => {
+  clearJwtClaimEnv();
   process.env.SUPABASE_JWT_SECRET = TEST_SECRET;
   const token = await signTestToken("user-abc");
+  const app = await createApp();
+  const res = await app.inject({
+    method: "GET",
+    url: "/v1/me",
+    headers: { authorization: `Bearer ${token}` },
+  });
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(res.json(), {
+    id: "user-abc",
+    profile: { displayName: null },
+  });
+  await app.close();
+});
+
+test("GET /v1/me rejects token with wrong issuer when SUPABASE_JWT_ISSUER is set", async () => {
+  clearJwtClaimEnv();
+  process.env.SUPABASE_JWT_SECRET = TEST_SECRET;
+  process.env.SUPABASE_JWT_ISSUER = "https://example.supabase.co/auth/v1";
+  const token = await signTestToken("user-abc", {
+    issuer: "https://wrong.supabase.co/auth/v1",
+  });
+  const app = await createApp();
+  const res = await app.inject({
+    method: "GET",
+    url: "/v1/me",
+    headers: { authorization: `Bearer ${token}` },
+  });
+  assert.equal(res.statusCode, 401);
+  assert.deepEqual(res.json(), { error: "unauthorized" });
+  await app.close();
+});
+
+test("GET /v1/me accepts token matching configured issuer and audience", async () => {
+  clearJwtClaimEnv();
+  process.env.SUPABASE_JWT_SECRET = TEST_SECRET;
+  process.env.SUPABASE_JWT_ISSUER = "https://example.supabase.co/auth/v1";
+  process.env.SUPABASE_JWT_AUDIENCE = "authenticated";
+  const token = await signTestToken("user-abc", {
+    issuer: "https://example.supabase.co/auth/v1",
+    audience: "authenticated",
+  });
   const app = await createApp();
   const res = await app.inject({
     method: "GET",

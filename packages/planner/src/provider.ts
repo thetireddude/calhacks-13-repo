@@ -12,7 +12,13 @@ export interface ProviderAdapterConfig {
   readonly model?: string;
 }
 
-export interface CreaoAppConfig { readonly appId: string; readonly apiKey: string; readonly baseUrl?: string; }
+export interface CreaoAppConfig {
+  readonly appId: string;
+  readonly apiKey: string;
+  readonly baseUrl?: string;
+  readonly pollIntervalMs?: number;
+  readonly maxPollAttempts?: number;
+}
 
 /** App-scoped CREAO API Trigger adapter; poll-only, with no conversation reuse. */
 export class CreaoAppEvaluationProvider implements PersonalEvaluationProvider {
@@ -29,13 +35,23 @@ export class CreaoAppEvaluationProvider implements PersonalEvaluationProvider {
     }
     const { id } = await created.json() as { id?: string };
     if (!id) throw new ProviderUnavailableError("Creao did not return a run id");
-    for (let attempt = 0; attempt < 20; attempt += 1) {
+    const pollIntervalMs = this.config.pollIntervalMs ?? 1_000;
+    const maxPollAttempts = this.config.maxPollAttempts ?? 60;
+    for (let attempt = 0; attempt < maxPollAttempts; attempt += 1) {
       const polled = await this.fetchImpl(`${base}/api/v1/apps/${this.config.appId}/runs/${id}`, { headers: { Authorization: `Bearer ${this.config.apiKey}` } });
+      if (polled.status === 429) {
+        const retryAfterSeconds = Number(polled.headers.get("retry-after"));
+        const delay = Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
+          ? retryAfterSeconds * 1_000
+          : Math.max(pollIntervalMs, 2_000);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
       const run = await polled.json() as { status?: string; result?: { text?: string } };
       if (!polled.ok) throw new ProviderUnavailableError(`Creao run poll failed (${polled.status})`);
       if (run.status === "completed") return parsePersonalEvaluation(JSON.parse(run.result?.text ?? ""));
       if (run.status === "failed" || run.status === "cancelled") throw new ProviderUnavailableError(`Creao run ${run.status}`);
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
     }
     throw new ProviderUnavailableError("Creao run timed out");
   }

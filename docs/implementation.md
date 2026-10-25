@@ -40,7 +40,7 @@ It does not create root workspace tooling. Funcheap and DoTheBay remain deferred
 
 ### External verification status
 
-- A live Creao smoke request was attempted with the locally configured app ID and `capi_` key. Creao returned HTTP 403 before a run was created. The keys were present, trimmed, and had the expected `capi_` prefix; no secret was displayed or stored. The remaining external action is to verify that the app-scoped key was created from this agent's **API Trigger** panel and still belongs to the displayed app. The implementation fails closed with an actionable error until then.
+- Creao app-trigger authorization was verified by a live run creation after the app-scoped key was updated. The initial polling window was too short for the asynchronous run, so the adapter now polls for up to one minute by default before failing closed. No secret was displayed or stored.
 - Bright Data source normalization is implemented. Live Yelp/Facebook verification waits for their running snapshots or a fresh small request; Google Street View is intentionally not used.
 
 ### Next action after Gate 0

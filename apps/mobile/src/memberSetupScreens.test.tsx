@@ -51,7 +51,7 @@ test("preferences save, reload, and learning toggle is shown accurately", async 
   await screen.findByText("Saved: learning is off.");
   await fireEvent.changeText(screen.getByLabelText("Activity preferences"), "hiking, games");
   await fireEvent.changeText(screen.getByLabelText("Maximum budget"), "40");
-  await fireEvent(screen.getByLabelText("Learning opt-in"), "valueChange", true);
+  await fireEvent(screen.getByLabelText("Learn from my history"), "valueChange", true);
   await screen.findByText("Unsaved change.");
   expect(screen.getByText("Saved: learning is off.")).toBeTruthy();
   await fireEvent.press(screen.getByText("Save preferences"));

@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { ActivityIndicator, Button, StyleSheet, Text, TextInput, View } from "react-native";
+import { View } from "react-native";
 
 import { AuthError, useAuth } from "./auth";
+import { useTheme } from "./theme";
+import { AppText, Button, Screen, TextField } from "./ui";
 
 export type SignedOutParams = {
   SignIn: undefined;
@@ -28,6 +30,7 @@ function messageFor(e: unknown): string {
 }
 
 export function SignInScreen() {
+  const { colors, bold, radius } = useTheme();
   const { signIn, signUp } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -56,13 +59,32 @@ export function SignInScreen() {
     }
   }
 
+  const bubble = { borderRadius: radius.card, paddingHorizontal: 16, paddingVertical: 12, maxWidth: "75%" } as const;
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Gather</Text>
-      <Text>Sign in or create an account.</Text>
-      <TextInput
-        accessibilityLabel="Email"
-        style={styles.input}
+    <Screen scroll edges={["left", "right"]} contentStyle={{ justifyContent: "center", flexGrow: 1 }}>
+      <View
+        accessible={false}
+        importantForAccessibility="no-hide-descendants"
+        style={{ backgroundColor: colors.peach, borderRadius: radius.card, padding: 20, gap: 12 }}
+      >
+        <View style={[bubble, { backgroundColor: colors.surface, alignSelf: "flex-start" }]}>
+          <AppText style={bold}>we should hang out soon!</AppText>
+        </View>
+        <View style={[bubble, { backgroundColor: colors.coral, alignSelf: "flex-end" }]}>
+          <AppText color={colors.onCoral} style={bold}>
+            Saturday?
+          </AppText>
+        </View>
+        <View style={[bubble, { backgroundColor: colors.butter, alignSelf: "flex-start" }]}>
+          <AppText style={bold}>I’m in. Who else?</AppText>
+        </View>
+      </View>
+      <AppText variant="display" accessibilityRole="header">
+        Turn “we should” into “see you there.”
+      </AppText>
+      <AppText muted>Plans for your people, without the group-chat shuffle.</AppText>
+      <TextField
+        label="Email"
         value={email}
         onChangeText={(t) => {
           setEmail(t);
@@ -74,9 +96,8 @@ export function SignInScreen() {
         keyboardType="email-address"
         editable={!busy}
       />
-      <TextInput
-        accessibilityLabel="Password"
-        style={styles.input}
+      <TextField
+        label="Password"
         value={password}
         onChangeText={(t) => {
           setPassword(t);
@@ -88,16 +109,13 @@ export function SignInScreen() {
         autoCorrect={false}
         editable={!busy}
       />
-      {error ? <Text accessibilityRole="alert">{error}</Text> : null}
-      {busy ? <ActivityIndicator accessibilityLabel="Working" /> : null}
-      <Button title="Sign in" onPress={() => void submit(signIn, false)} disabled={busy} />
-      <Button title="Create account" onPress={() => void submit(signUp, true)} disabled={busy} color="#666" />
-    </View>
+      {error ? (
+        <AppText variant="small" accessibilityRole="alert" color={colors.danger}>
+          {error}
+        </AppText>
+      ) : null}
+      <Button title="Sign in" icon="arrow" onPress={() => void submit(signIn, false)} busy={busy} />
+      <Button title="Create account" variant="secondary" onPress={() => void submit(signUp, true)} disabled={busy} />
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#fff", padding: 16 },
-  title: { fontSize: 32, fontWeight: "700", marginBottom: 8 },
-  input: { borderWidth: 1, borderColor: "#999", alignSelf: "stretch", margin: 12, padding: 8 },
-});

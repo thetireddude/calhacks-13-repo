@@ -1,10 +1,14 @@
-import type { RankedCandidate } from "./ranking.js";
+import type { ActivityCandidate } from "./domain.js";
+
+interface CandidateEntry {
+  readonly candidate: ActivityCandidate;
+}
 
 /** The planner may surface no more than three ranked proposals (SPEC §5). */
-export function selectProposalCandidates(
-  candidates: readonly RankedCandidate[],
+export function selectProposalCandidates<T extends CandidateEntry>(
+  candidates: readonly T[],
   now: Date = new Date(),
-): readonly RankedCandidate[] {
+): readonly T[] {
   return candidates
     .filter(({ candidate }) => hasFutureStart(candidate.startsAt, now))
     .slice(0, 3);

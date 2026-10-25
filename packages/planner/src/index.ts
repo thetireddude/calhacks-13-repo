@@ -1,5 +1,6 @@
 import type { PlannerInput, PlannerPort, PlannerResult, Proposal } from "@gather/contracts";
 import type { CandidateDiscoveryPort } from "./domain.js";
+import { selectProposalCandidates } from "./proposal-selection.js";
 import { SeededCandidateDiscovery } from "./seeded-discovery.js";
 
 export interface PlannerFactoryOptions {
@@ -14,7 +15,9 @@ export function createPlanner(options: PlannerFactoryOptions = {}): PlannerPort 
     async generatePlans(input: PlannerInput): Promise<PlannerResult> {
       if (!input.groupId.trim() || !input.planningRunId.trim()) throw new Error("groupId and planningRunId are required");
       const candidates = await discovery.discover({ limit: 3 });
-      const proposals: Proposal[] = candidates.map((candidate, index) => ({
+      const proposalCandidates = selectProposalCandidates(candidates.map((candidate) => ({ candidate })), now())
+        .map(({ candidate }) => candidate);
+      const proposals: Proposal[] = proposalCandidates.map((candidate, index) => ({
         proposalId: `${input.planningRunId}:${candidate.id}`,
         rank: index + 1,
         summary: candidate.venueName ? `${candidate.title} at ${candidate.venueName}` : candidate.title,

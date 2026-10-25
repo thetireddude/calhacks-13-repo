@@ -1,6 +1,6 @@
 # Task Index — Gather (Developer 2)
 
-Core API lane only. Other lanes own their tasks separately.
+Dev 2 owns the Core API rows below. Dev 3's planner DAG is listed after the mobile lane.
 
 | Task | Status | Depends on | Notes |
 |------|--------|------------|-------|
@@ -49,5 +49,16 @@ Core API lane only. Other lanes own their tasks separately.
 | DEV1-010 | blocked | DEV1-009 | Gate 3: real API groups + setup |
 | DEV1-011 | blocked | DEV1-010 | Gate 3: real API planning/voting/events/notifications |
 | DEV1-012 | blocked | DEV1-011 | Gate 5: mobile demo hardening |
+
+## Developer 3 (Planner)
+
+| Task | Status | Depends on | Notes |
+|------|--------|------------|-------|
+| DEV3-001 | candidate | GATE0-003, ADR-002 planner rules | Review/test existing planner vertical on `feature/planner` |
+| DEV3-002 | backlog | DEV3-001 | Planner DTO contract proposal and consumer sign-off |
+| DEV3-003 | backlog | DEV3-002 | Compose authorized input, discovery, scoring, and explanations behind `PlannerPort` |
+| DEV3-004 | blocked | DEV3-003 | Verify Creao/Claude Haiku adapter with non-committed credentials |
+| DEV3-005 | blocked | DEV3-003 | Verify Bright Data live discovery with seeded fallback |
+| GATE2-001 | backlog | DEV3-003, DEV2-023 | Integrate the real planner into the Core API |
 
 Milestone: [`docs/milestone-dag.md`](../docs/milestone-dag.md)

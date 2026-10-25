@@ -8,6 +8,7 @@ import type {
 export type GroupsStore = {
   createGroup(name: string, createdBy: string): Promise<GroupResponse>;
   getGroup(groupId: string): Promise<GroupResponse | undefined>;
+  listGroupsForUser(userId: string): Promise<GroupResponse[]>;
   isMember(groupId: string, userId: string): Promise<boolean>;
   listMembers(groupId: string): Promise<GroupMemberResponse[]>;
   createInvite(
@@ -46,6 +47,20 @@ export class InMemoryGroupsStore implements GroupsStore {
 
   async getGroup(groupId: string): Promise<GroupResponse | undefined> {
     return this.groups.get(groupId);
+  }
+
+  async listGroupsForUser(userId: string): Promise<GroupResponse[]> {
+    const groups: GroupResponse[] = [];
+    for (const [groupId, members] of this.memberships) {
+      if (!members.some((m) => m.userId === userId)) {
+        continue;
+      }
+      const group = this.groups.get(groupId);
+      if (group) {
+        groups.push(group);
+      }
+    }
+    return groups;
   }
 
   async isMember(groupId: string, userId: string): Promise<boolean> {

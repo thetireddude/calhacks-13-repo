@@ -121,6 +121,35 @@ export class SupabaseGroupsStore implements GroupsStore {
     return mapGroup(data as GroupRow);
   }
 
+  async listGroupsForUser(userId: string): Promise<GroupResponse[]> {
+    const { data: memberships, error: membershipError } = await this.client
+      .from("group_memberships")
+      .select("group_id")
+      .eq("user_id", userId);
+
+    if (membershipError) {
+      throw new Error(`list user memberships failed: ${membershipError.message}`);
+    }
+
+    const groupIds = (memberships ?? []).map(
+      (row) => (row as { group_id: string }).group_id,
+    );
+    if (groupIds.length === 0) {
+      return [];
+    }
+
+    const { data, error } = await this.client
+      .from("groups")
+      .select("id, name, created_by, created_at")
+      .in("id", groupIds);
+
+    if (error) {
+      throw new Error(`list groups for user failed: ${error.message}`);
+    }
+
+    return (data ?? []).map((row) => mapGroup(row as GroupRow));
+  }
+
   async isMember(groupId: string, userId: string): Promise<boolean> {
     const { data, error } = await this.client
       .from("group_memberships")

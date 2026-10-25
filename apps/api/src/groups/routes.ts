@@ -48,6 +48,14 @@ export function registerGroupRoutes(
     },
   );
 
+  app.get(
+    "/v1/groups",
+    { preHandler: requireAuth },
+    async (request) => ({
+      groups: await store.listGroupsForUser(request.authUser!.sub),
+    }),
+  );
+
   app.get<{ Params: { groupId: string } }>(
     "/v1/groups/:groupId",
     { preHandler: [requireAuth, memberOnly] },

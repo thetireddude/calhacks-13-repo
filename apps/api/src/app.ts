@@ -9,7 +9,7 @@ import { registerProfileRoutes } from "./me/profileRoutes.js";
 import type { ProfileStore } from "./me/profileStore.js";
 import { registerMemberSetupRoutes } from "./me/routes.js";
 import type { MemberSetupStore } from "./me/store.js";
-import { createMockPlannerPort } from "./planner/mockPlannerPort.js";
+import { createDefaultPlannerPort } from "./planner/createPlannerPort.js";
 import { createDefaultPlanningStore } from "./planning/createPlanningStore.js";
 import { registerPlanningRoutes } from "./planning/routes.js";
 import type { PlanningStore } from "./planning/store.js";
@@ -37,7 +37,7 @@ export async function createApp(options: CreateAppOptions = {}) {
     options.memberSetupStore ?? createDefaultMemberSetupStore();
   const planningStore = options.planningStore ?? createDefaultPlanningStore();
   const votingStore = options.votingStore ?? createDefaultVotingStore();
-  const plannerPort = options.plannerPort ?? createMockPlannerPort();
+  const plannerPort = options.plannerPort ?? createDefaultPlannerPort();
 
   app.get("/v1/health", async () => ({ status: "ok" as const }));
 

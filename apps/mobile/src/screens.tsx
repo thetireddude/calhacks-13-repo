@@ -145,7 +145,6 @@ function placeholder(label: string) {
   };
 }
 
-export const PlanningScreen = placeholder("Planning");
 export const EventsScreen = placeholder("Events");
 export const NotificationsScreen = placeholder("Notifications");
 

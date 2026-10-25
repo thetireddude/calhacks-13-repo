@@ -51,7 +51,7 @@ test("dashboard entry point navigates to the planning tab", async () => {
   await renderSignedIn();
   await createGroup("Climbing");
   await fireEvent.press(screen.getByText("Open planning"));
-  await screen.findByText("Planning placeholder");
+  await screen.findByText("Plan an activity");
 });
 
 test("generated invite is shown as a token link and can be shared", async () => {
@@ -178,7 +178,7 @@ test("a link received while another tab is focused opens the group; failures sho
   const emit = captureListeners();
   await renderSignedIn();
   await fireEvent.press(screen.getByRole("button", { name: /Planning, tab/ }));
-  await screen.findByText("Planning placeholder");
+  await screen.findByText("Create or join a group to start planning.");
   await act(async () => emit(inviteLink("bogus")));
   await waitFor(() => expect(alert).toHaveBeenCalledWith("Invite", "That invite link is not valid."));
   await act(async () => emit(inviteLink(MOCK_SEED_INVITE_TOKEN)));

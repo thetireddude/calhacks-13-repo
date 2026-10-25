@@ -14,9 +14,11 @@ Human-readable status. Detailed state: [`state/CURRENT.md`](../state/CURRENT.md)
 
 | Task | Status | Depends on | Lane | Notes |
 |------|--------|------------|------|-------|
-| DEV1-001 | blocked | GATE0-001 | mobile | Expo bootstrap |
+| DEV1-001 | done | GATE0-001 | mobile | Merged `9777545` — Expo SDK 58 |
 | DEV2-001 | done | GATE0-001 | core-api | Merged `e7adadb` — Fastify `/v1/health` |
-| DEV3-001 | ready | GATE0-001, GATE0-002 | planner | Planner package stub (contracts on main) |
+| DEV1-002 | implementing | DEV1-001 | mobile | Navigation shell (W3) |
+| DEV2-002 | implementing | DEV2-001 | core-api | Supabase + JWT (W3 worktree) |
+| DEV3-001 | implementing | GATE0-001, GATE0-002 | planner | PlannerPort stub (W3 worktree) |
 
 ## How to pick work
 

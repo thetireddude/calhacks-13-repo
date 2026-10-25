@@ -30,7 +30,7 @@ test("Facebook venue-event normalization retains public event details", () => {
   assert.equal(candidates[0]?.city, "Hamburg");
 });
 
-test("Facebook discovery sends only explicitly supplied public venue URLs", async () => {
+test("Facebook discovery uses Bright Data's discover-by-venue method", async () => {
   let requestBody = "";
   const client = new BrightDataDatasetClient({ apiKey: "test" }, async (_url, init) => {
     requestBody = String(init?.body);
@@ -38,11 +38,11 @@ test("Facebook discovery sends only explicitly supplied public venue URLs", asyn
   });
   const discovery = new BrightDataCandidateDiscovery(client, {
     facebookEventsVenueDatasetId: "gd_facebook",
-    facebookVenueUrls: ["https://www.facebook.com/example-venue/events"],
+    facebookVenueNames: ["NOHO"],
   });
   const candidates = await discovery.discover({ city: "San Francisco", limit: 1 });
   assert.equal(candidates.length, 1);
-  assert.match(requestBody, /example-venue\/events/);
+  assert.match(requestBody, /"venue":"NOHO"/);
   assert.doesNotMatch(requestBody, /upcoming_events_only/);
 });
 

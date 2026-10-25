@@ -1,6 +1,8 @@
 export interface BrightDataDatasetRequest {
   readonly datasetId: string;
   readonly input: readonly Record<string, unknown>[];
+  readonly query?: Readonly<Record<string, string>>;
+  readonly limitPerInput?: number;
 }
 
 export interface BrightDataClientConfig {
@@ -39,6 +41,7 @@ export class BrightDataDatasetClient {
     endpoint.searchParams.set("dataset_id", request.datasetId);
     endpoint.searchParams.set("notify", "false");
     endpoint.searchParams.set("include_errors", "true");
+    for (const [key, value] of Object.entries(request.query ?? {})) endpoint.searchParams.set(key, value);
 
     const response = await this.fetchImpl(endpoint.toString(), {
       method: "POST",
@@ -46,7 +49,10 @@ export class BrightDataDatasetClient {
         Authorization: `Bearer ${this.config.apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ input: request.input }),
+      body: JSON.stringify({
+        input: request.input,
+        ...(request.limitPerInput === undefined ? {} : { limit_per_input: request.limitPerInput }),
+      }),
     });
 
     if (!response.ok) {

@@ -33,3 +33,25 @@ test("Bright Data client fails closed on a non-array response", async () => {
     BrightDataRequestError,
   );
 });
+
+test("Bright Data client forwards an approved discovery method and limit", async () => {
+  let capturedUrl = "";
+  let capturedBody = "";
+  const client = new BrightDataDatasetClient(
+    { apiKey: "test-key" },
+    async (url, init) => {
+      capturedUrl = url;
+      capturedBody = String(init?.body);
+      return new Response(JSON.stringify([]), { status: 200 });
+    },
+  );
+  await client.scrape({
+    datasetId: "gd_example",
+    query: { type: "discover_new", discover_by: "venue" },
+    input: [{ venue: "NOHO" }],
+    limitPerInput: 1,
+  });
+  assert.match(capturedUrl, /type=discover_new/);
+  assert.match(capturedUrl, /discover_by=venue/);
+  assert.match(capturedBody, /limit_per_input/);
+});

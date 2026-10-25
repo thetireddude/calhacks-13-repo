@@ -5,8 +5,8 @@ import { parseActivityCandidate } from "./validation.js";
 export interface BrightDataDiscoveryConfig {
   readonly yelpDatasetId?: string;
   readonly facebookEventsVenueDatasetId?: string;
-  /** Public venue /events URLs explicitly selected by the caller. */
-  readonly facebookVenueUrls?: readonly string[];
+  /** Public venue names explicitly selected by the caller. */
+  readonly facebookVenueNames?: readonly string[];
 }
 
 type RawRecord = Record<string, unknown>;
@@ -144,10 +144,12 @@ export class BrightDataCandidateDiscovery implements CandidateDiscoveryPort {
       return normalizeYelpRecords(records, city).slice(0, limit);
     }
 
-    if (this.config.facebookEventsVenueDatasetId && this.config.facebookVenueUrls?.length) {
+    if (this.config.facebookEventsVenueDatasetId && this.config.facebookVenueNames?.length) {
       const records = await this.client.scrape({
         datasetId: this.config.facebookEventsVenueDatasetId,
-        input: this.config.facebookVenueUrls.slice(0, limit).map((url) => ({ url })),
+        query: { type: "discover_new", discover_by: "venue" },
+        input: this.config.facebookVenueNames.slice(0, limit).map((venue) => ({ venue })),
+        limitPerInput: limit,
       });
       return normalizeFacebookEventRecords(records, city).slice(0, limit);
     }

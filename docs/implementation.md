@@ -58,6 +58,7 @@ It does not create root workspace tooling. Funcheap and DoTheBay remain deferred
 
 - Bright Data MCP successfully ran Facebook Events `discover_by_venue` for a public venue URL. The ready snapshot contained one public event record and no errors.
 - The Facebook normalizer now matches the observed MCP fields, including event identifiers, start/end instants, event URL, and full address. A minimal public fixture excludes description text and contact details.
+- The REST adapter now maps Facebook venue discovery to Bright Data's `type=discover_new&discover_by=venue` method with a public venue name, instead of the incompatible URL collector.
 
 ### Next action after Gate 0
 

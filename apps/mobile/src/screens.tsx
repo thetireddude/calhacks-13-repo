@@ -34,14 +34,15 @@ export function SignInScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  async function submit(action: typeof signIn) {
+  async function submit(action: typeof signIn, isSignUp: boolean) {
     const trimmed = email.trim();
     if (!trimmed.includes("@")) {
       setError("Enter a valid email address.");
       return;
     }
-    if (password.length < MIN_PASSWORD_LENGTH) {
-      setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
+    // Minimum length applies to new accounts only; an existing account may have a shorter password.
+    if (isSignUp ? password.length < MIN_PASSWORD_LENGTH : password.length === 0) {
+      setError(isSignUp ? `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` : "Enter your password.");
       return;
     }
     setError(null);
@@ -89,8 +90,8 @@ export function SignInScreen() {
       />
       {error ? <Text accessibilityRole="alert">{error}</Text> : null}
       {busy ? <ActivityIndicator accessibilityLabel="Working" /> : null}
-      <Button title="Sign in" onPress={() => void submit(signIn)} disabled={busy} />
-      <Button title="Create account" onPress={() => void submit(signUp)} disabled={busy} color="#666" />
+      <Button title="Sign in" onPress={() => void submit(signIn, false)} disabled={busy} />
+      <Button title="Create account" onPress={() => void submit(signUp, true)} disabled={busy} color="#666" />
     </View>
   );
 }

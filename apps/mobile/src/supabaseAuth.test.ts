@@ -218,3 +218,31 @@ test("api client treats 500 as a non-network, non-unauthorized error", async () 
   const err = await createApiClient({ baseUrl: "http://api.test", getAccessToken: async () => "t", fetchImpl: jest.fn().mockResolvedValue({ ok: false, status: 500 }) }).getMe().catch((e) => e);
   expect(err).toMatchObject({ status: 500, network: false, unauthorized: false });
 });
+
+test("signIn maps a 400/401 with no code (older gotrue) to invalid_credentials; signUp 400 with no code stays network", async () => {
+  const bad = (status: number) =>
+    jest.fn().mockResolvedValue({ data: { session: null }, error: { status, message: "a@example.com secret1" } });
+  for (const status of [400, 401]) {
+    const err = await createSupabaseAuthClient(fakeSupabase({ signInWithPassword: bad(status) }))
+      .signIn("a@example.com", "secret1")
+      .catch((e) => e);
+    expect(err).toMatchObject({ code: "invalid_credentials" });
+    expect(`${err.message}${err.stack}`).not.toMatch(/a@example\.com|secret1/);
+  }
+  const upErr = await createSupabaseAuthClient(fakeSupabase({ signUp: bad(400) }))
+    .signUp("a@example.com", "secret1")
+    .catch((e) => e);
+  expect(upErr).toMatchObject({ code: "network" });
+});
+
+test("signIn email_not_confirmed maps to confirmation_required without leaking input", async () => {
+  const signInWithPassword = jest.fn().mockResolvedValue({
+    data: { session: null },
+    error: { status: 400, code: "email_not_confirmed", message: "a@example.com secret1" },
+  });
+  const err = await createSupabaseAuthClient(fakeSupabase({ signInWithPassword }))
+    .signIn("a@example.com", "secret1")
+    .catch((e) => e);
+  expect(err).toMatchObject({ code: "confirmation_required" });
+  expect(`${err.message}${err.stack}`).not.toMatch(/a@example\.com|secret1/);
+});

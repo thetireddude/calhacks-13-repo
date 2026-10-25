@@ -10,10 +10,15 @@ type SupabaseError = { status?: number; code?: string } | null;
 // Map SDK errors to the mobile-local codes. Never include SDK messages (they may echo input).
 // Rate limits (429), 5xx and unknown/missing status surface as "network" (retry-type) until the
 // contract error schema adds more codes (SPEC section 11).
-function mapAuthError(error: NonNullable<SupabaseError>): AuthError {
+function mapAuthError(error: NonNullable<SupabaseError>, isSignIn = false): AuthError {
   if (error.code === "invalid_credentials") return new AuthError("invalid_credentials");
   if (error.code === "user_already_exists" || error.code === "email_exists") return new AuthError("email_taken");
   if (error.code === "weak_password") return new AuthError("weak_password");
+  if (error.code === "email_not_confirmed") return new AuthError("confirmation_required");
+  // Older gotrue responses carry no `code`; on sign-in a bare 400/401 means bad credentials.
+  if (isSignIn && !error.code && (error.status === 400 || error.status === 401)) {
+    return new AuthError("invalid_credentials");
+  }
   return new AuthError("network");
 }
 
@@ -52,7 +57,7 @@ export function createSupabaseAuthClient(supabase: SupabaseClient): SupabaseAuth
       } catch {
         throw new AuthError("network");
       }
-      if (result.error) throw mapAuthError(result.error);
+      if (result.error) throw mapAuthError(result.error, true);
       const session = toSession(result.data.session);
       if (!session) throw new AuthError("network");
       return session;

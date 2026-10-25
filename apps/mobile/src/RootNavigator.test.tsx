@@ -97,9 +97,41 @@ test("validation blocks empty or invalid input before calling the client", async
   await fireEvent.press(screen.getByText("Create account"));
   await screen.findByText("Enter a valid email address.");
   await fill("a@example.com", "12345");
-  await fireEvent.press(screen.getByText("Sign in"));
+  await fireEvent.press(screen.getByText("Create account"));
   await screen.findByText("Password must be at least 6 characters.");
   expect(signIn).not.toHaveBeenCalled();
   expect(signUp).not.toHaveBeenCalled();
+  expect(screen.queryByText("Your groups")).toBeNull();
+});
+
+test("sign in with a short existing password reaches the client; create account with it is blocked", async () => {
+  const client = createMockAuthClient();
+  const signIn = jest.spyOn(client, "signIn");
+  const signUp = jest.spyOn(client, "signUp");
+  await renderApp(client);
+  await fill("a@example.com", "12345");
+  await fireEvent.press(screen.getByText("Create account"));
+  await screen.findByText("Password must be at least 6 characters.");
+  expect(signUp).not.toHaveBeenCalled();
+  await fireEvent.press(screen.getByText("Sign in"));
+  await screen.findByText("Your groups");
+  expect(signIn).toHaveBeenCalledWith("a@example.com", "12345");
+});
+
+test("sign in requires a non-empty password", async () => {
+  const client = createMockAuthClient();
+  const signIn = jest.spyOn(client, "signIn");
+  await renderApp(client);
+  await fill("a@example.com", "");
+  await fireEvent.press(screen.getByText("Sign in"));
+  await screen.findByText("Enter your password.");
+  expect(signIn).not.toHaveBeenCalled();
+});
+
+test("sign in with confirmation_required shows the confirmation message", async () => {
+  await renderApp(createMockAuthClient({ signIn: "confirmation_required" }));
+  await fill();
+  await fireEvent.press(screen.getByText("Sign in"));
+  await screen.findByText(/Turn off Confirm email/);
   expect(screen.queryByText("Your groups")).toBeNull();
 });

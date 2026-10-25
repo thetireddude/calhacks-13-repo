@@ -1,41 +1,30 @@
-# DEV1-004 Review — CHANGES_REQUESTED
+# DEV1-004 Re-review (repair pass 1, candidate ce76cc4, prior e856f41)
 
-Candidate e856f41 (agent/DEV1-004-groups-ui-mock). Surface OK: apps/mobile/** + task status only; lockfile unchanged.
-Commands run: pnpm install --frozen-lockfile; pnpm --filter @gather/contracts build; pnpm --filter @gather/mobile typecheck, lint, test (31/31 pass, all clean).
+Verdict: APPROVE
 
-## Findings
+## Prior findings
+- P1 parseInviteToken URIError on malformed escapes: RESOLVED (try/catch returns null, apps/mobile/src/groups.ts:35-42; unit test in groups.test.ts and launch+running screen test with "%E0%A4%A").
+- P2 signed-out running-app links dropped: RESOLVED (Linking handled in always-mounted RootNavigator, pending token held in state, apps/mobile/src/RootNavigator.tsx:81-93; test "held and joined after sign-in" drives the real sign-in flow).
+- P2 launch URL replay / other-tab feedback: RESOLVED (getInitialURL read once per RootNavigator mount; InviteJoiner navigates via navigationRef to Groups/GroupDashboard from any tab and Alerts on failure; tests cover no replay after sign-out/in, other-tab navigation, Alert on bogus token).
+- P3 eslint-disable: RESOLVED (useInviteLinkJoin removed; lint clean).
 
-P1 apps/mobile/src/groups.ts:30 (parseInviteToken) — decodeURIComponent throws URIError on malformed percent-escapes
-(e.g. gather://invite/%E0%A4%A). Called from handle() in groupsState.tsx:~67 outside any try/catch: in the "url" listener it
-throws synchronously (uncaught JS error / app crash in release); for getInitialURL it is an unhandled rejection. Violates
-"malformed link safe". Fix: wrap in try/catch returning null (or skip decoding) and add a malformed-link test.
+## New-bug hunt
+- Double join: pending token consumed by one effect run; onDone clears it. Cold-start and url event with the same token set identical state (no re-render), and groups add() dedups by id. A different token arriving mid-flight starts its own join; the first join's clear does not drop it because its effect already ran. No issue.
+- Stale token / sign-out: InviteJoiner unmounts with the session; pending state is cleared in finally even after unmount. A token received while signed out is intentionally held until next sign-in (could join under a different account); P3.
+- Listener lifecycle: subscription removed in effect cleanup; hooks run before the loading early-return. OK.
+- Token logging: none. Alert/navigation loops: none. Session-load vs link race: link held in state during loading, joined once GroupsProvider mounts.
 
-P2 apps/mobile/src/groupsState.tsx:56-78 — "signed-out link handled after sign-in" only holds for the cold-start URL
-(getInitialURL). A gather:// link opened while the app is running signed out fires the "url" event with no listener mounted
-and is dropped. Also untested (no signed-out deep-link test). Fix: attach the Linking listener at app/root level and stash a
-pending token until a session exists (or document as a limitation and test the cold-start case).
+## New findings
+- P3 apps/mobile/src/RootNavigator.tsx:59 navigationRef.navigate called without navigationRef.isReady(); async after mount so works in practice, cheap guard recommended.
+- P3 apps/mobile/src/RootNavigator.tsx:51-65 pending token not tied to a user; held across sign-out/sign-in as another user would join that user. Fine for mock; document or clear on sign-out.
+- P3 Sign-out mid-join: navigate targets the signed-out navigator (dev warning, no-op).
 
-P2 groupsState.tsx:67 / groupScreens.tsx:~40 — getInitialURL returns the same launch URL on every mount of GroupListScreen,
-so sign-out/sign-in (provider remounts) re-runs the join and re-navigates to the dashboard; React StrictMode double-invokes
-too (join is idempotent in mock, but unexpected navigation; real API idempotency is unverified). Consume the initial URL once
-(module/ref flag). Also: a link arriving while another tab is focused joins but gives no visible feedback (navigates only
-inside the hidden Groups stack; errors set on a hidden screen).
+## Acceptance / constraints
+- Create/join flows, member list, dashboard entry points, multiple groups met against mocks; fixtures type-check against @gather/contracts.
+- No contract drift (packages/contracts untouched), no private data (privacy test retained), no client-side voting/authorization logic. Changes since e856f41 are apps/mobile/** only (plus this file).
 
-P3 groupsState.tsx:76 eslint-disable exhaustive-deps — acceptable in practice: joinByToken is stable per client, handlers
-are inline closures over navigation/setError, so the stale-closure risk is small and active flag prevents post-unmount calls.
-But a latest-handler ref would remove the disable and the stale-closure concern with no extra complexity.
-
-P3 Privacy tests (groups.test.ts last test, groupScreens.test.tsx last test) are regex denylist checks over fixtures/render;
-weak but meaningful as a smoke test. Stronger: assert exact key sets (already done for DTOs in groups.test.ts — good) on
-rendered member rows. No change required.
-
-P3 groupScreens.tsx:~146 member list shows raw userId only (no display name in contract) — acceptable; mock role strings
-documented as placeholders (SPEC §11).
-
-## Checks passed
-- Mock payloads match packages/contracts/src/groups.ts exactly (no invented fields; key-set assertions in tests); typed with contract DTOs.
-- GroupClient has exactly the 5 SPEC §6.2 routes; no "list my groups" route invented (groups kept in local state, documented).
-- Member list renders only userId/role/joinedAt. Multiple groups supported and tested.
-- Deep link: token only, no logging, non-invite/other-scheme links ignored; app.json scheme "gather" is the only config change.
-- Provider mounted only while session exists, so group state resets on sign-out (mock client itself persists in App.tsx, fine for a mock).
-- No client-side authorization/voting/fairness logic; no secrets; no new dependencies; anti-bloat OK (GroupError/inviteLink small, justified).
+## Commands run (all pass)
+- pnpm --filter @gather/contracts build
+- pnpm --filter @gather/mobile typecheck
+- pnpm --filter @gather/mobile lint
+- pnpm --filter @gather/mobile test (4 suites, 35 tests passed)

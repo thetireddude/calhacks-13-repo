@@ -25,8 +25,8 @@ Core API lane only. Other lanes own their tasks separately.
 | DEV1-001 | done | GATE0-001 | Expo bootstrap |
 | DEV1-002 | done | DEV1-001 | Navigation + auth shell + logout |
 | DEV1-003 | done | DEV1-002 | OTP auth UI + mock AuthClient |
-| DEV1-004 | ready | DEV1-003 | Groups UI + mock group client |
-| DEV1-005 | backlog | DEV1-004 | Member setup + weekly settings UI |
+| DEV1-004 | done | DEV1-003 | Groups UI + mock group client |
+| DEV1-005 | ready | DEV1-004 | Member setup + weekly settings UI |
 | DEV1-006 | backlog | DEV1-005 | Planning + proposals UI |
 | DEV1-007 | backlog | DEV1-006 | Voting, veto, confirmed event, notifications mocks |
 | DEV1-008 | backlog | DEV1-007 | Gate 1 mobile exit |

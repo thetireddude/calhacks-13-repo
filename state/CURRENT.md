@@ -19,9 +19,13 @@ This branch state tracks **`apps/api/**`, `supabase/**`, `packages/contracts/**`
 | DEV2-009 | Vote/veto/confirmed-event skeleton + idempotent stub majority |
 | DEV2-010 | Gate 1 exit docs, CI `test:dev2`, checklist vs SPEC §8 |
 
-## Next
+## Milestone
 
-Gate 1 Dev 2 **exit documented** (DEV2-010, status `candidate`). Follow-on: Supabase persistence wiring, SPEC §11 consensus when approved, reviewer/tester gates on DEV2-010.
+**Gate 1 Developer 2 — complete** (DEV2-001–010). Evidence: [`state/GATE1-DEV2-EXIT.md`](GATE1-DEV2-EXIT.md), [`docs/gate1-dev2-exit.md`](../docs/gate1-dev2-exit.md).
+
+## Next (Gate 2 prep)
+
+Supabase persistence wiring, import real `@gather/planner` when Dev 3 lands, SPEC §11 when approved.
 
 ## Test status
 

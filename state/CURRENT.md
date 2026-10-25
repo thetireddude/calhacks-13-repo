@@ -37,7 +37,7 @@ Voting rules, scheduler, full DTO freeze — stub until approved.
 
 # Developer 1 (Mobile)
 
-**Gate 1 Developer 1 — candidate (DEV1-001..008), mock-only.** `apps/mobile` has screens, navigation, and mock-backed onboarding, planning, voting, confirmation. Nothing runs against a real API or on a physical device. Evidence: [`state/GATE1-DEV1-EXIT.md`](GATE1-DEV1-EXIT.md), [`docs/gate1-dev1-exit.md`](../docs/gate1-dev1-exit.md).
+**Gate 1 Developer 1 — complete (DEV1-001..008), mock-only.** `apps/mobile` has screens, navigation, and mock-backed onboarding, planning, voting, confirmation. Nothing runs against a real API or on a physical device. Evidence: [`state/GATE1-DEV1-EXIT.md`](GATE1-DEV1-EXIT.md), [`docs/gate1-dev1-exit.md`](../docs/gate1-dev1-exit.md).
 
 - Mobile verification: contracts build, typecheck, lint, test — 10 suites / 167 tests pass (contracts `0.1.1-stub`).
 - Not met (contract gap): aggregate attendance, inclusion-aware alternative, "Suggest another". SPEC §9 change requests are listed in the exit doc.

@@ -4,9 +4,21 @@
 
 ## Local setup
 
-1. Install [Supabase CLI](https://supabase.com/docs/guides/cli).
-2. From repo root: `supabase start` (uses `supabase/config.toml`).
-3. Copy JWT secret into `.env` as `SUPABASE_JWT_SECRET` (see root `.env.example`). Local value: `supabase status` → **JWT secret** — required for API bearer verification in `apps/api/src/auth.ts`.
+**Runbook:** [`docs/dev2-local-setup.md`](../docs/dev2-local-setup.md) (install deps → `supabase start` → `supabase db reset` → `.env` from `supabase status` → `pnpm run test:ci`).
+
+1. Install [Supabase CLI](https://supabase.com/docs/guides/cli) and ensure Docker is running.
+2. From repo root: `supabase start` (uses `supabase/config.toml`, project id `gather-local`, API port **54321**).
+3. Apply migrations: `supabase db reset`.
+4. Copy keys from `supabase status` into root `.env` (see [`.env.example`](../.env.example)):
+
+   | Status field | Env var |
+   |--------------|---------|
+   | API URL | `SUPABASE_URL` |
+   | anon key | `SUPABASE_ANON_KEY` |
+   | service_role key | `SUPABASE_SERVICE_ROLE_KEY` |
+   | JWT secret | `SUPABASE_JWT_SECRET` (required for API JWT verification in `apps/api/src/auth.ts`) |
+
+   Gate 2 DB-backed API paths also need `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` when that mode is enabled; CI tests use in-memory stores without a running database.
 
 ## Migrations (four files)
 

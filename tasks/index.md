@@ -28,4 +28,21 @@ Core API lane only. Other lanes own their tasks separately.
 | DEV2-019 | merged | DEV2-011 | `GET /v1/groups` list mine |
 | DEV2-020 | merged | DEV2-014 | `PUT /v1/me` displayName |
 
+## Developer 1 (Mobile)
+
+| Task | Status | Depends on | Notes |
+|------|--------|------------|-------|
+| DEV1-001 | done | GATE0-001 | Expo bootstrap |
+| DEV1-002 | done | DEV1-001 | Navigation + auth shell + logout |
+| DEV1-003 | done | DEV1-002 | OTP auth UI + mock AuthClient |
+| DEV1-004 | done | DEV1-003 | Groups UI + mock group client |
+| DEV1-005 | done | DEV1-004 | Member setup + weekly settings UI |
+| DEV1-006 | done | DEV1-005 | Planning + proposals UI |
+| DEV1-007 | done | DEV1-006 | Voting, veto, confirmed event, notifications mocks |
+| DEV1-008 | done | DEV1-007 | Gate 1 mobile exit |
+| DEV1-009 | blocked | DEV1-008, GATE2-EXIT | HOLD: needs GATE2-EXIT (Dev 2/3 + orchestrator) and §9 contract decisions; not authored in mobile lane |
+| DEV1-010 | blocked | DEV1-009 | Gate 3: real API groups + setup |
+| DEV1-011 | blocked | DEV1-010 | Gate 3: real API planning/voting/events/notifications |
+| DEV1-012 | blocked | DEV1-011 | Gate 5: mobile demo hardening |
+
 Milestone: [`docs/milestone-dag.md`](../docs/milestone-dag.md)

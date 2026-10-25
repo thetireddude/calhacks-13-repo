@@ -2,10 +2,37 @@
   "name": "@gather/mobile",
   "version": "0.0.0",
   "private": true,
+  "main": "index.ts",
   "scripts": {
-    "start": "node -e \"console.log('Expo bootstrap: DEV1-001')\"",
-    "build": "node -e \"process.exit(0)\"",
-    "typecheck": "node -e \"process.exit(0)\"",
-    "lint": "node -e \"process.exit(0)\""
+    "start": "expo start",
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@gather/contracts": "workspace:*",
+    "@react-navigation/bottom-tabs": "^7.21.0",
+    "@react-navigation/native": "^7.5.1",
+    "@react-navigation/native-stack": "^7.21.0",
+    "expo": "~58.0.19",
+    "expo-notifications": "~58.1.6",
+    "expo-status-bar": "~58.0.4",
+    "react": "19.3.0",
+    "react-native": "0.88.0",
+    "react-native-safe-area-context": "~5.10.1",
+    "react-native-screens": "~4.30.0"
+  },
+  "devDependencies": {
+    "@react-native/jest-preset": "0.88.0",
+    "@testing-library/react-native": "^14.1.0",
+    "@types/jest": "^30.0.0",
+    "@types/react": "~19.3.0",
+    "eslint": "^9",
+    "eslint-config-expo": "~58.0.4",
+    "jest": "^30.0.0",
+    "jest-expo": "~58.0.12",
+    "react-test-renderer": "19.3.0",
+    "typescript": "^5.7.2"
   }
 }

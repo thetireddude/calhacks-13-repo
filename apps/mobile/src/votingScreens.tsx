@@ -56,6 +56,7 @@ function VoteSectionBody({ proposalId }: { proposalId: string }) {
   const [confirmingVeto, setConfirmingVeto] = useState(false);
   // False once this body unmounts (proposal changed or screen left): late results are dropped.
   const mounted = useRef(true);
+  const inFlight = useRef(false);
 
   useEffect(() => {
     mounted.current = true;
@@ -71,6 +72,17 @@ function VoteSectionBody({ proposalId }: { proposalId: string }) {
   }, [voting, proposalId]);
 
   async function act(fn: () => Promise<unknown>) {
+    // Ref guard: set synchronously so two presses before a re-render cannot both start a call.
+    if (inFlight.current) return;
+    inFlight.current = true;
+    try {
+      await run(fn);
+    } finally {
+      inFlight.current = false;
+    }
+  }
+
+  async function run(fn: () => Promise<unknown>) {
     const forId = proposalId;
     const stale = () => !mounted.current;
     setError(null);
@@ -181,6 +193,7 @@ function GroupEvent({ groupId, groupName }: { groupId: string; groupName: string
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const exportInFlight = useRef(false);
 
   useEffect(() => {
     let live = true;
@@ -194,7 +207,8 @@ function GroupEvent({ groupId, groupName }: { groupId: string; groupName: string
   }, [voting, groupId]);
 
   async function exportIcs(event: ConfirmedEventResponse) {
-    if (exporting) return;
+    if (exportInFlight.current) return;
+    exportInFlight.current = true;
     setNotice(null);
     setError(null);
     setExporting(true);
@@ -204,6 +218,7 @@ function GroupEvent({ groupId, groupName }: { groupId: string; groupName: string
     } catch {
       setError(GENERIC_ERROR);
     } finally {
+      exportInFlight.current = false;
       setExporting(false);
     }
   }

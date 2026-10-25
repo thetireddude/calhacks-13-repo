@@ -112,7 +112,6 @@ describe("veto vs Can't make it", () => {
     await waitFor(() => expect(putVote).toHaveBeenCalledTimes(1));
     expect(putVote).toHaveBeenLastCalledWith("p1", { choice: "cant_make_it" });
     expect(veto).not.toHaveBeenCalled();
-    expect(veto).not.toHaveBeenCalled();
     await pressVeto();
     await waitFor(() => expect(veto).toHaveBeenCalledTimes(1));
     expect(putVote).toHaveBeenCalledTimes(1);

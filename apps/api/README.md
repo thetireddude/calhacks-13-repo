@@ -7,7 +7,13 @@ Node.js + TypeScript HTTP API and planning orchestration. See [`docs/developers/
 
 ## Status
 
-Placeholder — implement **DEV2-001** after GATE0-001.
+Bootstrap (**DEV2-001**): `GET /v1/health` → `{ "status": "ok" }`.
+
+## Scripts
+
+- `pnpm run dev` — watch mode via `tsx`
+- `pnpm run build` / `pnpm start` — compile and run `dist/`
+- `pnpm test` — health endpoint test (`node:test`)
 
 ## Route inventory
 

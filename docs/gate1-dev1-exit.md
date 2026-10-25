@@ -16,7 +16,7 @@ The mobile lane delivers screens, navigation, and mock-backed flows for onboardi
 | Screens and navigation | **Met (mock-only)** | `apps/mobile/src/RootNavigator.tsx` (signed-out stack, authenticated tabs Groups/Setup/Planning/Events/Notifications), screens in `screens.tsx`, `groupScreens.tsx`, `memberSetupScreens.tsx`, `planningScreens.tsx`, `votingScreens.tsx`. |
 | API-mocked onboarding | **Met (mock-only)** | OTP sign-in/logout, create/join group, preferences, availability, learning toggle, notification permission, weekly settings (`auth.tsx`, `groups.ts`, `memberSetup.ts`). |
 | API-mocked planning | **Partially met** | Run start/status/proposals render against `PlanningClient` mock. Aggregate attendance counts and inclusion-aware alternative are **not met — contract gap**. |
-| API-mocked voting | **Met for contract fields; stubs elsewhere** | Vote and separate veto controls, deadline, counts render from mobile-local stub types (`ProposalVoteStateView`); "Suggest another" is not in the contract and is shown disabled. |
+| API-mocked voting | **Partially met (mock-only; stubs for missing DTOs)** | Vote and separate veto controls, deadline, counts render from mobile-local stub types (`ProposalVoteStateView`); "Suggest another" is not in the contract and is shown disabled. **Revision and revote UI (SPEC §3 Voting): display-only.** `votingScreens.tsx` (~lines 116-119) shows banner text ("This proposal was revised.", "Revote: please vote again.") when the mobile-local stub `status` string is `revision` or `revote` (`voting.ts` ~line 16). No revision or revote flow exists; contract gap under item e1 (SPEC §11 revision/revote rules are undecided). |
 | API-mocked confirmation | **Met (mock-only)** | Confirmed/cancelled/none states, member-visible event, ICS stub (`IcsClient`), notification feed. |
 
 **Exit condition (SPEC §8):** "Each owned module builds/tests independently and respects the frozen public interfaces."
@@ -28,7 +28,7 @@ The mobile lane delivers screens, navigation, and mock-backed flows for onboardi
 | Mobile lint | **Pass** | `pnpm --filter @gather/mobile lint` |
 | Mobile tests | **Pass** — 10 suites, 167 tests | `pnpm --filter @gather/mobile test` |
 | Consumes only frozen/stub contracts | **Pass, with caveats** | Imports `@gather/contracts` types (`CONTRACTS_VERSION` = `0.1.1-stub`); mobile-local stubs listed below stand in for missing DTOs. |
-| CI covers mobile | **Not covered** | Root `typecheck` filters only contracts and api; see integration-owner action items. |
+| CI covers mobile | **Partly / not explicitly** | See "What CI runs" below: CI does not run mobile typecheck, lint, or tests; no mobile-specific step exists. |
 
 ## Verification command
 
@@ -46,7 +46,8 @@ Nothing was run on a physical device or simulator in this task. The following SP
 
 ## Integration-owner action items
 
-- Root `typecheck` (`package.json`) and `.github/workflows/ci.yml` do not run mobile typecheck/lint/test. Add the command above (or a `test:dev1` script). Not changed here (root config is the integration owner's).
+- **What CI runs** (`.github/workflows/ci.yml`, read-only check): `pnpm install --frozen-lockfile || pnpm install`, `pnpm typecheck`, `pnpm run test:dev2`. Root `typecheck` is `pnpm --filter @gather/contracts --filter @gather/api run typecheck`, so mobile typecheck is not run; `test:dev2` covers contracts and api only. CI does not call root `pnpm build`, `pnpm lint`, or `pnpm test`. Those root scripts (`pnpm -r run ...`) would include mobile (its `build` is `tsc --noEmit`, plus eslint and jest), but CI does not invoke them, so mobile is not covered by CI today.
+- Action: add the command above (or a `test:dev1` script, or root `pnpm lint`/`pnpm test` plus a mobile typecheck) to CI. Not changed here (root config and CI are the integration owner's).
 - Lockfile ownership: `expo-notifications` and `@react-navigation/*` were added to `apps/mobile/package.json` with lockfile updates during DEV1-001..007.
 
 ## Contract change requests (SPEC §9)
@@ -70,17 +71,24 @@ These are requests only; `packages/contracts/**` was not modified. Each stub mus
 
 Unfixed reviewer P3s (from the DEV1-001..007 review/test verdicts):
 
-- Optional provider props default silently to mocks: `PlanningProvider` (`planningScreens.tsx`), `VoteProvider`/ICS (`votingScreens.tsx`), and member-setup/schedule/notification clients in `RootNavigator.tsx`. These must become required or explicit when real clients land (DEV1-010/011). Only `groupClient` is required today.
+- Optional provider props default silently to mocks: `PlanningProvider` (`planningScreens.tsx`), `VotingProvider` (`votingScreens.tsx`; its `voting` and `ics` props are optional and default to mocks), and member-setup/schedule/notification clients in `RootNavigator.tsx`. These must become required or explicit when real clients land (DEV1-010/011). Only `groupClient` is required today.
 - Pending invite token is not tied to a user: a link received while signed out is held and joined by whoever signs in next (`RootNavigator.tsx`).
 - `navigationRef.navigate` is called without an `isReady()` guard (`RootNavigator.tsx`).
-- Availability editor accepts any string `Date.parse` accepts; the window format is not frozen (item c).
+- Availability editor (`validateWindow` in `memberSetup.ts`) only requires that both strings pass `Date.parse` and that the end is after the start; the window format is not frozen (item c).
 - Expo Go on Android restricts notifications; the demo may need a development build.
 - `expo-notifications` and navigation dependencies were added; lockfile ownership is the integration owner's.
 - Pressing a vote choice while the veto confirm prompt is open silently dismisses the prompt.
 - The ICS success notice is hard-coded ("not connected yet (stub)") and must be replaced with real wiring.
+- Sign-out during an in-flight invite join makes the navigate a no-op against the signed-out navigator (DEV1-004 P3; dev warning only).
+- DEV1-001 cosmetic P3s: mobile `build` script duplicates `typecheck` (`tsc --noEmit`); README `--tunnel` step may prompt to install `@expo/ngrok` (not a repo dependency); `package.json` mixes `~`/`^`/exact ranges and devDependencies are not alphabetized. (The `HomeProfile` alias noted then was removed when `HomeScreen` was replaced in DEV1-002.)
 - Earlier P3s: busy-guard on OTP screens is render-state based; no test for back navigation from the OTP screen; planning group switch is not disabled while a start is in flight; planning Retry resubmits the current text field.
 
-Fixed in DEV1-007 repair pass 2 (no longer open): synchronous double-press races on ICS export and veto confirm (commit `c6e2046`).
+Fixed after review (no longer open):
+
+- DEV1-004: malformed invite link `URIError` (`parseInviteToken` now returns null); links received while signed out are held and joined after sign-in; launch URL no longer replayed; join feedback from other tabs.
+- DEV1-005: preferences/availability load failure no longer allows Save (no data loss, Retry recovers); learning status shows the persisted value versus an unsaved draft.
+- DEV1-006: a completed run whose proposals fetch fails now shows a "Refresh proposals" control.
+- DEV1-007: single-press veto replaced by a confirm step; honest ICS stub copy; stale/late results guarded; synchronous double-press races on ICS export and veto confirm (commit `c6e2046`); the duplicated `expect` line in `votingAdversarial.test.tsx` is gone.
 
 ## Not ready to start
 

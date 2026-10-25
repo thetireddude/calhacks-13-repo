@@ -41,5 +41,5 @@ Voting rules, scheduler, full DTO freeze — stub until approved.
 
 - Mobile verification: contracts build, typecheck, lint, test — 10 suites / 167 tests pass (contracts `0.1.1-stub`).
 - Not met (contract gap): aggregate attendance, inclusion-aware alternative, "Suggest another". SPEC §9 change requests are listed in the exit doc.
-- Integration-owner action: root `typecheck` and CI do not cover mobile.
+- Integration-owner action: CI runs only root `typecheck` (contracts + api) and `test:dev2`, so mobile is not covered.
 - Blocked: DEV1-009..012 need Gate 2 (no `GATE2-EXIT` task defined) and the contract freeze items.

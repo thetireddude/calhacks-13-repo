@@ -1,6 +1,6 @@
 # ORCH-001 — Developer 2 focus
 
-- **status:** Dev 2 Gate 1 spine complete on `main` / `feature/core-api`
+- **status:** Dev 2 **Gate 1 exit complete** (DEV2-010 merged)
 - **integration branch:** `feature/core-api` @ same commit as `main` (`8fd831a`)
 - **worktrees:** none (agent worktrees removed)
 - **local branches:** `main`, `feature/core-api` only

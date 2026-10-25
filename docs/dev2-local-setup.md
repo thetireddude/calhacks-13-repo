@@ -103,6 +103,7 @@ Migration filenames and table inventory: [`supabase/README.md`](../supabase/READ
 
 ```bash
 # From repo root — ensure SUPABASE_JWT_SECRET is set if hitting protected routes
+# `dev` (and `start`) load repo-root `../../.env` via `--env-file`; no `source` needed
 pnpm --filter @gather/api run dev
 ```
 
@@ -133,7 +134,7 @@ Equivalent to `pnpm run test:dev2`. Runs:
 | Symptom | Check |
 |---------|--------|
 | `supabase start` fails | Docker running; ports **54321** / **54322** free |
-| `SUPABASE_JWT_SECRET is not configured` at runtime | Export secret in shell or `.env` loaded by your process manager |
+| `SUPABASE_JWT_SECRET is not configured` at runtime | Fill repo-root `.env`; `dev`/`start` load it via `--env-file ../../.env` |
 | `401` on API with local JWT | JWT signed with local **JWT secret** from `supabase status`, not a prod secret |
 | Tests pass locally but DB empty | Expected for default CI path — persistence is env-gated in Gate 2 |
 | `supabase db reset` errors | Run from repo root; review migration SQL under `supabase/migrations/` |

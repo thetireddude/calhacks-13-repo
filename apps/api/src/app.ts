@@ -1,3 +1,4 @@
+import cors from "@fastify/cors";
 import Fastify from "fastify";
 import { registerGroupRoutes } from "./groups/routes.js";
 import { createDefaultGroupsStore } from "./groups/createGroupsStore.js";
@@ -28,6 +29,7 @@ export type CreateAppOptions = {
 
 export async function createApp(options: CreateAppOptions = {}) {
   const app = Fastify({ logger: false });
+  await app.register(cors, { origin: true });
   const groupsStore = options.groupsStore ?? createDefaultGroupsStore();
   const profileStore = options.profileStore ?? createDefaultProfileStore();
   const memberSetupStore =

@@ -5,3 +5,4 @@ const host = process.env.HOST ?? "0.0.0.0";
 
 const app = await createApp();
 await app.listen({ port, host });
+console.log(`API listening on http://${host}:${port}`);

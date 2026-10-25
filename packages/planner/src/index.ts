@@ -39,11 +39,12 @@ export type { DiscoveryFailure, DiscoveryResult } from "./fallback-discovery.js"
 export {
   ProviderUnavailableError,
   UnavailablePersonalEvaluationProvider,
+  CreaoAppEvaluationProvider,
 } from "./provider.js";
-export type { ProviderAdapterConfig } from "./provider.js";
+export type { ProviderAdapterConfig, CreaoAppConfig } from "./provider.js";
 export { prepareProviderSafeInput, isPublicExplanationSafe } from "./privacy.js";
 export type { AuthorizedPersonalContext, ProviderSafePersonalInput } from "./privacy.js";
-export { rankPreScoredCandidates, UnresolvedRankingTieError } from "./ranking.js";
+export { rankPreScoredCandidates } from "./ranking.js";
 export type { ApprovedScoreComponents, PreScoredCandidate, RankedCandidate } from "./ranking.js";
 export { selectProposalCandidates } from "./proposal-selection.js";
 export { parseActivityCandidate, parsePersonalEvaluation, PlannerValidationError } from "./validation.js";
@@ -53,3 +54,9 @@ export { calculateApprovedScoreComponents, meetsMinimumFeasibleMembers } from ".
 export type { MemberCandidateAssessment } from "./scoring.js";
 export { createRankingOutcome } from "./tie-resolution.js";
 export type { RankingOutcome } from "./tie-resolution.js";
+export {
+  BrightDataCandidateDiscovery,
+  normalizeFacebookEventRecords,
+  normalizeYelpRecords,
+} from "./bright-data-discovery.js";
+export type { BrightDataDiscoveryConfig } from "./bright-data-discovery.js";

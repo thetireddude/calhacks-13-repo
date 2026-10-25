@@ -28,7 +28,20 @@ live requests by default.
 ADR-002 records the project-owner-approved initial planner rules for eligibility,
 scoring, inclusion debt, tie handling, provider choice, and live discovery.
 
-It does not create root workspace tooling, call Creao or Bright Data, implement scoring, or export the pending backend-facing `PlannerPort`. Those items still require the shared contract and approved rules.
+It does not create root workspace tooling. Funcheap and DoTheBay remain deferred by product-owner decision; Google Street View is excluded because the configured dataset does not provide activity discovery.
+
+### Completed after the shared PlannerPort landed
+
+- `createPlanner()` now implements the shared `PlannerPort` contract and returns at most three public proposals.
+- Approved deterministic component formulas and the 45/30/15/10 weighted ranker are covered by frozen tests. Exact top ties are surfaced for the backend-owned tie vote.
+- The app-scoped Creao API Trigger adapter creates isolated runs, polls them, and accepts only schema-validated JSON. It does not reuse conversations or send private-history fields.
+- Bright Data has a generic authenticated dataset client plus public-record normalizers for the approved Yelp and Facebook Events sources. Live source failures can fall back to seeded candidates.
+- The focused planner suite now covers provider success/failure, public normalizers, privacy filtering, fallback behavior, scoring, ties, and the `PlannerPort` boundary.
+
+### External verification status
+
+- A live Creao smoke request was attempted with the locally configured app ID and `capi_` key. Creao returned HTTP 403 before a run was created. The keys were present, trimmed, and had the expected `capi_` prefix; no secret was displayed or stored. The remaining external action is to verify that the app-scoped key was created from this agent's **API Trigger** panel and still belongs to the displayed app. The implementation fails closed with an actionable error until then.
+- Bright Data source normalization is implemented. Live Yelp/Facebook verification waits for their running snapshots or a fresh small request; Google Street View is intentionally not used.
 
 ### Next action after Gate 0
 

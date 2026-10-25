@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { rankPreScoredCandidates, UnresolvedRankingTieError } from "../src/ranking.js";
+import { rankPreScoredCandidates } from "../src/ranking.js";
 
 const candidate = (id: string) => ({
   id,
@@ -27,12 +27,11 @@ test("ranking uses only the approved category weights", () => {
   assert.equal(ranked[0]?.score, 0.45);
 });
 
-test("ranking refuses to invent a tie-breaker", () => {
-  assert.throws(
-    () => rankPreScoredCandidates([
+test("ranking preserves exact ties in a stable order for backend tie voting", () => {
+  const ranked = rankPreScoredCandidates([
       { candidate: candidate("a"), components: { expectedAttendance: 1, sharedPreferenceFit: 0, budgetTravelFit: 0, inclusionFairness: 0 } },
       { candidate: candidate("b"), components: { expectedAttendance: 1, sharedPreferenceFit: 0, budgetTravelFit: 0, inclusionFairness: 0 } },
-    ]),
-    UnresolvedRankingTieError,
-  );
+  ]);
+  assert.equal(ranked[0]?.score, ranked[1]?.score);
+  assert.deepEqual(ranked.map((entry) => entry.candidate.id), ["a", "b"]);
 });

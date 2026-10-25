@@ -1,0 +1,110 @@
+import type { ActivityCandidate, CandidateDiscoveryPort, DiscoveryQuery } from "./domain.js";
+import { BrightDataDatasetClient } from "./bright-data.js";
+import { parseActivityCandidate } from "./validation.js";
+
+export interface BrightDataDiscoveryConfig {
+  readonly yelpDatasetId?: string;
+  readonly facebookEventsVenueDatasetId?: string;
+}
+
+type RawRecord = Record<string, unknown>;
+
+function asRecord(value: unknown): RawRecord | undefined {
+  return typeof value === "object" && value !== null && !Array.isArray(value) ? value as RawRecord : undefined;
+}
+
+function firstString(record: RawRecord, keys: readonly string[]): string | null {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return null;
+}
+
+function firstBoolean(record: RawRecord, keys: readonly string[]): boolean | null {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "boolean") return value;
+  }
+  return null;
+}
+
+function stableId(source: string, url: string, title: string): string {
+  const text = `${source}:${url}:${title}`;
+  let hash = 2166136261;
+  for (const character of text) hash = Math.imul(hash ^ character.charCodeAt(0), 16777619);
+  return `${source}-${(hash >>> 0).toString(36)}`;
+}
+
+function normalizeRecord(record: RawRecord, source: "yelp" | "facebook_events", fallbackCity: string): ActivityCandidate | null {
+  const title = firstString(record, ["name", "title", "event_name"]);
+  const sourceUrl = firstString(record, ["url", "link", "event_url", "business_url"]);
+  if (!title || !sourceUrl) return null;
+
+  const city = firstString(record, ["city", "location", "location_city"]) ?? fallbackCity;
+  const isFree = firstBoolean(record, ["is_free", "free"]);
+  const priceText = firstString(record, ["price", "price_text", "ticket_price"]);
+  const candidate = {
+    id: stableId(source, sourceUrl, title),
+    title,
+    category: firstString(record, ["category", "categories", "event_type"]) ?? "activity",
+    startsAt: firstString(record, ["start_date", "start_time", "date", "datetime"]),
+    endsAt: firstString(record, ["end_date", "end_time"]),
+    venueName: firstString(record, ["venue_name", "venue", "business_name"]),
+    city,
+    priceText,
+    isFree: isFree ?? (priceText?.toLocaleLowerCase("en-US") === "free" ? true : null),
+    sourceUrl,
+    source,
+  };
+
+  try {
+    return parseActivityCandidate(candidate);
+  } catch {
+    return null;
+  }
+}
+
+/** Normalizes only public Yelp records returned by Bright Data. */
+export function normalizeYelpRecords(records: readonly unknown[], city: string): readonly ActivityCandidate[] {
+  return records.flatMap((record) => {
+    const raw = asRecord(record);
+    const normalized = raw ? normalizeRecord(raw, "yelp", city) : null;
+    return normalized ? [normalized] : [];
+  });
+}
+
+/** Normalizes only public Facebook venue-event records returned by Bright Data. */
+export function normalizeFacebookEventRecords(records: readonly unknown[], city: string): readonly ActivityCandidate[] {
+  return records.flatMap((record) => {
+    const raw = asRecord(record);
+    const normalized = raw ? normalizeRecord(raw, "facebook_events", city) : null;
+    return normalized ? [normalized] : [];
+  });
+}
+
+/**
+ * Live source adapter. It uses a single selected source per request so
+ * source-specific inputs and output schemas never get mixed together.
+ */
+export class BrightDataCandidateDiscovery implements CandidateDiscoveryPort {
+  public constructor(
+    private readonly client: BrightDataDatasetClient,
+    private readonly config: BrightDataDiscoveryConfig,
+  ) {}
+
+  public async discover(query: DiscoveryQuery = {}): Promise<readonly ActivityCandidate[]> {
+    const city = query.city?.trim() || "San Francisco, CA";
+    const limit = Math.max(1, Math.min(query.limit ?? 3, 3));
+
+    if (this.config.yelpDatasetId) {
+      const records = await this.client.scrape({
+        datasetId: this.config.yelpDatasetId,
+        input: [{ country: "US", category: "Restaurants", location: city, limit_per_input: limit }],
+      });
+      return normalizeYelpRecords(records, city).slice(0, limit);
+    }
+
+    throw new Error("No approved Bright Data discovery source is configured");
+  }
+}

@@ -1,4 +1,5 @@
 import type { PersonalEvaluation, PersonalEvaluationProvider } from "./domain.js";
+import { parsePersonalEvaluation } from "./validation.js";
 
 /**
  * Provider-neutral boundary. Creao-specific request and response handling
@@ -9,6 +10,39 @@ export interface ProviderAdapterConfig {
   readonly apiKey: string;
   readonly baseUrl?: string;
   readonly model?: string;
+}
+
+export interface CreaoAppConfig { readonly appId: string; readonly apiKey: string; readonly baseUrl?: string; }
+
+/** App-scoped CREAO API Trigger adapter; poll-only, with no conversation reuse. */
+export class CreaoAppEvaluationProvider implements PersonalEvaluationProvider {
+  public constructor(private readonly config: CreaoAppConfig, private readonly fetchImpl: typeof fetch = fetch) {}
+  public async evaluate(input: unknown): Promise<PersonalEvaluation> {
+    if (!isInput(input)) throw new ProviderUnavailableError("Invalid Creao input");
+    const base = (this.config.baseUrl ?? "https://agent.creao.ai").replace(/\/$/, "");
+    const created = await this.fetchImpl(`${base}/api/v1/apps/${this.config.appId}/runs`, { method: "POST", headers: { Authorization: `Bearer ${this.config.apiKey}`, "Content-Type": "application/json" }, body: JSON.stringify({ inputs: input }) });
+    if (!created.ok) {
+      const configurationHint = created.status === 401 || created.status === 403
+        ? "; verify the capi_ key was created for this exact app and API Trigger is enabled"
+        : "";
+      throw new ProviderUnavailableError(`Creao run creation failed (${created.status})${configurationHint}`);
+    }
+    const { id } = await created.json() as { id?: string };
+    if (!id) throw new ProviderUnavailableError("Creao did not return a run id");
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const polled = await this.fetchImpl(`${base}/api/v1/apps/${this.config.appId}/runs/${id}`, { headers: { Authorization: `Bearer ${this.config.apiKey}` } });
+      const run = await polled.json() as { status?: string; result?: { text?: string } };
+      if (!polled.ok) throw new ProviderUnavailableError(`Creao run poll failed (${polled.status})`);
+      if (run.status === "completed") return parsePersonalEvaluation(JSON.parse(run.result?.text ?? ""));
+      if (run.status === "failed" || run.status === "cancelled") throw new ProviderUnavailableError(`Creao run ${run.status}`);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+    throw new ProviderUnavailableError("Creao run timed out");
+  }
+}
+
+function isInput(value: unknown): value is { permitted_preferences: string; proposed_activity: string } {
+  return typeof value === "object" && value !== null && typeof (value as Record<string, unknown>).permitted_preferences === "string" && typeof (value as Record<string, unknown>).proposed_activity === "string";
 }
 
 export class ProviderUnavailableError extends Error {

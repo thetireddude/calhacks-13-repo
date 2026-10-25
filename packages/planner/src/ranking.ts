@@ -16,13 +16,6 @@ export interface RankedCandidate extends PreScoredCandidate {
   readonly score: number;
 }
 
-export class UnresolvedRankingTieError extends Error {
-  public constructor() {
-    super("Ranking tie requires an approved tie-break rule");
-    this.name = "UnresolvedRankingTieError";
-  }
-}
-
 function assertUnitInterval(label: string, value: number): void {
   if (!Number.isFinite(value) || value < 0 || value > 1) {
     throw new RangeError(`${label} must be a finite value from 0 through 1`);
@@ -30,8 +23,9 @@ function assertUnitInterval(label: string, value: number): void {
 }
 
 /**
- * Applies only the category weights approved in SPEC §5. It deliberately
- * accepts precomputed components because their formulas remain unresolved.
+ * Applies only the approved category weights. Exact scores retain a stable
+ * candidate-id order; createRankingOutcome exposes a top tie to the backend
+ * so it can open the approved tie vote.
  */
 export function rankPreScoredCandidates(
   candidates: readonly PreScoredCandidate[],
@@ -53,12 +47,7 @@ export function rankPreScoredCandidates(
     };
   });
 
-  ranked.sort((left, right) => right.score - left.score);
-  for (let index = 1; index < ranked.length; index += 1) {
-    if (ranked[index - 1]?.score === ranked[index]?.score) {
-      throw new UnresolvedRankingTieError();
-    }
-  }
+  ranked.sort((left, right) => right.score - left.score || left.candidate.id.localeCompare(right.candidate.id));
 
   return ranked;
 }

@@ -7,9 +7,10 @@
 - Use `anthropic/claude-haiku-4-5` through Creao for constrained personal
   evaluations. It is the economy model suited to short structured evaluations;
   it cannot make eligibility, score, or vote decisions.
-- Use manual, on-demand live discovery only. Bright Data sources are Google
-  Maps (venues/activities), Yelp (dining/activity venues), and Facebook Events
-  by known public venue. Each live-source failure falls back to seeded data.
+- Use manual, on-demand live discovery only. Bright Data sources are Yelp
+  (dining/activity venues) and Facebook Events by known public venue. The
+  available Google Maps dataset is Street View imagery and is excluded. Each
+  live-source failure falls back to seeded data.
 - Defer Funcheap and DoTheBay until their custom collectors exist.
 
 ## Authorized planner input and privacy

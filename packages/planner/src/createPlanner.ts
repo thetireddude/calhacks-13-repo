@@ -5,6 +5,7 @@ import type {
   Proposal,
 } from "@gather/contracts";
 import type { DiscoveryProvider } from "./discoveryProvider.js";
+import { applyDeterministicScoring } from "./deterministicScoring.js";
 import {
   buildSeededProposal,
   pickSeededCandidates,
@@ -83,7 +84,11 @@ export function createPlanner(options: CreatePlannerOptions = {}): PlannerPort {
     async generatePlans(input: PlannerInput): Promise<PlannerResult> {
       assertInput(input);
       const generatedAt = new Date().toISOString();
-      const proposals = await resolveCandidates(input, discoveryProvider);
+      const candidates = await resolveCandidates(input, discoveryProvider);
+      const proposals = applyDeterministicScoring(
+        candidates,
+        input.memberContext,
+      );
       return toPlannerResult(input, proposals, generatedAt);
     },
   };

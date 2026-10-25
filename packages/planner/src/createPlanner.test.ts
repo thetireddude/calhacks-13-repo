@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { PlannerInput, Proposal } from "@gather/contracts";
 import { createPlanner } from "./createPlanner.js";
+import { computeDeterministicScore } from "./deterministicScoring.js";
 import type { PlannerProposal } from "./seededCandidateActivities.js";
 
 const fixtureInput: PlannerInput = {
@@ -109,4 +110,58 @@ test("createPlanner rejects missing planningRunId", async () => {
   await assert.rejects(() =>
     planner.generatePlans({ groupId: "g1", planningRunId: "  " }),
   );
+});
+
+test("memberContext.scoringStub assigns non-zero deterministicScore", async () => {
+  const dimensions = {
+    expectedAttendance: 0.9,
+    sharedPreferenceFit: 0.7,
+    budgetTravelFit: 0.5,
+    inclusionFairness: 0.3,
+  };
+  const planner = createPlanner();
+  const result = await planner.generatePlans({
+    ...fixtureInput,
+    memberContext: {
+      scoringStub: { default: dimensions },
+    },
+  });
+  assert.ok(result.proposals.length <= 3);
+  const expected = computeDeterministicScore(dimensions);
+  for (const proposal of result.proposals) {
+    assert.equal(proposal.deterministicScore, expected);
+  }
+});
+
+test("scoringStub byActivityId re-orders seeded proposals by score", async () => {
+  const planner = createPlanner();
+  const result = await planner.generatePlans({
+    groupId: "group-fixture-1",
+    planningRunId: "run-scoring-order",
+    activityRequest: "food",
+    memberContext: {
+      scoringStub: {
+        byActivityId: {
+          "seed-act-dinner-01": {
+            expectedAttendance: 0.2,
+            sharedPreferenceFit: 0.2,
+            budgetTravelFit: 0.2,
+            inclusionFairness: 0.2,
+          },
+          "seed-act-brunch-01": {
+            expectedAttendance: 1,
+            sharedPreferenceFit: 1,
+            budgetTravelFit: 1,
+            inclusionFairness: 1,
+          },
+        },
+      },
+    },
+  });
+  assert.ok(result.proposals.length <= 3);
+  assert.equal(
+    (result.proposals[0] as PlannerProposal).activityIds[0],
+    "seed-act-brunch-01",
+  );
+  assert.equal(result.proposals[0]?.rank, 1);
 });

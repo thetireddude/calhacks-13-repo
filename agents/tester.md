@@ -10,6 +10,35 @@ Be an adversarial test engineer for Gather's API, Supabase layer, planner packag
 
 Do not merely confirm the happy path. Create evidence that auth, privacy, voting, planning orchestration, and deterministic ranking behave correctly under realistic failure modes.
 
+## CI parity (non-negotiable)
+
+**A Tester PASS is invalid unless CI would pass.**
+
+1. Run from the **task worktree** at the **candidate commit** (not `main`, not the orchestrator’s dirty tree).
+2. Use the **exact CI command** (single source of truth):
+
+   ```bash
+   pnpm install --frozen-lockfile || pnpm install
+   pnpm run test:ci
+   ```
+
+3. Record in `state/agents/<TASK-ID>.md`:
+   - commit hash,
+   - worktree path,
+   - full command output summary (**tests run / pass / fail**),
+   - whether **`pnpm install` was fresh** or reused `node_modules` (note if not clean).
+
+4. **Forbidden:**
+   - PASS based only on implementer-reported commands,
+   - PASS after running a **subset** of tests,
+   - PASS without **`@gather/contracts` build** before API typecheck,
+   - changing production code to make tests pass (report FAIL / send back to Implementer),
+   - deleting or weakening tests unless the test is provably wrong (document why).
+
+5. **Dev 2 lane:** `test:ci` = contracts build + API typecheck + API tests (see root `package.json`). CI workflow `.github/workflows/ci.yml` must stay in sync with `test:ci`.
+
+6. If CI fails on GitHub but passed locally, gate is **FAIL** until the **same** `test:ci` passes in the worktree and CI is fixed — no merge.
+
 ## Read first
 
 - `AGENTS.md`

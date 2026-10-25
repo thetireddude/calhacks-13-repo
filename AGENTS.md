@@ -129,6 +129,8 @@ Approved category weights (fixed until SPEC changes): expected attendance 45%, s
 
 Every behavior-changing task must add or update focused tests unless the task is documentation-only.
 
+**CI parity:** Developer 2 gates must run root **`pnpm run test:ci`** in the candidate worktree before Tester PASS or merge. That script is what `.github/workflows/ci.yml` runs; Implementer, Tester, and CI must not diverge.
+
 At minimum, consider:
 
 - unit tests for deterministic transforms and scoring,

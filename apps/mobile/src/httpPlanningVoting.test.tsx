@@ -6,17 +6,24 @@ import type {
   ProposalVoteResponse,
 } from "@gather/contracts";
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
-import { Linking } from "react-native";
+import { Linking, Share } from "react-native";
 
 import { createApiClient } from "./apiClient";
 import { AuthProvider, createMockAuthClient } from "./auth";
 import { createMockGroupClient } from "./groups";
-import { createHttpPlanningClient, createHttpVotingClient } from "./httpClients";
+import {
+  createHttpIcsClient,
+  createHttpPlanningClient,
+  createHttpScheduleClient,
+  createHttpVotingClient,
+} from "./httpClients";
+import { MemberSetupError } from "./memberSetup";
 import { PlanningError, createMockPlanningClient } from "./planning";
 import type { PlanningClient } from "./planning";
 import { POLL_INTERVAL_MS } from "./planningScreens";
 import { RootNavigator } from "./RootNavigator";
-import { FIXTURE_NOTIFICATIONS, VotingError, createMockVotingClient } from "./voting";
+import { VotingError, createMockVotingClient } from "./voting";
+import type { IcsClient } from "./voting";
 
 const TOKEN = "secret-token-xyz";
 const run: PlanningRunResponse = {
@@ -41,7 +48,7 @@ const event: ConfirmedEventResponse = {
   confirmedAt: "2026-01-02T00:00:00.000Z",
 };
 
-function setup(status: number | "throw", body: unknown = {}) {
+function setupApi(status: number | "throw", body: unknown = {}) {
   const fetchImpl = jest.fn(async () => {
     if (status === "throw") throw new Error(`boom ${TOKEN}`);
     return { ok: status >= 200 && status < 300, status, json: async () => body } as Response;
@@ -51,6 +58,10 @@ function setup(status: number | "throw", body: unknown = {}) {
     getAccessToken: async () => TOKEN,
     fetchImpl: fetchImpl as unknown as typeof fetch,
   });
+  return { fetchImpl, api };
+}
+function setup(status: number | "throw", body: unknown = {}) {
+  const { fetchImpl, api } = setupApi(status, body);
   return {
     fetchImpl,
     planning: createHttpPlanningClient(api),
@@ -167,13 +178,106 @@ describe("http voting client", () => {
     await voting.putVote("p1", { choice: "approve" }).catch(() => {});
     expect((await voting.getVoteState("p1")).myChoice).toBeUndefined();
   });
-  test("real-mode notifications are empty and never fixture data", async () => {
-    const { voting, fetchImpl } = setup(200);
+  test("listNotifications GETs /v1/me/notifications and maps only what the API returns", async () => {
+    const { voting, fetchImpl } = setup(200, {
+      notifications: [
+        { type: "event_confirmed", groupId: "g1", eventId: "e1", summary: "Hike", createdAt: "2026-01-02T00:00:00.000Z" },
+        { type: "something_new", groupId: "g1", eventId: "e2", summary: "Other", createdAt: "2026-01-03T00:00:00.000Z" },
+      ],
+    });
     const list = await voting.listNotifications();
-    expect(list).toEqual([]);
-    expect(list).not.toEqual(FIXTURE_NOTIFICATIONS);
-    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(list).toEqual([
+      { id: "event_confirmed:e1", title: "Event confirmed", body: "Hike", createdAt: "2026-01-02T00:00:00.000Z" },
+    ]);
+    const c = lastCall(fetchImpl);
+    expect(c.url).toBe("https://api.test/v1/me/notifications");
+    expect(c.init.method).toBe("GET");
+    expect(c.headers.Authorization).toBe(`Bearer ${TOKEN}`);
+    expect(await setup(200, { notifications: [] }).voting.listNotifications()).toEqual([]);
   });
+  test.each([
+    [0, "network"],
+    [401, "unauthenticated"],
+    [500, "server"],
+  ])("listNotifications status %s maps to %s without leaking the token", async (status, code) => {
+    const { voting } = setup(status);
+    const err = await voting.listNotifications().catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(VotingError);
+    expect((err as VotingError).code).toBe(code);
+    expect(JSON.stringify(err) + (err as Error).message).not.toContain(TOKEN);
+  });
+});
+
+describe("http schedule client", () => {
+  const schedule = { timezone: "America/Los_Angeles", weeklyEnabled: true };
+  test("get and put use the schedule route with bearer auth", async () => {
+    const a = createHttpScheduleClient(setupApi(200, schedule).api);
+    expect(await a.get("g/1")).toEqual(schedule);
+    const f = setupApi(200, schedule);
+    await createHttpScheduleClient(f.api).put("g1", schedule);
+    const c = lastCall(f.fetchImpl);
+    expect(c.url).toBe("https://api.test/v1/groups/g1/schedule");
+    expect(c.init.method).toBe("PUT");
+    expect(c.init.body).toBe(JSON.stringify(schedule));
+    expect(c.headers.Authorization).toBe(`Bearer ${TOKEN}`);
+    const g = setupApi(200, schedule);
+    await createHttpScheduleClient(g.api).get("g/1");
+    expect(lastCall(g.fetchImpl).url).toBe("https://api.test/v1/groups/g%2F1/schedule");
+    expect(lastCall(g.fetchImpl).init.method).toBe("GET");
+  });
+  test.each([
+    [0, "network"],
+    [400, "invalid"],
+    [401, "unauthenticated"],
+    [403, "server"],
+    [500, "server"],
+  ])("status %s maps to %s, PUT is attempted once, no token leak", async (status, code) => {
+    const f = setupApi(status);
+    const err = await createHttpScheduleClient(f.api).put("g1", schedule).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(MemberSetupError);
+    expect((err as MemberSetupError).code).toBe(code);
+    expect(f.fetchImpl).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(err) + (err as Error).message).not.toContain(TOKEN);
+  });
+});
+
+describe("http ics client", () => {
+  const ics = "BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n";
+  function icsSetup(status: number | "throw") {
+    const fetchImpl = jest.fn(async () => {
+      if (status === "throw") throw new Error(`boom ${TOKEN}`);
+      return { ok: status >= 200 && status < 300, status, text: async () => ics } as Response;
+    });
+    const api = createApiClient({
+      baseUrl: "https://api.test/",
+      getAccessToken: async () => TOKEN,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+    return { fetchImpl, client: createHttpIcsClient(api) };
+  }
+  test("exportIcs GETs the calendar route with bearer auth and returns the text", async () => {
+    const { fetchImpl, client } = icsSetup(200);
+    expect(await client.exportIcs("e/1")).toEqual({ filename: "event-e/1.ics", content: ics });
+    const c = lastCall(fetchImpl);
+    expect(c.url).toBe("https://api.test/v1/events/e%2F1/calendar.ics");
+    expect(c.init.method).toBe("GET");
+    expect(c.headers.Authorization).toBe(`Bearer ${TOKEN}`);
+    expect(c.headers.Accept).toBe("text/calendar");
+  });
+  test.each([
+    ["throw", "network"],
+    [401, "unauthenticated"],
+    [403, "forbidden"],
+    [404, "not_found"],
+    [500, "server"],
+  ] as const)("status %s maps to %s without leaking the token", async (status, code) => {
+    const { client } = icsSetup(status);
+    const err = await client.exportIcs("e1").catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(VotingError);
+    expect((err as VotingError).code).toBe(code);
+    expect(JSON.stringify(err) + (err as Error).message).not.toContain(TOKEN);
+  });
+
 });
 
 describe("screens with real clients and polling", () => {
@@ -186,12 +290,12 @@ describe("screens with real clients and polling", () => {
     jest.restoreAllMocks();
   });
 
-  async function open(planningClient: PlanningClient, votingClient = createMockVotingClient()) {
+  async function open(planningClient: PlanningClient, votingClient = createMockVotingClient(), icsClient?: IcsClient) {
     const auth = createMockAuthClient();
     await auth.signIn("a@example.com", "secret1");
     const view = await render(
       <AuthProvider client={auth}>
-        <RootNavigator groupClient={createMockGroupClient()} planningClient={planningClient} votingClient={votingClient} />
+        <RootNavigator groupClient={createMockGroupClient()} planningClient={planningClient} votingClient={votingClient} icsClient={icsClient} />
       </AuthProvider>,
     );
     await screen.findByText("Your groups");
@@ -280,20 +384,51 @@ describe("screens with real clients and polling", () => {
     await act(async () => release({ ...(await base.getRun("run-1")), status: "failed" }));
   });
 
-  test("real mode shows no notifications and says so honestly", async () => {
-    await open(createMockPlanningClient("three"), setup(200).voting);
+  test("real mode renders backend notifications as returned", async () => {
+    const { voting } = setup(200, {
+      notifications: [
+        { type: "event_confirmed", groupId: "g1", eventId: "e1", summary: "Saturday hike", createdAt: "2026-01-02T00:00:00.000Z" },
+      ],
+    });
+    await open(createMockPlanningClient("three"), voting);
     await fireEvent.press(screen.getByLabelText(/^Notifications, tab/));
-    expect(await screen.findByText("Notifications are not available yet.")).toBeTruthy();
-    expect(screen.queryByText(FIXTURE_NOTIFICATIONS[0]!.title)).toBeNull();
+    expect(await screen.findByText("Event confirmed")).toBeTruthy();
+    expect(screen.getByText("Saturday hike")).toBeTruthy();
+    expect(screen.queryByText(/not available yet/)).toBeNull();
   });
 
-  test("real mode offers no live ICS export and shows no success notice", async () => {
+  test("real mode with an empty feed shows the normal empty state", async () => {
+    await open(createMockPlanningClient("three"), setup(200, { notifications: [] }).voting);
+    await fireEvent.press(screen.getByLabelText(/^Notifications, tab/));
+    expect(await screen.findByText("No notifications yet.")).toBeTruthy();
+    expect(screen.queryByText(/not available yet/)).toBeNull();
+  });
+
+  test("real mode ICS button calls the client, then the OS share sheet", async () => {
+    const share = jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction", activityType: undefined });
     const { voting } = setup(200, event);
-    await open(createMockPlanningClient("three"), voting);
+    const exportIcs = jest.fn(async (id: string) => ({ filename: `event-${id}.ics`, content: "BEGIN:VCALENDAR" }));
+    await open(createMockPlanningClient("three"), voting, { exportIcs });
     await fireEvent.press(screen.getByLabelText(/^Events, tab/));
-    expect(await screen.findByText("Calendar export is not available yet")).toBeTruthy();
-    expect(screen.queryByText("Add to calendar (.ics)")).toBeNull();
+    await fireEvent.press(await screen.findByText("Add to calendar (.ics)"));
+    await screen.findByText("Choose where to save the calendar file.");
+    expect(exportIcs).toHaveBeenCalledWith("e1");
+    expect(share).toHaveBeenCalledWith({ message: "BEGIN:VCALENDAR", title: "event-e1.ics" });
     expect(screen.queryByText(/not connected yet/)).toBeNull();
+  });
+
+  test("real mode ICS failure shows an error and does not open the share sheet", async () => {
+    const share = jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction", activityType: undefined });
+    const { voting } = setup(200, event);
+    await open(createMockPlanningClient("three"), voting, {
+      exportIcs: async () => {
+        throw new VotingError("forbidden");
+      },
+    });
+    await fireEvent.press(screen.getByLabelText(/^Events, tab/));
+    await fireEvent.press(await screen.findByText("Add to calendar (.ics)"));
+    await screen.findByRole("alert");
+    expect(share).not.toHaveBeenCalled();
   });
 
   test("a 401 on planning shows session-expired messaging", async () => {

@@ -6,8 +6,10 @@ import { createApiClient } from "./src/apiClient";
 import { createMockGroupClient } from "./src/groups";
 import {
   createHttpGroupClient,
+  createHttpIcsClient,
   createHttpMemberSetupClient,
   createHttpPlanningClient,
+  createHttpScheduleClient,
   createHttpVotingClient,
 } from "./src/httpClients";
 import { createExpoNotificationPermissionClient } from "./src/notifications";
@@ -42,19 +44,19 @@ const api =
     : null;
 const apiMissing = backend === "config_error";
 const groupClient = api ? createHttpGroupClient(api) : createMockGroupClient();
-// undefined lets RootNavigator fall back to its in-memory mock. The weekly schedule stays a local
-// mock: the API has no /schedule route yet (SPEC section 9 request in the DEV1-010 handoff).
+// undefined lets RootNavigator fall back to its in-memory mock.
 const memberSetupClient = api ? createHttpMemberSetupClient(api) : undefined;
+const scheduleClient = api ? createHttpScheduleClient(api) : undefined;
 
 // Replaced by the API-backed MemberSetupClient later; push permission uses Expo for real.
 const notificationClient = createExpoNotificationPermissionClient();
-// Planning, vote, veto and confirmed-event are real when the API is configured. Still mock because the API
-// has no route yet (SPEC section 9 requests): notifications feed, ICS export, vote-state tallies, push-device
-// registration and the weekly schedule. The mock is explicit here, never a silent fallback.
+// Planning, vote, veto, confirmed-event, notifications feed, ICS export and weekly schedule are real when the
+// API is configured. Still unavailable (no API route, SPEC section 9 requests): vote-state tallies/deadline
+// and push-device registration. The mock is explicit here, never a silent fallback.
 const mockVoting = createMockVotingClient();
 const planningClient = api ? createHttpPlanningClient(api) : createMockPlanningClient();
 const votingClient = api ? createHttpVotingClient(api) : mockVoting;
-const icsClient = createMockIcsClient();
+const icsClient = api ? createHttpIcsClient(api) : createMockIcsClient();
 
 export default function App() {
   const fonts = useAppFonts();
@@ -72,6 +74,7 @@ export default function App() {
       <RootNavigator
         groupClient={groupClient}
         memberSetupClient={memberSetupClient}
+        scheduleClient={scheduleClient}
         notificationClient={notificationClient}
         planningClient={planningClient}
         votingClient={votingClient}

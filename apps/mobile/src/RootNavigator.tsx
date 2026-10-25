@@ -23,12 +23,12 @@ import {
 } from "./groupScreens";
 import type { GroupsStackParams } from "./groupScreens";
 import {
-  createMockLocalScheduleClient,
+  createMockScheduleClient,
   createMockMemberSetupClient,
   createMockNotificationPermissionClient,
 } from "./memberSetup";
 import type {
-  LocalScheduleClient,
+  ScheduleClient,
   MemberSetupClient,
   NotificationPermissionClient,
 } from "./memberSetup";
@@ -119,7 +119,7 @@ export function RootNavigator({
 }: {
   groupClient: GroupClient;
   memberSetupClient?: MemberSetupClient;
-  scheduleClient?: LocalScheduleClient;
+  scheduleClient?: ScheduleClient;
   notificationClient?: NotificationPermissionClient;
   planningClient?: PlanningClient;
   votingClient?: VotingClient;
@@ -127,7 +127,7 @@ export function RootNavigator({
 }) {
   const [defaults] = useState(() => ({
     member: createMockMemberSetupClient(),
-    schedule: createMockLocalScheduleClient(),
+    schedule: createMockScheduleClient(),
     notifications: createMockNotificationPermissionClient(),
   }));
   const { loading, session } = useAuth();

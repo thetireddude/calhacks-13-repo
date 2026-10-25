@@ -55,17 +55,17 @@ Real = wired to the API today. MOCK = local in-memory mock, do not promise it in
 | 13 | Other account: vote Can't make it | Accepted; distinct from veto | Real | |
 | 14 | Veto (separate control, confirm prompt) | Veto recorded separately from Can't make it | Real | |
 | 15 | Once majority is met, open Events | Confirmed event visible to all members, including the one who declined | Real (`confirmed-event`) | |
-| 16 | Weekly schedule settings | Form works locally only | MOCK | |
+| 16 | Weekly schedule settings | Timezone + weekly toggle load from and save to the backend; no auto-planning | Real (`/v1/groups/:id/schedule`), not yet run live | |
 | 17 | Vote tally / counts / deadline display | Rendered from mobile-local stub, not backend data | MOCK | |
-| 18 | Notifications feed | Mock items only | MOCK | |
-| 19 | ICS export | Stub, no real file produced | MOCK | |
+| 18 | Notifications feed | Confirmed-event items from the backend; empty list shows "No notifications yet." | Real (`/v1/me/notifications`), not yet run live | |
+| 19 | ICS export | "Add to calendar (.ics)" fetches the file and opens the OS share sheet | Real (`/v1/events/:id/calendar.ics`), not yet run live | |
 | 20 | Push device registration | Not implemented (permission request only) | MOCK / absent | |
 
-Rows 16-20 and "Suggest another" (disabled control), aggregate attendance counts, the inclusion-aware alternative, and revision/revote flows are not demo-able today. Do not promise them (SPEC §3 items "ICS export works on the demo device" and the in-app feed are therefore not met).
+Rows 17 and 20 and "Suggest another" (disabled control), aggregate attendance counts, the inclusion-aware alternative, and revision/revote flows are not demo-able today. Do not promise them (the ICS export and in-app feed rows 18-19 are wired but unverified until run on a device).
 
 ## 4. Known limitations and fallback
 
-- Contract gaps (no route or DTO yet): schedule, vote tally, notifications feed, ICS, push registration, "Suggest another". See `docs/gate1-dev1-exit.md`.
+- Contract gaps (no route or DTO yet): vote tally, push registration, "Suggest another". See `docs/gate1-dev1-exit.md`.
 - The API is a local dev machine on a LAN: it is up only while `pnpm --filter @gather/api dev` runs, and HTTP is cleartext (fine in Expo Go; a release build would need HTTPS).
 - Pending invite token is held and joined by whoever signs in next; avoid opening an invite link while signed out on a shared phone.
 

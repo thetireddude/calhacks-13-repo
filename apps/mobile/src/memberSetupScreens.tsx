@@ -6,11 +6,11 @@ import { View } from "react-native";
 
 import { useGroups } from "./groupsState";
 import { AppText, Banner, Button, Card, Screen, Skeleton, TextField, Toggle } from "./ui";
-import { validatePreferences, validateWeeklySettings, validateWindow } from "./memberSetup";
+import { MemberSetupError, validatePreferences, validateWindow } from "./memberSetup";
 import type {
-  LocalScheduleClient,
   MemberSetupClient,
   NotificationPermissionClient,
+  ScheduleClient,
 } from "./memberSetup";
 
 export type SetupStackParams = {
@@ -22,7 +22,7 @@ export type SetupStackParams = {
 
 type SetupDeps = {
   member: MemberSetupClient;
-  schedule: LocalScheduleClient;
+  schedule: ScheduleClient;
   notifications: NotificationPermissionClient;
 };
 const SetupContext = createContext<SetupDeps | null>(null);
@@ -299,41 +299,50 @@ export function AvailabilityScreen() {
   );
 }
 
-// Mobile-local and unapproved: see LocalWeeklySettings in memberSetup.ts.
+// Stores GroupSchedule config (timezone + weekly toggle) through the ScheduleClient. The backend does not
+// auto-plan from it yet (SPEC section 11), so the screen says so rather than implying a schedule runs.
+const SCHEDULE_REJECTED = "The server rejected these settings. Enter a timezone such as America/Los_Angeles.";
+
 export function WeeklyPlanningScreen({ route }: NativeStackScreenProps<SetupStackParams, "WeeklyPlanning">) {
   const { schedule } = useSetup();
   const { groupId } = route.params;
-  const [weekday, setWeekday] = useState("");
-  const [time, setTime] = useState("");
-  const [deadline, setDeadline] = useState("");
+  const [timezone, setTimezone] = useState("");
+  const [weeklyEnabled, setWeeklyEnabled] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
+    let live = true;
     schedule.get(groupId).then(
       (s) => {
-        if (!s) return;
-        setWeekday(String(s.weekday));
-        setTime(s.time);
-        setDeadline(String(s.votingDeadlineHours));
+        if (!live) return;
+        setTimezone(s.timezone);
+        setWeeklyEnabled(s.weeklyEnabled);
+        setLoaded(true);
       },
-      () => setError(LOAD_FAILED),
+      () => live && setError(LOAD_FAILED),
     );
+    return () => {
+      live = false;
+    };
   }, [schedule, groupId]);
 
   async function save() {
+    if (saving) return;
     setNotice(null);
-    const result = validateWeeklySettings(weekday, time, deadline);
-    if (!result.ok) {
-      setError(result.error);
-      return;
-    }
     setError(null);
+    setSaving(true);
     try {
-      await schedule.put(groupId, result.value);
+      const saved = await schedule.put(groupId, { timezone, weeklyEnabled });
+      setTimezone(saved.timezone);
+      setWeeklyEnabled(saved.weeklyEnabled);
       setNotice("Saved.");
-    } catch {
-      setError(SAVE_FAILED);
+    } catch (e) {
+      setError(e instanceof MemberSetupError && e.code === "invalid" ? SCHEDULE_REJECTED : SAVE_FAILED);
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -342,14 +351,18 @@ export function WeeklyPlanningScreen({ route }: NativeStackScreenProps<SetupStac
       <AppText variant="title" accessibilityRole="header">
         Weekly planning
       </AppText>
-      <Banner tone="info" message="Draft settings, not yet connected to the backend (mobile-local, unapproved)." />
-      <AppText muted>Weekday 0 (Sunday) to 6 (Saturday), time like 18:00, deadline in hours.</AppText>
-      <TextField label="Weekday" value={weekday} onChangeText={setWeekday} keyboardType="number-pad" />
-      <TextField label="Planning time" value={time} onChangeText={setTime} autoCapitalize="none" />
-      <TextField label="Voting deadline hours" value={deadline} onChangeText={setDeadline} keyboardType="number-pad" />
+      <Banner tone="info" message="These settings are saved for your group. Automatic weekly planning is not available yet." />
+      {loaded ? (
+        <>
+          <TextField label="Timezone" value={timezone} onChangeText={setTimezone} autoCapitalize="none" />
+          <Toggle label="Weekly planning enabled" value={weeklyEnabled} onValueChange={setWeeklyEnabled} />
+        </>
+      ) : error ? null : (
+        <AppText variant="small" muted>Loading settings.</AppText>
+      )}
       {error ? <Banner message={error} /> : null}
       {notice ? <Banner tone="info" message={notice} /> : null}
-      <Button title="Save weekly planning" onPress={() => void save()} />
+      {loaded ? <Button title="Save weekly planning" disabled={saving} onPress={() => void save()} /> : null}
     </Screen>
   );
 }

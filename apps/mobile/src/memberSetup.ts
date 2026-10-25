@@ -1,5 +1,6 @@
 import type {
   AvailabilityWindow,
+  GroupSchedule,
   MemberAvailabilityResponse,
   MemberPreferencesResponse,
   PutMemberAvailabilityRequest,
@@ -102,49 +103,23 @@ export function validateWindow(startsAt: string, endsAt: string): string | null 
   return null;
 }
 
-// ---- Weekly planning settings: MOBILE-LOCAL, UNAPPROVED ----
-// No schedule DTO exists in packages/contracts, and timezone/time/deadline representation are
-// SPEC section 11 items. This shape and mock are placeholders so the UI can be built; they must be
-// replaced by the contract once a SPEC section 9 change is approved. Do not treat as a frozen format.
-export type LocalWeeklySettings = {
-  weekday: number; // 0 = Sunday .. 6 = Saturday (unapproved)
-  time: string; // "HH:MM" (unapproved; no timezone)
-  votingDeadlineHours: number; // hours after planning run (unapproved)
-};
-
-export interface LocalScheduleClient {
-  get(groupId: string): Promise<LocalWeeklySettings | null>;
-  put(groupId: string, settings: LocalWeeklySettings): Promise<LocalWeeklySettings>;
+// ---- Weekly planning settings (contract GroupSchedule) ----
+// Config only: the backend stores it and does not auto-plan from it (SPEC section 11). Defaults when a
+// group has none are the backend's: UTC, disabled.
+export interface ScheduleClient {
+  get(groupId: string): Promise<GroupSchedule>;
+  put(groupId: string, schedule: GroupSchedule): Promise<GroupSchedule>;
 }
 
-export function createMockLocalScheduleClient(): LocalScheduleClient {
-  const store = new Map<string, LocalWeeklySettings>();
+export function createMockScheduleClient(): ScheduleClient {
+  const store = new Map<string, GroupSchedule>();
   return {
-    get: async (id) => {
-      const s = store.get(id);
-      return s ? { ...s } : null;
-    },
+    get: async (id) => ({ ...(store.get(id) ?? { timezone: "UTC", weeklyEnabled: false }) }),
     put: async (id, s) => {
       store.set(id, { ...s });
       return { ...s };
     },
   };
-}
-
-export function validateWeeklySettings(
-  weekday: string,
-  time: string,
-  deadline: string,
-): { ok: true; value: LocalWeeklySettings } | { ok: false; error: string } {
-  const day = Number(weekday.trim());
-  if (weekday.trim() === "" || !Number.isInteger(day) || day < 0 || day > 6)
-    return { ok: false, error: "Weekday must be a number from 0 (Sunday) to 6 (Saturday)." };
-  const t = time.trim();
-  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(t)) return { ok: false, error: "Time must look like 18:30." };
-  const hours = Number(deadline.trim());
-  if (deadline.trim() === "" || !Number.isInteger(hours) || hours <= 0)
-    return { ok: false, error: "Voting deadline must be a whole number of hours above 0." };
-  return { ok: true, value: { weekday: day, time: t, votingDeadlineHours: hours } };
 }
 
 // ---- Notification permission ----

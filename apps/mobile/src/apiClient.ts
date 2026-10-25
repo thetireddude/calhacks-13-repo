@@ -22,9 +22,14 @@ export type ApiClientOptions = {
 };
 
 export function createApiClient({ baseUrl, getAccessToken, fetchImpl = fetch }: ApiClientOptions) {
-  async function request<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+  async function send(
+    path: string,
+    init: { method?: string; body?: unknown },
+    accept: string,
+    read: (res: Response) => Promise<unknown>,
+  ): Promise<unknown> {
     const token = await getAccessToken();
-    const headers: Record<string, string> = { Accept: "application/json" };
+    const headers: Record<string, string> = { Accept: accept };
     if (token) headers.Authorization = `Bearer ${token}`;
     if (init.body !== undefined) headers["Content-Type"] = "application/json";
     let res: Response;
@@ -39,13 +44,21 @@ export function createApiClient({ baseUrl, getAccessToken, fetchImpl = fetch }: 
     }
     if (!res.ok) throw new ApiError(res.status);
     try {
-      return (await res.json()) as T;
+      return await read(res);
     } catch {
       throw new ApiError(0);
     }
   }
+  async function request<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+    return (await send(path, init, "application/json", (r) => r.json())) as T;
+  }
+  // GET returning a text body (for example text/calendar). Same auth and status handling as request().
+  async function requestText(path: string, accept: string): Promise<string> {
+    return (await send(path, {}, accept, (r) => r.text())) as string;
+  }
   return {
     request,
+    requestText,
     getMe: () => request<MeResponse>("/v1/me"),
   };
 }

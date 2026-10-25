@@ -49,6 +49,7 @@ Core API lane only. Other lanes own their tasks separately.
 | DEV1-010 | done | DEV1-009 | Real HTTP group + member-setup clients (groups, invites, members, preferences, availability); weekly schedule still local mock; live two-device run pending |
 | DEV1-011 | partial | DEV1-010 | Real planning runs/proposals, vote, veto, confirmed event; notifications, ICS, push, vote tally, schedule remain mock/unavailable pending API routes |
 | DEV1-012 | ready for device run | DEV1-011 | Privacy sweep done (no P0/P1), `docs/demo-mobile.md` written; physical-device checklist still to be run by a human |
+| DEV1-011b | candidate | DEV1-011, DEV2-021..023 | Real weekly schedule, notifications feed and ICS export clients; vote tally and push registration remain unavailable (no API route); not run live |
 | DEV1-013 | done | DEV1-011 | UI restyle from the Gather design system (visual only); on-device visual check pending |
 
 Milestone: [`docs/milestone-dag.md`](../docs/milestone-dag.md)

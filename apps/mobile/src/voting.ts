@@ -48,7 +48,8 @@ export type NotificationItemView = {
 };
 
 // mobile-local stub, pending SPEC §9/§11 approval: ICS result; serialization owner is SPEC section 11.
-export type IcsExportResult = { filename: string };
+// `content` is the .ics text returned by the real API; the mock returns only a filename.
+export type IcsExportResult = { filename: string; content?: string };
 
 export interface IcsClient {
   exportIcs(eventId: string): Promise<IcsExportResult>;
@@ -72,8 +73,7 @@ export interface VotingClient {
   veto(proposalId: string): Promise<ProposalVetoResponse>;
   getConfirmedEvent(groupId: string): Promise<ConfirmedEventView>;
   listNotifications(): Promise<NotificationItemView[]>;
-  // True for the API-backed client: screens then say honestly what the API cannot do yet (no notifications
-  // feed, no ICS export). Absent for the mock.
+  // True for the API-backed client (the vote state degrades honestly: no tallies, deadline or eligibility).
   realBackend?: boolean;
 }
 

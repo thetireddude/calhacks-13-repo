@@ -6,12 +6,12 @@ Raised by the mobile lane while wiring DEV1-009..013. Dev 2 owns `packages/contr
 |---|---------|---------------------|-------------------------|
 | 1 | Vote-state route: counts, status, deadline, vote/veto allowed, and the caller's own vote and veto | Voting UI is driven by it; own vote is lost on app restart | Real mode hardcodes open/allowed, shows "Vote counts are not available yet." |
 | 2 | Vote and veto responses (or proposal status) that say whether the proposal was vetoed or confirmed | UI cannot show the outcome until the confirmed-event fetch | No outcome shown |
-| 3 | Notifications feed route and DTO | In-app feed | Real mode: "Notifications are not available yet." |
-| 4 | ICS export route/delivery | Add to calendar | Real mode: "Calendar export is not available yet" |
+| 3 | Notifications feed route and DTO | In-app feed | **Resolved (route)** by DEV2-023: `GET /v1/me/notifications` is wired. Open: the item type is declared only in `apps/api`, not `@gather/contracts`; mobile mirrors it locally. |
+| 4 | ICS export route/delivery | Add to calendar | **Resolved** by DEV2-022: `GET /v1/events/:eventId/calendar.ics` is wired; the text is handed to the OS share sheet (nothing is added to a calendar silently). |
 | 5 | Push-device registration route | Push notifications | Permission prompt only |
-| 6 | Weekly schedule route and DTO (`/v1/groups/:id/schedule`; DEV2-021 in progress) | Weekly planning settings | Local in-memory mock |
+| 6 | Weekly schedule route and DTO (`/v1/groups/:id/schedule`) | Weekly planning settings | **Resolved** by DEV2-021: `GroupSchedule` (`timezone`, `weeklyEnabled`) is wired. The old mobile weekday/time/deadline fields were dropped; the API stores no such fields and auto-planning is undecided (SPEC §11). |
 | 7 | Frozen planning-run status set and error schema; retry semantics | Mobile keys on pending/completed/failed; maps errors by HTTP status | Status strings pending/completed/failed assumed |
-| 8 | `ListGroupsResponse` and `ListMembersResponse` types in contracts; display name on members | Group list and members screens | Wrapper types declared inline; members show IDs |
+| 8 | `ListGroupsResponse` and `ListMembersResponse` types in contracts; display name on members | Group list and members screens | Still open: contracts still has no list wrapper types or notification DTO; wrappers stay inline. Members show IDs |
 | 9 | Proposal fields for place, time and cost per person | Design shows them on proposal cards | Not shown; only summary and explanation |
 | 10 | "Maybe" vote choice (design shows it) and "Suggest another" (SPEC §3) | Design and SPEC list them | Not offered; "Suggest another" is a disabled placeholder |
 | 11 | Cancelled-event representation and distinct "no event" vs "unknown group" on confirmed-event | Event states | Every 404 shown as no event; only `confirmed` supported |

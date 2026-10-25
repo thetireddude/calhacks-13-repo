@@ -4,6 +4,7 @@ import type {
   GroupInviteResponse,
   GroupMemberResponse,
   GroupResponse,
+  GroupSchedule,
   JoinInviteResponse,
   MemberAvailabilityResponse,
   MemberPreferencesResponse,
@@ -20,11 +21,11 @@ import type { GroupClient, GroupErrorCode } from "./groups";
 import { PlanningError } from "./planning";
 import type { PlanningClient, PlanningErrorCode } from "./planning";
 import { VotingError } from "./voting";
-import type { ProposalVoteStateView, VotingClient, VotingErrorCode } from "./voting";
+import type { IcsClient, NotificationItemView, ProposalVoteStateView, VotingClient, VotingErrorCode } from "./voting";
 import { MemberSetupError } from "./memberSetup";
-import type { MemberSetupClient, MemberSetupErrorCode } from "./memberSetup";
+import type { MemberSetupClient, MemberSetupErrorCode, ScheduleClient } from "./memberSetup";
 
-type Api = Pick<ReturnType<typeof createApiClient>, "request">;
+type Api = Pick<ReturnType<typeof createApiClient>, "request" | "requestText">;
 
 // Real API clients (SPEC section 6.2). Only the HTTP status is mapped; response bodies, tokens and
 // emails never reach error messages. POSTs are never retried automatically: the user retries by hand.
@@ -99,6 +100,35 @@ export function createHttpMemberSetupClient(api: Api): MemberSetupClient {
   };
 }
 
+// GET/PUT /v1/groups/:groupId/schedule: config only (timezone + weeklyEnabled); the API does not auto-plan.
+// 400 invalid_schedule maps to "invalid"; the PUT is a single attempt.
+export function createHttpScheduleClient(api: Api): ScheduleClient {
+  return {
+    get: (id) => setupCall(() => api.request<GroupSchedule>(`/v1/groups/${seg(id)}/schedule`)),
+    put: (id, schedule) =>
+      setupCall(() => api.request<GroupSchedule>(`/v1/groups/${seg(id)}/schedule`, { method: "PUT", body: schedule })),
+  };
+}
+
+// GET /v1/events/:eventId/calendar.ics (member-only, text/calendar). Returns the text; the screen hands it
+// to the OS share sheet. Nothing is written to a calendar here.
+export function createHttpIcsClient(api: Api): IcsClient {
+  return {
+    exportIcs: async (eventId) => ({
+      filename: `event-${eventId}.ics`,
+      content: await votingCall(() =>
+        api.requestText(`/v1/events/${seg(eventId)}/calendar.ics`, "text/calendar"),
+      ),
+    }),
+  };
+}
+
+// Response of GET /v1/me/notifications. The API defines this type locally (apps/api), not in
+// @gather/contracts, so it is mirrored here. Only "event_confirmed" exists; other types are skipped.
+type NotificationsResponse = {
+  notifications: { type: string; groupId: string; eventId: string; summary: string; createdAt: string }[];
+};
+
 async function planningCall<T>(call: () => Promise<T>): Promise<T> {
   try {
     return await call();
@@ -157,12 +187,12 @@ async function votingCall<T>(call: () => Promise<T>): Promise<T> {
 }
 
 // Real: PUT vote, POST veto, GET confirmed-event (404 = no event yet, the API's "none" answer).
-// Not real (no API route yet, SPEC section 9 requests): getVoteState and listNotifications.
+// Not real (no API route, SPEC section 9 request): getVoteState.
 // - getVoteState: the API exposes no tallies, deadline or eligibility, so none are invented or computed.
 //   The view carries only what the API itself returned to this user in this session (own vote / own veto),
 //   and `voteAllowed`/`vetoAllowed` are true only so the controls are reachable: the backend remains the
 //   authority and rejects disallowed actions (shown as an error).
-// - listNotifications: always empty until a notifications route exists; fixture data is never shown.
+// - listNotifications: GET /v1/me/notifications, mapped to the view as the API provides it (no fabrication).
 export function createHttpVotingClient(api: Api): VotingClient {
   const mine = new Map<string, Pick<ProposalVoteStateView, "myChoice" | "myVeto">>();
   return {
@@ -196,7 +226,19 @@ export function createHttpVotingClient(api: Api): VotingClient {
         throw votingError(e);
       }
     },
-    listNotifications: async () => [],
+    listNotifications: async () => {
+      const res = await votingCall(() => api.request<NotificationsResponse>("/v1/me/notifications"));
+      return res.notifications
+        .filter((n) => n.type === "event_confirmed")
+        .map(
+          (n): NotificationItemView => ({
+            id: `${n.type}:${n.eventId}`,
+            title: "Event confirmed",
+            body: n.summary,
+            createdAt: n.createdAt,
+          }),
+        );
+    },
     realBackend: true,
   };
 }

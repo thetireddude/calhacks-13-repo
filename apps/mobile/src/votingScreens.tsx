@@ -1,7 +1,7 @@
 import type { ConfirmedEventResponse } from "@gather/contracts";
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { View } from "react-native";
+import { Share, View } from "react-native";
 
 import { useGroups } from "./groupsState";
 import { AppText, Banner, Button, Card, Chip, EmptyState, Screen, VoteButton } from "./ui";
@@ -257,8 +257,14 @@ function GroupEvent({ groupId, groupName }: { groupId: string; groupName: string
     setError(null);
     setExporting(true);
     try {
-      await ics.exportIcs(event.id);
-      setNotice("Calendar export is not connected yet (stub).");
+      const result = await ics.exportIcs(event.id);
+      if (result.content === undefined) {
+        setNotice("Calendar export is not connected yet (stub).");
+      } else {
+        // The user picks the destination in the share sheet; nothing is added to a calendar silently.
+        await Share.share({ message: result.content, title: result.filename });
+        setNotice("Choose where to save the calendar file.");
+      }
     } catch {
       setError(GENERIC_ERROR);
     } finally {
@@ -281,8 +287,6 @@ function GroupEvent({ groupId, groupName }: { groupId: string; groupName: string
             <AppText variant="small" muted>{`Confirmed at: ${view.event.confirmedAt}`}</AppText>
             {view.status === "cancelled" ? (
               <AppText accessibilityRole="alert">This event was cancelled.</AppText>
-            ) : voting.realBackend ? (
-              <AppText variant="small" muted>Calendar export is not available yet</AppText>
             ) : (
               <Button title="Add to calendar (.ics)" disabled={exporting} onPress={() => void exportIcs(view.event)} />
             )}
@@ -337,7 +341,7 @@ export function NotificationsScreen() {
       {error ? <Banner message={error} /> : null}
       {!items && !error ? <AppText variant="small" muted>Loading notifications.</AppText> : null}
       {items && items.length === 0 ? (
-        <EmptyState title={voting.realBackend ? "Notifications are not available yet." : "No notifications yet."} />
+        <EmptyState title="No notifications yet." />
       ) : null}
       {items?.map((n) => (
         <Card key={n.id}>

@@ -10,6 +10,7 @@ export function registerPlanningRoutes(
   groupsStore: GroupsStore,
   planningStore: PlanningStore,
   plannerPort: PlannerPort,
+  plannerTimeoutMs?: number,
 ): void {
   const memberOnlyForGroup = async (
     request: { params: { groupId: string }; authUser?: { sub: string } },
@@ -51,7 +52,7 @@ export function registerPlanningRoutes(
       await generateAndPersistProposals(planningStore, plannerPort, run.id, {
         groupId: run.groupId,
         activityRequest: run.activityRequest,
-      });
+      }, { timeoutMs: plannerTimeoutMs });
       const updated = (await planningStore.getRun(run.id))!;
       return reply.code(201).send(updated);
     },
@@ -65,7 +66,7 @@ export function registerPlanningRoutes(
       if (run.status === "completed") {
         return reply.code(409).send({ error: "already_completed" });
       }
-      await generateAndPersistProposals(
+      const outcome = await generateAndPersistProposals(
         planningStore,
         plannerPort,
         run.id,
@@ -73,7 +74,11 @@ export function registerPlanningRoutes(
           groupId: run.groupId,
           activityRequest: run.activityRequest,
         },
+        { timeoutMs: plannerTimeoutMs },
       );
+      if (!outcome.ok && outcome.conflict) {
+        return reply.code(409).send({ error: "generation_in_progress" });
+      }
       return (await planningStore.getRun(run.id))!;
     },
   );

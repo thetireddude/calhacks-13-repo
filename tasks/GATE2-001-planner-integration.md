@@ -18,7 +18,15 @@ Backend creates and stores proposals from the real `@gather/planner` (SPEC §8 G
 
 ## Validation behavior
 
-Run id must match; `proposals` must be an array; at most 3 are kept (extras beyond the third are truncated, pre-existing behavior); 1..3 required. Each item needs a non-empty `proposalId` and `summary`, an integer `rank >= 1`, unique ids and ranks, a finite `deterministicScore` if present, and an `explanation` that passes the planner's `isPublicExplanationSafe`. Any violation or thrown error: `markRunFailed`, nothing persisted, `POST /v1/planning-runs/:id/generate` retries. Unsafe explanation fails the run (not field-dropping).
+Run id must match; `proposals` must be an array of 1..3 (MORE than 3 is a contract violation: the run fails closed, nothing is truncated or persisted). Each item needs a `proposalId` (non-empty, <=200 chars), `summary` (non-empty, <=300), an integer `rank`; ids unique; ranks exactly the set {1..n} (gaps, duplicates, rank 0 rejected; contiguous out-of-order ranks are sorted and persisted in rank order); finite `deterministicScore` if present; `explanation` if present must be non-empty, <=600 chars; `revisionId` if present a string <=200. `isPublicExplanationSafe` is applied to both `summary` and `explanation`. An empty-string explanation is invalid (not treated as absent). Any violation, thrown error or timeout: `markRunFailed`, nothing persisted, `POST /v1/planning-runs/:id/generate` retries. Violations fail the run rather than dropping fields.
+
+An existing test (`planning.test.ts`, formerly "mock planner persists at most three proposals") previously encoded silent truncation of 5 proposals to 3; it was updated to assert fail-closed rejection because truncation hid a contract violation.
+
+Privacy: `isPublicExplanationSafe` is a BEST-EFFORT substring filter, NOT a privacy guarantee. It misses emails, phone numbers, addresses and phrasing like "free on Friday", and can false-positive on words like "history". The real guarantee today is that no member context is passed to the planner.
+
+Operational behavior: planner call timeout (default 20000 ms, `PLANNER_TIMEOUT_MS` or `createApp({plannerTimeoutMs})`); a late result after timeout is ignored. Failures log one line (`[planner] run=<id> <code>`, codes `invalid_output:<reason>`, `planner_error:<ErrorClassName>`, `planner_timeout`, `persist_error:<ErrorClassName>`), never messages, payloads or proposal text. A per-run in-process in-flight guard makes a concurrent `/generate` return 409 `generation_in_progress` without calling the planner; it is per-process only. Cross-process atomicity (conditional claim update; Postgres RPC doing delete+insert+status in one transaction) is Dev 2's surface and remains an open request. `PLANNER_IMPL` is trimmed/lower-cased; `real` and `mock` accepted; other non-empty values warn once and use the mock.
+
+Build order: the API imports `@gather/planner`, so `pnpm --filter @gather/planner build` is needed before `dev`/`start`/tests (`pnpm run test:ci` does it).
 
 ## Gaps / requests
 

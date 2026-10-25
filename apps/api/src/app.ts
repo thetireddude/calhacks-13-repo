@@ -26,6 +26,8 @@ export type CreateAppOptions = {
   planningStore?: PlanningStore;
   votingStore?: VotingStore;
   plannerPort?: PlannerPort;
+  /** Planner call timeout; default PLANNER_TIMEOUT_MS env or 20000. */
+  plannerTimeoutMs?: number;
 };
 
 export async function createApp(options: CreateAppOptions = {}) {
@@ -39,12 +41,16 @@ export async function createApp(options: CreateAppOptions = {}) {
   const votingStore = options.votingStore ?? createDefaultVotingStore();
   const plannerPort = options.plannerPort ?? createDefaultPlannerPort();
 
+  const envTimeout = Number(process.env.PLANNER_TIMEOUT_MS);
+  const plannerTimeoutMs =
+    options.plannerTimeoutMs ?? (envTimeout > 0 ? envTimeout : undefined);
+
   app.get("/v1/health", async () => ({ status: "ok" as const }));
 
   registerProfileRoutes(app, profileStore);
   registerGroupRoutes(app, groupsStore);
   registerMemberSetupRoutes(app, memberSetupStore);
-  registerPlanningRoutes(app, groupsStore, planningStore, plannerPort);
+  registerPlanningRoutes(app, groupsStore, planningStore, plannerPort, plannerTimeoutMs);
   registerVotingRoutes(app, groupsStore, planningStore, votingStore);
   registerNotificationRoutes(app, groupsStore, planningStore, votingStore);
 

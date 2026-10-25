@@ -1,5 +1,5 @@
 import type { PlanningRunResponse, Proposal } from "@gather/contracts";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { ActivityIndicator, Button, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
@@ -114,7 +114,12 @@ export function PlanningScreen() {
     setProposals(latest.status === "completed" ? (await client.getProposals(runId)).proposals : null);
   }
 
+  const inFlight = useRef(false);
+
   async function work(fn: () => Promise<void>) {
+    // Ref guard: set synchronously so a double press before re-render cannot start two calls.
+    if (inFlight.current) return;
+    inFlight.current = true;
     setError(null);
     setBusy(true);
     try {
@@ -126,6 +131,7 @@ export function PlanningScreen() {
           : "Something went wrong. Please try again.",
       );
     } finally {
+      inFlight.current = false;
       setBusy(false);
     }
   }

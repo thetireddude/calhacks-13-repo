@@ -135,6 +135,13 @@ test("a member who voted Can't make it can still open the confirmed event", asyn
   expect(screen.getByText("Add to calendar (.ics)")).toBeTruthy();
 });
 
+test("vote note is absent when counts are present", async () => {
+  await setup({ vote: "open" });
+  await openProposals();
+  await screen.findAllByText(`Voting closes: ${FIXTURE_DEADLINE}`);
+  expect(screen.queryByText("Vote counts are not available yet.")).toBeNull();
+});
+
 test("cancelled event shows cancellation and no calendar export", async () => {
   await setup({ event: "cancelled" });
   await openTab("Events");

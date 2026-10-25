@@ -51,7 +51,7 @@ const notificationClient = createExpoNotificationPermissionClient();
 // registration and the weekly schedule. The mock is explicit here, never a silent fallback.
 const mockVoting = createMockVotingClient();
 const planningClient = api ? createHttpPlanningClient(api) : createMockPlanningClient();
-const votingClient = api ? createHttpVotingClient(api, mockVoting) : mockVoting;
+const votingClient = api ? createHttpVotingClient(api) : mockVoting;
 const icsClient = createMockIcsClient();
 
 export default function App() {

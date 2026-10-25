@@ -162,8 +162,8 @@ async function votingCall<T>(call: () => Promise<T>): Promise<T> {
 //   The view carries only what the API itself returned to this user in this session (own vote / own veto),
 //   and `voteAllowed`/`vetoAllowed` are true only so the controls are reachable: the backend remains the
 //   authority and rejects disallowed actions (shown as an error).
-// - listNotifications: delegated to the supplied mock until a notifications route exists.
-export function createHttpVotingClient(api: Api, mock: Pick<VotingClient, "listNotifications">): VotingClient {
+// - listNotifications: always empty until a notifications route exists; fixture data is never shown.
+export function createHttpVotingClient(api: Api): VotingClient {
   const mine = new Map<string, Pick<ProposalVoteStateView, "myChoice" | "myVeto">>();
   return {
     getVoteState: async (proposalId) => ({
@@ -196,6 +196,7 @@ export function createHttpVotingClient(api: Api, mock: Pick<VotingClient, "listN
         throw votingError(e);
       }
     },
-    listNotifications: mock.listNotifications,
+    listNotifications: async () => [],
+    realBackend: true,
   };
 }

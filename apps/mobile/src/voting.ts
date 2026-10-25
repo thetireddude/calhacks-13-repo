@@ -72,6 +72,9 @@ export interface VotingClient {
   veto(proposalId: string): Promise<ProposalVetoResponse>;
   getConfirmedEvent(groupId: string): Promise<ConfirmedEventView>;
   listNotifications(): Promise<NotificationItemView[]>;
+  // True for the API-backed client: screens then say honestly what the API cannot do yet (no notifications
+  // feed, no ICS export). Absent for the mock.
+  realBackend?: boolean;
 }
 
 export type MockVoteScenario = "open" | "vetoed" | "revision" | "revote" | "confirmed" | "cancelled" | "noVeto";

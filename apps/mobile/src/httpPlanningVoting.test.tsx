@@ -54,7 +54,7 @@ function setup(status: number | "throw", body: unknown = {}) {
   return {
     fetchImpl,
     planning: createHttpPlanningClient(api),
-    voting: createHttpVotingClient(api, createMockVotingClient()),
+    voting: createHttpVotingClient(api),
   };
 }
 function lastCall(f: jest.Mock) {
@@ -167,9 +167,11 @@ describe("http voting client", () => {
     await voting.putVote("p1", { choice: "approve" }).catch(() => {});
     expect((await voting.getVoteState("p1")).myChoice).toBeUndefined();
   });
-  test("notifications stay on the supplied mock", async () => {
+  test("real-mode notifications are empty and never fixture data", async () => {
     const { voting, fetchImpl } = setup(200);
-    expect(await voting.listNotifications()).toEqual(FIXTURE_NOTIFICATIONS);
+    const list = await voting.listNotifications();
+    expect(list).toEqual([]);
+    expect(list).not.toEqual(FIXTURE_NOTIFICATIONS);
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 });
@@ -265,6 +267,35 @@ describe("screens with real clients and polling", () => {
     expect(retryRun).toHaveBeenCalledWith("run-1");
   });
 
+  test("double press on Try again issues one retry call", async () => {
+    const base = createMockPlanningClient("failed");
+    let release: (r: PlanningRunResponse) => void = () => {};
+    const retryRun = jest.fn(() => new Promise<PlanningRunResponse>((r) => (release = r)));
+    await open({ ...base, retryRun });
+    await fireEvent.press(screen.getByText("Start planning"));
+    const again = await screen.findByText("Try again");
+    await fireEvent.press(again);
+    await fireEvent.press(again);
+    expect(retryRun).toHaveBeenCalledTimes(1);
+    await act(async () => release({ ...(await base.getRun("run-1")), status: "failed" }));
+  });
+
+  test("real mode shows no notifications and says so honestly", async () => {
+    await open(createMockPlanningClient("three"), setup(200).voting);
+    await fireEvent.press(screen.getByLabelText(/^Notifications, tab/));
+    expect(await screen.findByText("Notifications are not available yet.")).toBeTruthy();
+    expect(screen.queryByText(FIXTURE_NOTIFICATIONS[0]!.title)).toBeNull();
+  });
+
+  test("real mode offers no live ICS export and shows no success notice", async () => {
+    const { voting } = setup(200, event);
+    await open(createMockPlanningClient("three"), voting);
+    await fireEvent.press(screen.getByLabelText(/^Events, tab/));
+    expect(await screen.findByText("Calendar export is not available yet")).toBeTruthy();
+    expect(screen.queryByText("Add to calendar (.ics)")).toBeNull();
+    expect(screen.queryByText(/not connected yet/)).toBeNull();
+  });
+
   test("a 401 on planning shows session-expired messaging", async () => {
     const base = createMockPlanningClient("three");
     await open({ ...base, createRun: async () => { throw new PlanningError("unauthenticated"); } });
@@ -278,6 +309,7 @@ describe("screens with real clients and polling", () => {
     await fireEvent.press(screen.getByText("Start planning"));
     await screen.findByText("#1 Option 1: Saturday hike");
     expect(screen.queryByText(/Interested: /)).toBeNull();
+    expect(screen.getAllByText("Vote counts are not available yet.").length).toBeGreaterThan(0);
     await fireEvent.press((await screen.findAllByText("Interested"))[0]!);
     await screen.findByText("Your vote: Interested");
   });

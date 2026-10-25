@@ -134,7 +134,9 @@ function VoteSectionBody({ proposalId }: { proposalId: string }) {
       {state.deadline ? <Text>{`Voting closes: ${state.deadline}`}</Text> : null}
       {state.approveCount !== undefined && state.cantMakeItCount !== undefined ? (
         <Text>{`Interested: ${state.approveCount} | Can't make it: ${state.cantMakeItCount}`}</Text>
-      ) : null}
+      ) : (
+        <Text>Vote counts are not available yet.</Text>
+      )}
       {state.myVeto ? <Text>You vetoed this proposal.</Text> : null}
       {state.myChoice ? (
         <Text>{`Your vote: ${state.myChoice === "approve" ? "Interested" : "Can't make it"}`}</Text>
@@ -241,6 +243,8 @@ function GroupEvent({ groupId, groupName }: { groupId: string; groupName: string
           <Text>{`Confirmed at: ${view.event.confirmedAt}`}</Text>
           {view.status === "cancelled" ? (
             <Text accessibilityRole="alert">This event was cancelled.</Text>
+          ) : voting.realBackend ? (
+            <Text>Calendar export is not available yet</Text>
           ) : (
             <Button title="Add to calendar (.ics)" disabled={exporting} onPress={() => void exportIcs(view.event)} />
           )}
@@ -293,7 +297,9 @@ export function NotificationsScreen() {
       <Text style={styles.title}>Notifications</Text>
       {error ? <Text accessibilityRole="alert">{error}</Text> : null}
       {!items && !error ? <Text>Loading notifications.</Text> : null}
-      {items && items.length === 0 ? <Text>No notifications yet.</Text> : null}
+      {items && items.length === 0 ? (
+        <Text>{voting.realBackend ? "Notifications are not available yet." : "No notifications yet."}</Text>
+      ) : null}
       {items?.map((n) => (
         <View key={n.id} style={styles.card}>
           <Text style={styles.cardTitle}>{n.title}</Text>

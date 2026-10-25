@@ -3,7 +3,7 @@
 **Owner:** Developer 1  
 **Branch:** `feature/mobile`
 
-Expo / React Native TypeScript client. See [`docs/developers/developer-1-mobile.md`](../../docs/developers/developer-1-mobile.md) and SPEC §3.
+Expo / React Native TypeScript client. See [`docs/developers/developer-1-mobile.md`](../../docs/developers/developer-1-mobile.md) and SPEC §1 (MVP journey).
 
 ## Local development
 
@@ -28,19 +28,21 @@ Use the Expo Go app on a physical device, or an iOS Simulator / Android emulator
 
 Supabase and API URLs will be wired in a follow-up task. Until then, use API mocks matching `packages/contracts` (read-only) once GATE0-002 DTOs are approved.
 
-## MVP placeholder screens (SPEC §1)
+## Navigation shell (DEV1-002)
 
-Planned navigation shell (not yet implemented):
+React Navigation native stack with placeholder screens. Manual smoke: launch app → **Welcome** → mock sign-in → **Home** → **Groups** → back → mock sign-out → **Welcome**.
 
-1. Auth — email OTP sign-in
-2. Groups — create or join a group
-3. Preferences & availability
-4. Planning — initiate or view a planning run
-5. Proposals — ranked plans (up to three)
-6. Voting — vote / veto / revote flows
-7. Confirmed event — group-visible details
-8. Notifications — in-app feed
-9. Calendar export — ICS
+| Screen (route) | SPEC §1 journey step | Status |
+|----------------|----------------------|--------|
+| `Welcome` | 1 — Authenticate (email OTP) | Placeholder; mock continue only |
+| `Home` | Signed-in hub before planning/voting | Placeholder |
+| `GroupsList` | 2 — Create or join a group | Placeholder list |
+| — | 3 — Preferences & availability | Not in shell yet |
+| — | 4–6 — Planning run & ranked proposals | Not in shell yet |
+| — | 7–8 — Voting / veto / revote | Not in shell yet |
+| — | 9–10 — Confirmed event (group-visible) | Not in shell yet |
+| — | 11 — ICS calendar export | Not in shell yet |
+| — | Notifications, scheduled runs, inclusion history | Not in shell yet |
 
 ## Smoke checks
 

@@ -15,7 +15,7 @@ Human-readable status. Detailed state: [`state/CURRENT.md`](../state/CURRENT.md)
 | Task | Status | Depends on | Lane | Notes |
 |------|--------|------------|------|-------|
 | DEV1-001 | blocked | GATE0-001 | mobile | Expo bootstrap |
-| DEV2-001 | blocked | GATE0-001 | core-api | API bootstrap |
+| DEV2-001 | done | GATE0-001 | core-api | Merged `e7adadb` — Fastify `/v1/health` |
 | DEV3-001 | ready | GATE0-001, GATE0-002 | planner | Planner package stub (contracts on main) |
 
 ## How to pick work

@@ -23,10 +23,10 @@
 |----------|------|------------|--------|
 | — | GATE0-001 | integration | **done** |
 | — | GATE0-002 | core-api | **done** (merged `76a97e7`) |
-| P0 | DEV2-001 | core-api | **implementing** (subagent) |
+| — | DEV2-001 | core-api | **done** (merged `e7adadb`) |
 | P0 | DEV1-001 | mobile | **implementing** (subagent) |
 | Next | GATE0-003 tri-review, DEV3-001 | — | ready after Dev 1/3 pull main |
-| Next | DEV2-002 | core-api | queued after DEV2-001 merges |
+| P0 | DEV2-002 | core-api | **ready** — Supabase local + JWT middleware |
 
 ## Blockers (from SPEC §11 — do not guess)
 

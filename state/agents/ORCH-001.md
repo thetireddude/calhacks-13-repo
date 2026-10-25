@@ -19,7 +19,7 @@
 | Task | Worktree | Branch | Status |
 |------|----------|--------|--------|
 | GATE0-002 | calhacks-13-wt-GATE0-002 | agent/GATE0-002-contract-stubs | **merged to main** (`76a97e7`) |
-| DEV2-001 | calhacks-13-wt-DEV2-001 | agent/DEV2-001-api-bootstrap | running |
+| DEV2-001 | calhacks-13-wt-DEV2-001 | agent/DEV2-001-api-bootstrap | **merged to main** (`e7adadb`) |
 | DEV1-001 | calhacks-13-wt-DEV1-001 | agent/DEV1-001-mobile-bootstrap | running |
 
 ## GATE0-002 follow-up

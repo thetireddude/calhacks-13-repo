@@ -28,3 +28,10 @@ export type {
   PlanningRunProposalsResponse,
   PlanningRunResponse,
 } from "./planning.js";
+export type {
+  ConfirmedEventResponse,
+  ProposalVetoResponse,
+  ProposalVoteResponse,
+  PutProposalVoteRequest,
+  VoteChoice,
+} from "./voting.js";

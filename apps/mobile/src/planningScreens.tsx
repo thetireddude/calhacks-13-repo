@@ -65,7 +65,14 @@ function RunView({
         </View>
       );
     case "completed":
-      return proposals ? <ProposalList proposals={proposals} /> : <Text>Loading proposals.</Text>;
+      return proposals ? (
+        <ProposalList proposals={proposals} />
+      ) : (
+        <View style={styles.list}>
+          <Text>Loading proposals.</Text>
+          <Button title="Refresh proposals" onPress={onRefresh} disabled={busy} />
+        </View>
+      );
     case "failed":
       return (
         <View style={styles.list}>
@@ -140,6 +147,7 @@ export function PlanningScreen() {
             <Button
               key={g.id}
               title={g.id === group.id ? `${g.name} (selected)` : g.name}
+              disabled={busy}
               onPress={() => {
                 setGroupId(g.id);
                 setRun(null);

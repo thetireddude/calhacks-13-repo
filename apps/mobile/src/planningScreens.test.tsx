@@ -115,3 +115,26 @@ test("privacy: private-looking fields and scores are never rendered, request tex
   expect(screen.queryByText(/user-secret|secret-history|0\.87|unavailable/i)).toBeNull();
   expect(JSON.stringify(log.mock.calls)).not.toContain("private-request-text");
 });
+
+test("proposal fetch failure shows an error and Refresh proposals recovers without a new run", async () => {
+  const client = createMockPlanningClient("three");
+  const createRun = jest.spyOn(client, "createRun");
+  const real = client.getProposals;
+  let fail = true;
+  const flaky: PlanningClient = {
+    ...client,
+    createRun: client.createRun,
+    getProposals: async (id) => {
+      if (fail) throw new Error("network");
+      return real(id);
+    },
+  };
+  await openPlanning(flaky);
+  await fireEvent.press(screen.getByText("Start planning"));
+  await screen.findByText("Something went wrong. Please try again.");
+  fail = false;
+  await fireEvent.press(screen.getByText("Refresh proposals"));
+  await screen.findByText("#1 Option 1: Saturday hike");
+  expect(screen.queryByText("Something went wrong. Please try again.")).toBeNull();
+  expect(createRun).toHaveBeenCalledTimes(1);
+});

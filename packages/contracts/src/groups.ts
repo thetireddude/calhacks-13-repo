@@ -32,6 +32,12 @@ export type JoinInviteResponse = {
   joinedAt: string;
 };
 
+/** Config only; weeklyEnabled does not trigger auto-planning (SPEC §11). */
+export type GroupSchedule = {
+  timezone: string;
+  weeklyEnabled: boolean;
+};
+
 export type MeProfileStub = {
   displayName: string | null;
 };

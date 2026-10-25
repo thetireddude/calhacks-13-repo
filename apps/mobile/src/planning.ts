@@ -13,9 +13,13 @@ export interface PlanningClient {
   createRun(groupId: string, req: CreatePlanningRunRequest): Promise<PlanningRunResponse>;
   getRun(runId: string): Promise<PlanningRunResponse>;
   getProposals(runId: string): Promise<PlanningRunProposalsResponse>;
+  // Real API only: POST /v1/planning-runs/:runId/generate re-runs a failed/pending run in place
+  // (409 if already completed). Absent on the mock, where a retry is a new createRun.
+  retryRun?(runId: string): Promise<PlanningRunResponse>;
 }
 
-export type PlanningErrorCode = "not_found";
+// Only the HTTP status is mapped (never tokens or bodies). unauthenticated = 401 (sign in again).
+export type PlanningErrorCode = "not_found" | "network" | "unauthenticated" | "forbidden" | "conflict" | "invalid" | "server";
 export class PlanningError extends Error {
   constructor(readonly code: PlanningErrorCode) {
     super(code);

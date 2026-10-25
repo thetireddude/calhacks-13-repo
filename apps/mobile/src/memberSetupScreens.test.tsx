@@ -3,13 +3,18 @@ import { Linking } from "react-native";
 
 import { AuthProvider, createMockAuthClient } from "./auth";
 import { createMockGroupClient } from "./groups";
-import { createMockMemberSetupClient, createMockNotificationPermissionClient } from "./memberSetup";
-import type { MemberSetupClient, NotificationPermissionClient } from "./memberSetup";
+import type { GroupSchedule } from "@gather/contracts";
+import {
+  MemberSetupError,
+  createMockMemberSetupClient,
+  createMockNotificationPermissionClient,
+} from "./memberSetup";
+import type { MemberSetupClient, NotificationPermissionClient, ScheduleClient } from "./memberSetup";
 import { RootNavigator } from "./RootNavigator";
 
 async function renderSignedIn(opts: { member?: MemberSetupClient; notifications?: NotificationPermissionClient } = {}) {
   const auth = createMockAuthClient();
-  await auth.verifyOtp("a@example.com", "123456");
+  await auth.signIn("a@example.com", "secret1");
   await render(
     <AuthProvider client={auth}>
       <RootNavigator
@@ -51,7 +56,7 @@ test("preferences save, reload, and learning toggle is shown accurately", async 
   await screen.findByText("Saved: learning is off.");
   await fireEvent.changeText(screen.getByLabelText("Activity preferences"), "hiking, games");
   await fireEvent.changeText(screen.getByLabelText("Maximum budget"), "40");
-  await fireEvent(screen.getByLabelText("Learning opt-in"), "valueChange", true);
+  await fireEvent(screen.getByLabelText("Learn from my history"), "valueChange", true);
   await screen.findByText("Unsaved change.");
   expect(screen.getByText("Saved: learning is off.")).toBeTruthy();
   await fireEvent.press(screen.getByText("Save preferences"));
@@ -160,21 +165,90 @@ test("availability load failure hides Save, issues no PUT, and recovers on retry
   expect(puts()).toBe(0);
 });
 
-test("weekly planning draft validates and saves per group", async () => {
-  await renderSignedIn();
-  await fireEvent.press(screen.getByRole("button", { name: /Groups, tab/ }));
-  await fireEvent.press(await screen.findByText("Create group"));
+async function openWeekly(schedule?: ScheduleClient) {
+  const auth = createMockAuthClient();
+  await auth.signIn("a@example.com", "secret1");
+  await render(
+    <AuthProvider client={auth}>
+      <RootNavigator groupClient={createMockGroupClient()} scheduleClient={schedule} />
+    </AuthProvider>,
+  );
+  await screen.findByText("Your groups");
+  await fireEvent.press(screen.getByText("Create group"));
   await fireEvent.changeText(await screen.findByLabelText("Group name"), "Climbing");
   await fireEvent.press(screen.getByText("Create"));
   await screen.findByText("Climbing");
   await fireEvent.press(screen.getByRole("button", { name: /Setup, tab/ }));
   await fireEvent.press(await screen.findByText("Weekly planning: Climbing"));
-  await fireEvent.changeText(await screen.findByLabelText("Weekday"), "9");
+}
+
+test("weekly planning loads backend state, saves config only and says auto-planning is unavailable", async () => {
+  const put = jest.fn(async (_id: string, s: GroupSchedule) => s);
+  await openWeekly({ get: async () => ({ timezone: "Europe/Paris", weeklyEnabled: false }), put });
+  expect((await screen.findByLabelText("Timezone")).props.value).toBe("Europe/Paris");
+  expect(screen.getByText(/Automatic weekly planning is not available yet/)).toBeTruthy();
+  await fireEvent.changeText(screen.getByLabelText("Timezone"), "America/Los_Angeles");
+  await fireEvent(screen.getByLabelText("Weekly planning enabled"), "valueChange", true);
   await fireEvent.press(screen.getByText("Save weekly planning"));
-  await screen.findByText(/Weekday must be/);
-  await fireEvent.changeText(screen.getByLabelText("Weekday"), "5");
-  await fireEvent.changeText(screen.getByLabelText("Planning time"), "18:00");
-  await fireEvent.changeText(screen.getByLabelText("Voting deadline hours"), "24");
+  await screen.findByText("Saved.");
+  expect(put).toHaveBeenCalledTimes(1);
+  expect(put).toHaveBeenCalledWith(expect.any(String), { timezone: "America/Los_Angeles", weeklyEnabled: true });
+});
+
+test("weekly planning shows a server validation error and a generic save failure", async () => {
+  const put = jest
+    .fn<Promise<GroupSchedule>, [string, GroupSchedule]>()
+    .mockRejectedValueOnce(new MemberSetupError("invalid"))
+    .mockRejectedValueOnce(new MemberSetupError("network"));
+  await openWeekly({ get: async () => ({ timezone: "UTC", weeklyEnabled: false }), put });
+  await screen.findByLabelText("Timezone");
+  await fireEvent.press(screen.getByText("Save weekly planning"));
+  await screen.findByText(/The server rejected these settings/);
+  await fireEvent.press(screen.getByText("Save weekly planning"));
+  await screen.findByText("Could not save. Please try again.");
+  expect(screen.queryByText("Saved.")).toBeNull();
+});
+
+test("weekly planning rejects blank and non-IANA timezones locally, accepts a valid zone", async () => {
+  const put = jest.fn(async (_id: string, s: GroupSchedule) => s);
+  await openWeekly({ get: async () => ({ timezone: "UTC", weeklyEnabled: false }), put });
+  const field = await screen.findByLabelText("Timezone");
+  await fireEvent.changeText(field, " ");
+  await fireEvent.press(screen.getByText("Save weekly planning"));
+  await screen.findByText("Enter a timezone such as America/Los_Angeles.");
+  await fireEvent.changeText(field, "Pacific");
+  await fireEvent.press(screen.getByText("Save weekly planning"));
+  await screen.findByText("Enter a timezone such as America/Los_Angeles.");
+  expect(put).not.toHaveBeenCalled();
+  await fireEvent.changeText(field, "America/Los_Angeles");
+  await fireEvent.press(screen.getByText("Save weekly planning"));
+  await screen.findByText("Saved.");
+  expect(put).toHaveBeenCalledTimes(1);
+  expect(screen.queryByText("Enter a timezone such as America/Los_Angeles.")).toBeNull();
+});
+
+test("weekly planning shows clearer messages for 403 and 404", async () => {
+  const put = jest
+    .fn<Promise<GroupSchedule>, [string, GroupSchedule]>()
+    .mockRejectedValueOnce(new MemberSetupError("forbidden"))
+    .mockRejectedValueOnce(new MemberSetupError("not_found"));
+  await openWeekly({ get: async () => ({ timezone: "UTC", weeklyEnabled: false }), put });
+  await screen.findByLabelText("Timezone");
+  await fireEvent.press(screen.getByText("Save weekly planning"));
+  await screen.findByText("You do not have access to this group's settings.");
+  await fireEvent.press(screen.getByText("Save weekly planning"));
+  await screen.findByText("This group was not found.");
+});
+
+test("weekly planning load failure hides the form and Save", async () => {
+  await openWeekly({ get: async () => { throw new MemberSetupError("server"); }, put: jest.fn() });
+  await screen.findByText("Could not load. Please try again.");
+  expect(screen.queryByText("Save weekly planning")).toBeNull();
+});
+
+test("weekly planning works against the in-memory default (mock mode)", async () => {
+  await openWeekly();
+  expect((await screen.findByLabelText("Timezone")).props.value).toBe("UTC");
   await fireEvent.press(screen.getByText("Save weekly planning"));
   await screen.findByText("Saved.");
 });

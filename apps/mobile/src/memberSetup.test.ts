@@ -1,8 +1,7 @@
 import {
   createMockMemberSetupClient,
-  createMockLocalScheduleClient,
+  createMockScheduleClient,
   validatePreferences,
-  validateWeeklySettings,
   validateWindow,
 } from "./memberSetup";
 
@@ -42,15 +41,10 @@ test("window validation", () => {
   expect(validateWindow("2026-01-02T20:00", "2026-01-02T18:00")).not.toBeNull();
 });
 
-test("weekly settings validation and local mock round-trip", async () => {
-  expect(validateWeeklySettings("7", "18:00", "24").ok).toBe(false);
-  expect(validateWeeklySettings("3", "6pm", "24").ok).toBe(false);
-  expect(validateWeeklySettings("3", "18:00", "0").ok).toBe(false);
-  const r = validateWeeklySettings("3", "18:00", "24");
-  if (!r.ok) throw new Error("expected ok");
-  const s = createMockLocalScheduleClient();
-  expect(await s.get("g1")).toBeNull();
-  await s.put("g1", r.value);
-  expect(await s.get("g1")).toEqual(r.value);
-  expect(await s.get("g2")).toBeNull();
+test("mock schedule client defaults to the backend defaults and round-trips per group", async () => {
+  const s = createMockScheduleClient();
+  expect(await s.get("g1")).toEqual({ timezone: "UTC", weeklyEnabled: false });
+  await s.put("g1", { timezone: "America/Los_Angeles", weeklyEnabled: true });
+  expect(await s.get("g1")).toEqual({ timezone: "America/Los_Angeles", weeklyEnabled: true });
+  expect(await s.get("g2")).toEqual({ timezone: "UTC", weeklyEnabled: false });
 });

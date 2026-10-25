@@ -14,6 +14,7 @@ import { createDefaultPlanningStore } from "./planning/createPlanningStore.js";
 import { registerPlanningRoutes } from "./planning/routes.js";
 import type { PlanningStore } from "./planning/store.js";
 import { createDefaultVotingStore } from "./voting/createVotingStore.js";
+import { registerNotificationRoutes } from "./notifications/routes.js";
 import { registerVotingRoutes } from "./voting/routes.js";
 import type { VotingStore } from "./voting/store.js";
 import type { PlannerPort } from "@gather/contracts";
@@ -45,6 +46,7 @@ export async function createApp(options: CreateAppOptions = {}) {
   registerMemberSetupRoutes(app, memberSetupStore);
   registerPlanningRoutes(app, groupsStore, planningStore, plannerPort);
   registerVotingRoutes(app, groupsStore, planningStore, votingStore);
+  registerNotificationRoutes(app, groupsStore, planningStore, votingStore);
 
   return app;
 }

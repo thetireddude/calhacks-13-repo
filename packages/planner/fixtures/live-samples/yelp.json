@@ -1,0 +1,10 @@
+[
+  {
+    "name": "Cafe Canela Restaurant",
+    "url": "https://www.yelp.com/biz/cafe-canela-restaurant-galveston-2",
+    "categories": ["Mexican"],
+    "price_range": "$$",
+    "address": { "City": "Galveston", "Country": "US" },
+    "full_address": "6105 Stewart Rd, Ste C, Galveston, TX 77551"
+  }
+]

@@ -276,7 +276,7 @@ describe("rejecting clients", () => {
     await render(withProviders(v, <VoteSection proposalId="p1" />));
     await fireEvent.press(await screen.findByTestId("vote-approve-p1"));
     await screen.findByText(/Your action was recorded, but the latest state could not be loaded/);
-    expect(screen.queryByText("Your vote: Interested")).toBeNull();
+    expect(screen.queryByText("Your vote: Yes")).toBeNull();
   });
 
   test("listNotifications rejects", async () => {
@@ -335,7 +335,7 @@ describe("stale state", () => {
     const ui = (id: string) => withProviders(v, <VoteSection proposalId={id} />);
     const r = await render(ui("p1"));
     await r.rerender(ui("p2"));
-    await screen.findByText("Interested: 7 | Can't make it: 0");
+    await screen.findByText("Yes: 7 | Can't make it: 0");
     await act(async () => {
       d1.resolve(openState({ proposalId: "p1", approveCount: 99, cantMakeItCount: 99 }));
     });
@@ -350,10 +350,10 @@ describe("stale state", () => {
     });
     const ui = (id: string) => withProviders(v, <VoteSection proposalId={id} />);
     const r = await render(ui("p1"));
-    await screen.findByText("Interested: 5 | Can't make it: 1");
+    await screen.findByText("Yes: 5 | Can't make it: 1");
     await r.rerender(ui("p2"));
     // DEFECT CANDIDATE: VoteSection keeps p1's state while p2 loads (testID/buttons still target p1 data).
-    expect(screen.queryByText("Interested: 5 | Can't make it: 1")).toBeNull();
+    expect(screen.queryByText("Yes: 5 | Can't make it: 1")).toBeNull();
     await act(async () => {
       d2.resolve(openState({ proposalId: "p2" }));
     });
@@ -374,7 +374,7 @@ describe("stale state", () => {
     const r = await render(ui("p1"));
     await fireEvent.press(await screen.findByTestId("vote-approve-p1"));
     await r.rerender(ui("p2"));
-    await screen.findByText("Interested: 7 | Can't make it: 0");
+    await screen.findByText("Yes: 7 | Can't make it: 0");
     await act(async () => {
       put.resolve({});
     });
@@ -417,12 +417,12 @@ describe("privacy", () => {
   test("extra private-looking fields on vote state do not render or get logged", async () => {
     const v = client({ getVoteState: async () => ({ ...openState({ myChoice: "approve" }), ...PRIVATE }) as ProposalVoteStateView });
     await render(withProviders(v, <VoteSection proposalId="p1" />));
-    await screen.findByText("Your vote: Interested");
+    await screen.findByText("Your vote: Yes");
     const dump = JSON.stringify(screen.toJSON());
     for (const s of ["secret-user-77", "SECRET-AVAIL", "SECRET-PREF", "private.person@example.com", "Alice Secretname"]) {
       expect(dump).not.toContain(s);
     }
-    expect(screen.getByText("Interested: 3 | Can't make it: 1")).toBeTruthy();
+    expect(screen.getByText("Yes: 3 | Can't make it: 1")).toBeTruthy();
     expect(loggedText()).not.toMatch(/SECRET|secret-user|private\.person/);
   });
 
@@ -467,7 +467,7 @@ describe("privacy", () => {
     await render(withProviders(client({ getVoteState: async () => openState({ myChoice: "cant_make_it" }) }), <VoteSection proposalId="p1" />));
     await screen.findByText("Your vote: Can't make it");
     expect(screen.getAllByText(/Your vote:/)).toHaveLength(1);
-    expect(screen.getByText("Interested: 3 | Can't make it: 1")).toBeTruthy();
+    expect(screen.getByText("Yes: 3 | Can't make it: 1")).toBeTruthy();
   });
 });
 
@@ -529,7 +529,7 @@ describe("rendering robustness", () => {
 
   test("zero counts render", async () => {
     await render(withProviders(client({ getVoteState: async () => openState({ approveCount: 0, cantMakeItCount: 0 }) }), <VoteSection proposalId="p1" />));
-    await screen.findByText("Interested: 0 | Can't make it: 0");
+    await screen.findByText("Yes: 0 | Can't make it: 0");
   });
 
   test("one voting section per rendered VoteSection, independent state", async () => {
@@ -543,8 +543,8 @@ describe("rendering robustness", () => {
         </>,
       ),
     );
-    await screen.findByText("Interested: 1 | Can't make it: 1");
-    await screen.findByText("Interested: 2 | Can't make it: 1");
+    await screen.findByText("Yes: 1 | Can't make it: 1");
+    await screen.findByText("Yes: 2 | Can't make it: 1");
   });
 });
 
@@ -577,13 +577,13 @@ describe("no client-side rules", () => {
   test("own vote does not locally change counts or status", async () => {
     await render(withProviders(client({ putVote: async () => ({ proposalId: "p1", userId: "u", choice: "approve", updatedAt: "x" }) }), <VoteSection proposalId="p1" />));
     await fireEvent.press(await screen.findByTestId("vote-approve-p1"));
-    await waitFor(() => expect(screen.getByText("Interested: 3 | Can't make it: 1")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("Yes: 3 | Can't make it: 1")).toBeTruthy());
   });
 
   test("revote status re-enables voting; own prior choice displayed as given", async () => {
     await render(withProviders(client({ getVoteState: async () => openState({ status: "revote", myChoice: "approve" }) }), <VoteSection proposalId="p1" />));
     await screen.findByText("Revote: please vote again.");
     expect(screen.getByTestId("vote-approve-p1")).toBeTruthy();
-    expect(screen.getByText("Your vote: Interested")).toBeTruthy();
+    expect(screen.getByText("Your vote: Yes")).toBeTruthy();
   });
 });

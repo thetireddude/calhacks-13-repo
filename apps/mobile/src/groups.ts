@@ -9,8 +9,10 @@ import type {
 // Boundary the real API client will implement. Methods mirror SPEC section 6.2:
 //   POST /v1/groups, GET /v1/groups/:groupId, POST /v1/groups/:groupId/invites,
 //   POST /v1/invites/:token/join, GET /v1/groups/:groupId/members.
-// There is no "list my groups" route, so the app keeps the groups it created or joined in state.
+// GET /v1/groups ("list my groups") backs listGroups. It is optional: the in-memory mock has no
+// per-user ownership, so it omits it and the provider keeps only groups touched in this session.
 export interface GroupClient {
+  listGroups?(): Promise<GroupResponse[]>;
   createGroup(req: CreateGroupRequest): Promise<GroupResponse>;
   getGroup(groupId: string): Promise<GroupResponse>;
   createInvite(groupId: string): Promise<GroupInviteResponse>;
@@ -19,7 +21,14 @@ export interface GroupClient {
 }
 
 // Mobile-local error shape; the contract error schema is not frozen (SPEC section 11).
-export type GroupErrorCode = "invalid_name" | "invalid_invite" | "not_found";
+export type GroupErrorCode =
+  | "invalid_name"
+  | "invalid_invite"
+  | "not_found"
+  | "forbidden"
+  | "unauthenticated" // 401: session missing/expired; the user must sign in again
+  | "network" // request never completed; safe to retry by hand
+  | "server"; // 5xx or an unexpected status
 export class GroupError extends Error {
   constructor(readonly code: GroupErrorCode) {
     super(code);

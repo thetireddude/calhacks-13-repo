@@ -5,6 +5,11 @@
     "scheme": "gather",
     "version": "0.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "light"
+    "userInterfaceStyle": "automatic",
+    "plugins": [
+      "expo-secure-store",
+      "expo-font",
+      "expo-sharing"
+    ]
   }
 }

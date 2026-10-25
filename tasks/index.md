@@ -27,6 +27,11 @@ Core API lane only. Other lanes own their tasks separately.
 | DEV2-018 | merged | DEV2-017 | `.env` load + CORS |
 | DEV2-019 | merged | DEV2-011 | `GET /v1/groups` list mine |
 | DEV2-020 | merged | DEV2-014 | `PUT /v1/me` displayName |
+| DEV2-021 | merged | DEV2-019 | Group schedule stub (no auto-run) |
+| DEV2-022 | merged | DEV2-017 | ICS export stub |
+| DEV2-023 | merged | DEV2-017, DEV2-019 | Notifications feed stub |
+| DEV2-024 | merged | DEV2-020 | Dev 1 API handoff doc |
+| DEV2-025 | merged | DEV2-017 | Demo seed notes |
 
 ## Developer 1 (Mobile)
 
@@ -34,15 +39,17 @@ Core API lane only. Other lanes own their tasks separately.
 |------|--------|------------|-------|
 | DEV1-001 | done | GATE0-001 | Expo bootstrap |
 | DEV1-002 | done | DEV1-001 | Navigation + auth shell + logout |
-| DEV1-003 | done | DEV1-002 | OTP auth UI + mock AuthClient |
+| DEV1-003 | done | DEV1-002 | OTP auth UI + mock AuthClient (OTP UI later replaced by email+password, ADR-004) |
 | DEV1-004 | done | DEV1-003 | Groups UI + mock group client |
 | DEV1-005 | done | DEV1-004 | Member setup + weekly settings UI |
 | DEV1-006 | done | DEV1-005 | Planning + proposals UI |
 | DEV1-007 | done | DEV1-006 | Voting, veto, confirmed event, notifications mocks |
 | DEV1-008 | done | DEV1-007 | Gate 1 mobile exit |
-| DEV1-009 | blocked | DEV1-008, GATE2-EXIT | HOLD: needs GATE2-EXIT (Dev 2/3 + orchestrator) and §9 contract decisions; not authored in mobile lane |
-| DEV1-010 | blocked | DEV1-009 | Gate 3: real API groups + setup |
-| DEV1-011 | blocked | DEV1-010 | Gate 3: real API planning/voting/events/notifications |
-| DEV1-012 | blocked | DEV1-011 | Gate 5: mobile demo hardening |
+| DEV1-009 | done | DEV1-008 | Supabase auth client + secure session; email+password replaces OTP UI (ADR-004, DEV1-009b); started before GATE2-EXIT with user approval; real sign-up verified on a phone, live /v1/me call not yet run |
+| DEV1-010 | done | DEV1-009 | Real HTTP group + member-setup clients (groups, invites, members, preferences, availability); weekly schedule still local mock; live two-device run pending |
+| DEV1-011 | partial | DEV1-010 | Real planning runs/proposals, vote, veto, confirmed event; notifications, ICS, push, vote tally, schedule remain mock/unavailable pending API routes |
+| DEV1-012 | ready for device run | DEV1-011 | Privacy sweep done (no P0/P1), `docs/demo-mobile.md` written; physical-device checklist still to be run by a human |
+| DEV1-011b | candidate | DEV1-011, DEV2-021..023 | Real weekly schedule, notifications feed and ICS export clients (ICS is a real .ics file via the share sheet, not verified on a device or calendar); vote tally and push registration remain unavailable (no API route); not run live |
+| DEV1-013 | done | DEV1-011 | UI restyle from the Gather design system (visual only); on-device visual check pending |
 
 Milestone: [`docs/milestone-dag.md`](../docs/milestone-dag.md)

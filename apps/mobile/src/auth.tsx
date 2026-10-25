@@ -1,20 +1,27 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
-// Opaque, mobile-local session type. The real shape arrives with Supabase auth (DEV1-009).
-export type Session = { readonly kind: "mock" };
+// Mobile-local session type. The Supabase variant carries the access token sent as the API bearer
+// credential; the mock variant has none.
+export type Session = { readonly kind: "mock" } | { readonly kind: "supabase"; readonly accessToken: string };
 
-// Boundary the real Supabase client will implement later.
+// Boundary implemented by the mock and Supabase clients.
 export interface AuthClient {
   getSession(): Promise<Session | null>;
-  requestOtp(email: string): Promise<void>;
-  verifyOtp(email: string, code: string): Promise<Session>;
+  signIn(email: string, password: string): Promise<Session>;
+  signUp(email: string, password: string): Promise<Session>;
   signOut(): Promise<void>;
 }
 
 // Mobile-local error shape. The contract error schema is not frozen in packages/contracts yet
 // (SPEC section 11), so this stands in for it; swap when the contract lands.
-export type AuthErrorCode = "invalid_code" | "expired_code" | "network";
+// confirmation_required: signUp succeeded but Supabase "Confirm email" is still ON (no session).
+export type AuthErrorCode =
+  | "invalid_credentials"
+  | "email_taken"
+  | "weak_password"
+  | "confirmation_required"
+  | "network";
 export class AuthError extends Error {
   constructor(readonly code: AuthErrorCode) {
     super(code);
@@ -22,40 +29,38 @@ export class AuthError extends Error {
   }
 }
 
-// Fixture outcomes for the mock. Code length, expiry window and rate limits are NOT approved
-// product rules; the mock only simulates the outcomes the UI must handle.
-export type MockOutcome = "success" | "invalid_code" | "expired_code" | "network";
+// Fixture outcomes for the mock; it only simulates the outcomes the UI must handle.
+export type MockOutcome = "success" | AuthErrorCode;
 export type MockAuthClient = AuthClient & {
-  setRequestOutcome(outcome: "success" | "network"): void;
-  setVerifyOutcome(outcome: MockOutcome): void;
+  setSignInOutcome(outcome: MockOutcome): void;
+  setSignUpOutcome(outcome: MockOutcome): void;
 };
 
-// In-memory mock. Nothing is persisted or logged (never log email or OTP values).
-export function createMockAuthClient(
-  initial: { request?: "success" | "network"; verify?: MockOutcome } = {},
-): MockAuthClient {
+// In-memory mock. Nothing is persisted or logged (never log email or password values).
+export function createMockAuthClient(initial: { signIn?: MockOutcome; signUp?: MockOutcome } = {}): MockAuthClient {
   let session: Session | null = null;
-  let requestOutcome = initial.request ?? "success";
-  let verifyOutcome: MockOutcome = initial.verify ?? "success";
+  let signInOutcome: MockOutcome = initial.signIn ?? "success";
+  let signUpOutcome: MockOutcome = initial.signUp ?? "success";
   return {
     getSession: async () => session,
-    requestOtp: async () => {
-      if (requestOutcome === "network") throw new AuthError("network");
+    signIn: async () => {
+      if (signInOutcome !== "success") throw new AuthError(signInOutcome);
+      session = { kind: "mock" };
+      return session;
     },
-    verifyOtp: async (_email, code) => {
-      if (verifyOutcome !== "success") throw new AuthError(verifyOutcome);
-      if (code.trim() === "") throw new AuthError("invalid_code");
+    signUp: async () => {
+      if (signUpOutcome !== "success") throw new AuthError(signUpOutcome);
       session = { kind: "mock" };
       return session;
     },
     signOut: async () => {
       session = null;
     },
-    setRequestOutcome: (o) => {
-      requestOutcome = o;
+    setSignInOutcome: (o) => {
+      signInOutcome = o;
     },
-    setVerifyOutcome: (o) => {
-      verifyOutcome = o;
+    setSignUpOutcome: (o) => {
+      signUpOutcome = o;
     },
   };
 }
@@ -63,8 +68,8 @@ export function createMockAuthClient(
 type AuthState = {
   loading: boolean;
   session: Session | null;
-  requestOtp: (email: string) => Promise<void>;
-  verifyOtp: (email: string, code: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -87,9 +92,12 @@ export function AuthProvider({ client, children }: { client: AuthClient; childre
     };
   }, [client]);
 
-  const requestOtp = useCallback((email: string) => client.requestOtp(email), [client]);
-  const verifyOtp = useCallback(
-    async (email: string, code: string) => setSession(await client.verifyOtp(email, code)),
+  const signIn = useCallback(
+    async (email: string, password: string) => setSession(await client.signIn(email, password)),
+    [client],
+  );
+  const signUp = useCallback(
+    async (email: string, password: string) => setSession(await client.signUp(email, password)),
     [client],
   );
   const signOut = useCallback(async () => {
@@ -98,8 +106,8 @@ export function AuthProvider({ client, children }: { client: AuthClient; childre
   }, [client]);
 
   const value = useMemo(
-    () => ({ loading, session, requestOtp, verifyOtp, signOut }),
-    [loading, session, requestOtp, verifyOtp, signOut],
+    () => ({ loading, session, signIn, signUp, signOut }),
+    [loading, session, signIn, signUp, signOut],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

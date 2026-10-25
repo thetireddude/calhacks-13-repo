@@ -1,12 +1,14 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
+import { DefaultTheme, DarkTheme, NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
 import type { ParamListBase } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Button, Linking, View } from "react-native";
 
 import { useAuth } from "./auth";
-import { EmailScreen, OtpScreen } from "./screens";
+import { FloatingTabBar } from "./TabBar";
+import { useTheme } from "./theme";
+import { SignInScreen } from "./screens";
 import type { SignedOutParams } from "./screens";
 import { parseInviteToken } from "./groups";
 import type { GroupClient } from "./groups";
@@ -21,12 +23,12 @@ import {
 } from "./groupScreens";
 import type { GroupsStackParams } from "./groupScreens";
 import {
-  createMockLocalScheduleClient,
+  createMockScheduleClient,
   createMockMemberSetupClient,
   createMockNotificationPermissionClient,
 } from "./memberSetup";
 import type {
-  LocalScheduleClient,
+  ScheduleClient,
   MemberSetupClient,
   NotificationPermissionClient,
 } from "./memberSetup";
@@ -94,7 +96,7 @@ function InviteJoiner({ token, onDone }: { token: string | null; onDone: () => v
 
 function AuthenticatedTabs() {
   return (
-    <Tabs.Navigator screenOptions={{ headerRight: () => <SignOutButton /> }}>
+    <Tabs.Navigator tabBar={(props) => <FloatingTabBar {...props} />} screenOptions={{ headerRight: () => <SignOutButton /> }}>
       <Tabs.Screen name="Groups" component={GroupsNavigator} />
       <Tabs.Screen name="Setup" component={SetupNavigator} />
       <Tabs.Screen name="Planning" component={PlanningScreen} />
@@ -117,7 +119,7 @@ export function RootNavigator({
 }: {
   groupClient: GroupClient;
   memberSetupClient?: MemberSetupClient;
-  scheduleClient?: LocalScheduleClient;
+  scheduleClient?: ScheduleClient;
   notificationClient?: NotificationPermissionClient;
   planningClient?: PlanningClient;
   votingClient?: VotingClient;
@@ -125,10 +127,22 @@ export function RootNavigator({
 }) {
   const [defaults] = useState(() => ({
     member: createMockMemberSetupClient(),
-    schedule: createMockLocalScheduleClient(),
+    schedule: createMockScheduleClient(),
     notifications: createMockNotificationPermissionClient(),
   }));
   const { loading, session } = useAuth();
+  const { colors, isDark } = useTheme();
+  const navTheme = {
+    ...(isDark ? DarkTheme : DefaultTheme),
+    colors: {
+      ...(isDark ? DarkTheme : DefaultTheme).colors,
+      primary: colors.coral,
+      background: colors.bg,
+      card: colors.bg,
+      text: colors.ink,
+      border: colors.peach,
+    },
+  };
   // Links are captured at the root so one that arrives while signed out is held until sign-in.
   // The launch URL is read once per mount of this component, so sign-out/in does not replay it.
   const [pendingToken, setPendingToken] = useState<string | null>(null);
@@ -144,12 +158,12 @@ export function RootNavigator({
   const clearPending = useCallback(() => setPendingToken(null), []);
   if (loading)
     return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.bg }}>
         <ActivityIndicator accessibilityLabel="Loading" />
       </View>
     );
   return (
-    <NavigationContainer ref={navigationRef}>
+    <NavigationContainer ref={navigationRef} theme={navTheme}>
       {session ? (
         <GroupsProvider client={groupClient}>
           <MemberSetupProvider
@@ -167,8 +181,7 @@ export function RootNavigator({
         </GroupsProvider>
       ) : (
         <SignedOutStack.Navigator>
-          <SignedOutStack.Screen name="Email" component={EmailScreen} options={{ title: "Sign in" }} />
-          <SignedOutStack.Screen name="Otp" component={OtpScreen} options={{ title: "Enter code" }} />
+          <SignedOutStack.Screen name="SignIn" component={SignInScreen} options={{ title: "Welcome" }} />
         </SignedOutStack.Navigator>
       )}
     </NavigationContainer>

@@ -5,6 +5,8 @@
 
 Node.js + TypeScript (Fastify) HTTP API and planning orchestration. See [`docs/developers/developer-2-backend.md`](../../docs/developers/developer-2-backend.md) and SPEC §4 / §6.2.
 
+**Mobile (Dev 1):** how to call this API — [`docs/dev2-api-for-mobile.md`](../../docs/dev2-api-for-mobile.md).
+
 ## Local development (Developer 2)
 
 End-to-end setup: [`docs/dev2-local-setup.md`](../../docs/dev2-local-setup.md).

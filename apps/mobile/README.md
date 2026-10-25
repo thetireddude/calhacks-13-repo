@@ -9,7 +9,7 @@ Expo (SDK 58) / React Native / TypeScript client. See [`docs/developers/develope
 
 Gate 1 mobile work (DEV1-001..007) is complete as **mock-only**. Nothing calls a real API and nothing has been verified on a physical device.
 
-- Signed-out stack (email, OTP) and authenticated tabs: Groups, Setup, Planning, Events, Notifications.
+- Signed-out stack (email + password) and authenticated tabs: Groups, Setup, Planning, Events, Notifications.
 - Mock clients for auth, groups, member setup, weekly settings, planning, voting, ICS, and notifications. Notification permission uses `expo-notifications` for real; denying it does not block use.
 - Contracts consumed from `@gather/contracts` (`0.1.1-stub`); mobile-local stub types stand in for missing DTOs.
 - Not met due to contract gaps: aggregate attendance counts, inclusion-aware alternative, "Suggest another".
@@ -19,13 +19,13 @@ Gate 1 evidence and SPEC §9 contract change requests: [`docs/gate1-dev1-exit.md
 ### Try the mock flow
 
 1. Start the app (see below).
-2. Enter any valid-looking email, then **any non-empty OTP code** to sign in.
+2. Enter any valid-looking email and a password (6+ characters to create an account), then press Sign in or Create account. Without `EXPO_PUBLIC_SUPABASE_*` set, the in-memory dev mock auth is used; with them set, real Supabase email+password auth is used and the Supabase **Confirm email** setting must be off for sign-up to return a session.
 3. Join a group with the seed invite token `seed-invite` (or open `gather://invite/seed-invite`), or create a group.
 
 ### Known limits
 
 - Expo Go on Android restricts notifications; the demo may need a development build.
-- OTP on a physical device, the `gather://` deep link, the notification permission path, and ICS export on a device are all UNVERIFIED.
+- Supabase email+password auth on a physical device, the `gather://` deep link, the notification permission path, and ICS export on a device are all UNVERIFIED.
 - Real integration is Gate 3 (DEV1-009..011), blocked on Gate 2 and the contract freeze.
 
 ## Commands

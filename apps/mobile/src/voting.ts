@@ -18,8 +18,9 @@ import type {
 export type ProposalVoteStateView = {
   proposalId: string;
   status: string;
-  approveCount: number;
-  cantMakeItCount: number;
+  // Optional: the real API returns no tallies (no route), so they are omitted rather than computed.
+  approveCount?: number;
+  cantMakeItCount?: number;
   // mobile-local stub, pending SPEC §9 approval: backend says whether vote controls are shown at all.
   // The UI never infers this from `status`, which is display-only.
   voteAllowed: boolean;
@@ -29,6 +30,8 @@ export type ProposalVoteStateView = {
   deadline?: string;
   // The caller's own latest vote, if any.
   myChoice?: "approve" | "cant_make_it";
+  // The caller's own veto as acknowledged by the backend response; says nothing about the proposal's fate.
+  myVeto?: boolean;
 };
 
 // mobile-local stub, pending SPEC §9/§11 approval: confirmed-event envelope with cancellation state.
@@ -45,7 +48,8 @@ export type NotificationItemView = {
 };
 
 // mobile-local stub, pending SPEC §9/§11 approval: ICS result; serialization owner is SPEC section 11.
-export type IcsExportResult = { filename: string };
+// `content` is the .ics text returned by the real API; the mock returns only a filename.
+export type IcsExportResult = { filename: string; content?: string };
 
 export interface IcsClient {
   exportIcs(eventId: string): Promise<IcsExportResult>;
@@ -55,12 +59,22 @@ export interface IcsClient {
 // POST /v1/proposals/:id/veto (a separate route, never a vote choice),
 // GET /v1/groups/:groupId/confirmed-event, GET /v1/me/notifications.
 // getVoteState has no contract route yet (mobile-local stub).
+export type VotingErrorCode = "network" | "unauthenticated" | "forbidden" | "not_found" | "invalid" | "server";
+export class VotingError extends Error {
+  constructor(readonly code: VotingErrorCode) {
+    super(code);
+    this.name = "VotingError";
+  }
+}
+
 export interface VotingClient {
   getVoteState(proposalId: string): Promise<ProposalVoteStateView>;
   putVote(proposalId: string, req: PutProposalVoteRequest): Promise<ProposalVoteResponse>;
   veto(proposalId: string): Promise<ProposalVetoResponse>;
   getConfirmedEvent(groupId: string): Promise<ConfirmedEventView>;
   listNotifications(): Promise<NotificationItemView[]>;
+  // True for the API-backed client (the vote state degrades honestly: no tallies, deadline or eligibility).
+  realBackend?: boolean;
 }
 
 export type MockVoteScenario = "open" | "vetoed" | "revision" | "revote" | "confirmed" | "cancelled" | "noVeto";

@@ -63,3 +63,4 @@ REST handlers in `apps/api` use **in-memory stores** by default (CI and Gate 1 t
 
 - Gate 1 exit checklist: [`docs/gate1-dev2-exit.md`](../docs/gate1-dev2-exit.md)
 - Evidence matrix: [`state/GATE1-DEV2-EXIT.md`](../state/GATE1-DEV2-EXIT.md)
+- Cloud demo seed (placeholder SQL/curl, no secrets): [`docs/dev2-demo-seed.md`](../docs/dev2-demo-seed.md)

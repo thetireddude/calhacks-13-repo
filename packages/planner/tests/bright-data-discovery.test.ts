@@ -17,15 +17,17 @@ test("Yelp normalization retains only complete public records", () => {
 
 test("Facebook venue-event normalization retains public event details", () => {
   const candidates = normalizeFacebookEventRecords([{
-    event_name: "Outdoor Music Night",
-    event_url: "https://www.facebook.com/example/events/1",
-    venue_name: "Example Venue",
-    start_date: "2026-11-01T19:00:00-07:00",
-    is_free: true,
+    event_id: "1112502747940932",
+    title: "THE THURSDAY CLUB",
+    url: "https://www.facebook.com/events/1112502747940932/",
+    event_start_time: "2026-10-29T22:00:00.000Z",
+    event_end_time: "2026-10-30T03:00:00.000Z",
+    full_address: "Nobistor 10, 22767 Hamburg, Deutschland",
   }], "San Francisco, CA");
   assert.equal(candidates.length, 1);
   assert.equal(candidates[0]?.source, "facebook_events");
-  assert.equal(candidates[0]?.isFree, true);
+  assert.equal(candidates[0]?.id, "facebook_events-1112502747940932");
+  assert.equal(candidates[0]?.city, "Hamburg");
 });
 
 test("Facebook discovery sends only explicitly supplied public venue URLs", async () => {

@@ -54,6 +54,11 @@ It does not create root workspace tooling. Funcheap and DoTheBay remain deferred
 - A Creao app-trigger request returned `202 pending`, then `200 running`, and finally `200 completed` when polled by run ID.
 - The completed API result represented `feasible` as `"true"` and `preferenceTags` as a comma-separated string. The adapter now narrowly normalizes those two documented scalar encodings before applying strict planner validation.
 
+### 2026-10-24 — Bright Data MCP Facebook verification
+
+- Bright Data MCP successfully ran Facebook Events `discover_by_venue` for a public venue URL. The ready snapshot contained one public event record and no errors.
+- The Facebook normalizer now matches the observed MCP fields, including event identifiers, start/end instants, event URL, and full address. A minimal public fixture excludes description text and contact details.
+
 ### Next action after Gate 0
 
 Once Gate 0 supplies the workspace and shared types, export a contract-compatible planner factory and wire these internal modules into it. Live Creao and Bright Data integrations remain disabled until their respective contracts and custom collector IDs are approved.

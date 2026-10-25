@@ -38,6 +38,14 @@ function stableId(source: string, url: string, title: string): string {
   return `${source}-${(hash >>> 0).toString(36)}`;
 }
 
+function addressCity(value: unknown, fallbackCity: string): string {
+  const address = typeof value === "string" ? value.trim() : "";
+  if (!address) return fallbackCity;
+  const parts = address.split(",").map((part) => part.trim()).filter(Boolean);
+  const candidate = parts.length >= 2 ? parts[parts.length - 2] : parts[0];
+  return candidate?.replace(/^\d{4,6}\s+/, "") || fallbackCity;
+}
+
 function normalizeRecord(record: RawRecord, source: "yelp" | "facebook_events", fallbackCity: string): ActivityCandidate | null {
   const title = firstString(record, ["name", "title", "event_name"]);
   const sourceUrl = firstString(record, ["url", "link", "event_url", "business_url"]);
@@ -80,9 +88,35 @@ export function normalizeYelpRecords(records: readonly unknown[], city: string):
 export function normalizeFacebookEventRecords(records: readonly unknown[], city: string): readonly ActivityCandidate[] {
   return records.flatMap((record) => {
     const raw = asRecord(record);
-    const normalized = raw ? normalizeRecord(raw, "facebook_events", city) : null;
+    const normalized = raw ? normalizeFacebookEventRecord(raw, city) : null;
     return normalized ? [normalized] : [];
   });
+}
+
+/** Handles the published Facebook Events schema returned by Bright Data MCP. */
+function normalizeFacebookEventRecord(record: RawRecord, fallbackCity: string): ActivityCandidate | null {
+  const title = firstString(record, ["title", "event_name", "name"]);
+  const sourceUrl = firstString(record, ["url", "redirected_event_url", "event_url"]);
+  if (!title || !sourceUrl) return null;
+  const eventId = firstString(record, ["event_id"]);
+  const candidate = {
+    id: eventId ? `facebook_events-${eventId}` : stableId("facebook_events", sourceUrl, title),
+    title,
+    category: firstString(record, ["category", "event_type"]) ?? "event",
+    startsAt: firstString(record, ["event_start_time", "event_date", "start_date", "start_time", "date", "datetime"]),
+    endsAt: firstString(record, ["event_end_time", "event_end_date", "end_date", "end_time"]),
+    venueName: firstString(record, ["venue_name", "venue", "event_by"]),
+    city: addressCity(record.full_address ?? record.location, fallbackCity),
+    priceText: firstString(record, ["price", "price_text", "ticket_price"]),
+    isFree: firstBoolean(record, ["is_free", "free"]),
+    sourceUrl,
+    source: "facebook_events" as const,
+  };
+  try {
+    return parseActivityCandidate(candidate);
+  } catch {
+    return null;
+  }
 }
 
 /**

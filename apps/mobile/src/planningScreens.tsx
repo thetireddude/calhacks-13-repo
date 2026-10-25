@@ -1,10 +1,10 @@
 import type { PlanningRunResponse, Proposal } from "@gather/contracts";
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { ActivityIndicator, Button, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { useGroups } from "./groupsState";
-import { createMockPlanningClient } from "./planning";
+import { PlanningError, createMockPlanningClient } from "./planning";
 import type { PlanningClient } from "./planning";
 import { VoteSection } from "./votingScreens";
 
@@ -20,6 +20,9 @@ function usePlanning(): PlanningClient {
   if (!ctx) throw new Error("usePlanning must be used inside PlanningProvider");
   return ctx;
 }
+
+// Run-status polling interval while a run is `pending` (no realtime channel exists).
+export const POLL_INTERVAL_MS = 3000;
 
 // Spec section 3 / 6.3: show at most three proposals, in backend-provided order. Nothing is re-ranked here.
 const MAX_PROPOSALS = 3;
@@ -116,8 +119,12 @@ export function PlanningScreen() {
     setBusy(true);
     try {
       await fn();
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (e) {
+      setError(
+        e instanceof PlanningError && e.code === "unauthenticated"
+          ? "Your session has expired. Please sign out and sign in again."
+          : "Something went wrong. Please try again.",
+      );
     } finally {
       setBusy(false);
     }
@@ -133,6 +140,49 @@ export function PlanningScreen() {
       setProposals(null);
       await load(created.id);
     });
+
+  // Retry a failed run in place when the client supports it (real API); otherwise start a new run.
+  const retry = (runId: string) =>
+    client.retryRun
+      ? work(async () => {
+          setRun(await client.retryRun!(runId));
+          setProposals(null);
+          await load(runId);
+        })
+      : start();
+
+  // Poll getRun only while the run is pending. Stops on any other status, on error, or on unmount/run change.
+  const pollRunId = run?.status === "pending" ? run.id : null;
+  useEffect(() => {
+    if (!pollRunId) return;
+    let live = true;
+    let inFlight = false;
+    const timer = setInterval(() => {
+      if (inFlight) return;
+      inFlight = true;
+      client
+        .getRun(pollRunId)
+        .then(async (latest) => {
+          if (!live) return;
+          const done = latest.status === "completed" ? (await client.getProposals(pollRunId)).proposals : null;
+          if (!live) return;
+          setRun(latest);
+          if (done) setProposals(done);
+        })
+        .catch(() => {
+          if (!live) return;
+          clearInterval(timer);
+          setError("Something went wrong. Please try again.");
+        })
+        .finally(() => {
+          inFlight = false;
+        });
+    }, POLL_INTERVAL_MS);
+    return () => {
+      live = false;
+      clearInterval(timer);
+    };
+  }, [client, pollRunId]);
 
   if (!group)
     return (
@@ -175,7 +225,7 @@ export function PlanningScreen() {
           proposals={proposals}
           busy={busy}
           onRefresh={() => void work(() => load(run.id))}
-          onRetry={() => void start()}
+          onRetry={() => void retry(run.id)}
         />
       ) : null}
     </ScrollView>

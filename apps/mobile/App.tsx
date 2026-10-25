@@ -4,7 +4,12 @@ import { StatusBar } from "expo-status-bar";
 import { AuthProvider, createMockAuthClient } from "./src/auth";
 import { createApiClient } from "./src/apiClient";
 import { createMockGroupClient } from "./src/groups";
-import { createHttpGroupClient, createHttpMemberSetupClient } from "./src/httpClients";
+import {
+  createHttpGroupClient,
+  createHttpMemberSetupClient,
+  createHttpPlanningClient,
+  createHttpVotingClient,
+} from "./src/httpClients";
 import { createExpoNotificationPermissionClient } from "./src/notifications";
 import { createMockPlanningClient } from "./src/planning";
 import { createMockIcsClient, createMockVotingClient } from "./src/voting";
@@ -41,11 +46,12 @@ const memberSetupClient = api ? createHttpMemberSetupClient(api) : undefined;
 
 // Replaced by the API-backed MemberSetupClient later; push permission uses Expo for real.
 const notificationClient = createExpoNotificationPermissionClient();
-// Replaced by the API-backed PlanningClient once the backend routes are wired.
-const planningClient = createMockPlanningClient();
-
-// Replaced by the API-backed VotingClient and IcsClient once the backend routes are wired.
-const votingClient = createMockVotingClient();
+// Planning, vote, veto and confirmed-event are real when the API is configured. Still mock because the API
+// has no route yet (SPEC section 9 requests): notifications feed, ICS export, vote-state tallies, push-device
+// registration and the weekly schedule. The mock is explicit here, never a silent fallback.
+const mockVoting = createMockVotingClient();
+const planningClient = api ? createHttpPlanningClient(api) : createMockPlanningClient();
+const votingClient = api ? createHttpVotingClient(api, mockVoting) : mockVoting;
 const icsClient = createMockIcsClient();
 
 export default function App() {

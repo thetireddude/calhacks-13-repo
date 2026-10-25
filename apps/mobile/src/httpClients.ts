@@ -1,16 +1,26 @@
 import type {
+  ConfirmedEventResponse,
+  CreatePlanningRunRequest,
   GroupInviteResponse,
   GroupMemberResponse,
   GroupResponse,
   JoinInviteResponse,
   MemberAvailabilityResponse,
   MemberPreferencesResponse,
+  PlanningRunProposalsResponse,
+  PlanningRunResponse,
+  ProposalVetoResponse,
+  ProposalVoteResponse,
 } from "@gather/contracts";
 
 import { ApiError } from "./apiClient";
 import type { createApiClient } from "./apiClient";
 import { GroupError } from "./groups";
 import type { GroupClient, GroupErrorCode } from "./groups";
+import { PlanningError } from "./planning";
+import type { PlanningClient, PlanningErrorCode } from "./planning";
+import { VotingError } from "./voting";
+import type { ProposalVoteStateView, VotingClient, VotingErrorCode } from "./voting";
 import { MemberSetupError } from "./memberSetup";
 import type { MemberSetupClient, MemberSetupErrorCode } from "./memberSetup";
 
@@ -42,8 +52,9 @@ async function groupCall<T>(ctx: "create" | "join" | "other", call: () => Promis
   }
 }
 
+const seg = encodeURIComponent;
+
 export function createHttpGroupClient(api: Api): GroupClient {
-  const seg = encodeURIComponent;
   return {
     listGroups: () =>
       groupCall("other", async () => (await api.request<{ groups: GroupResponse[] }>("/v1/groups")).groups),
@@ -85,5 +96,106 @@ export function createHttpMemberSetupClient(api: Api): MemberSetupClient {
     getAvailability: () => setupCall(() => api.request<MemberAvailabilityResponse>("/v1/me/availability")),
     putAvailability: (req) =>
       setupCall(() => api.request<MemberAvailabilityResponse>("/v1/me/availability", { method: "PUT", body: req })),
+  };
+}
+
+async function planningCall<T>(call: () => Promise<T>): Promise<T> {
+  try {
+    return await call();
+  } catch (e) {
+    if (!(e instanceof ApiError)) throw new PlanningError("server");
+    const byStatus: Record<number, PlanningErrorCode> = {
+      0: "network",
+      400: "invalid",
+      401: "unauthenticated",
+      403: "forbidden",
+      404: "not_found",
+      409: "conflict",
+    };
+    throw new PlanningError(byStatus[e.status] ?? "server");
+  }
+}
+
+// POST /v1/groups/:groupId/planning-runs creates the run AND generates proposals synchronously (the API
+// calls the planner inside the request), so no separate /generate call is needed to start. The response
+// is the run in its resulting state ("completed" or "failed"). retryRun re-runs the same run in place via
+// POST /generate (409 if it already completed). Neither POST is retried automatically.
+export function createHttpPlanningClient(api: Api): PlanningClient {
+  return {
+    createRun: (groupId: string, req: CreatePlanningRunRequest) =>
+      planningCall(() =>
+        api.request<PlanningRunResponse>(`/v1/groups/${seg(groupId)}/planning-runs`, { method: "POST", body: req }),
+      ),
+    getRun: (runId) => planningCall(() => api.request<PlanningRunResponse>(`/v1/planning-runs/${seg(runId)}`)),
+    getProposals: (runId) =>
+      planningCall(() => api.request<PlanningRunProposalsResponse>(`/v1/planning-runs/${seg(runId)}/proposals`)),
+    retryRun: (runId) =>
+      planningCall(() =>
+        api.request<PlanningRunResponse>(`/v1/planning-runs/${seg(runId)}/generate`, { method: "POST" }),
+      ),
+  };
+}
+
+function votingError(e: unknown): VotingError {
+  if (!(e instanceof ApiError)) return new VotingError("server");
+  const byStatus: Record<number, VotingErrorCode> = {
+    0: "network",
+    400: "invalid",
+    401: "unauthenticated",
+    403: "forbidden",
+    404: "not_found",
+  };
+  return new VotingError(byStatus[e.status] ?? "server");
+}
+
+async function votingCall<T>(call: () => Promise<T>): Promise<T> {
+  try {
+    return await call();
+  } catch (e) {
+    throw votingError(e);
+  }
+}
+
+// Real: PUT vote, POST veto, GET confirmed-event (404 = no event yet, the API's "none" answer).
+// Not real (no API route yet, SPEC section 9 requests): getVoteState and listNotifications.
+// - getVoteState: the API exposes no tallies, deadline or eligibility, so none are invented or computed.
+//   The view carries only what the API itself returned to this user in this session (own vote / own veto),
+//   and `voteAllowed`/`vetoAllowed` are true only so the controls are reachable: the backend remains the
+//   authority and rejects disallowed actions (shown as an error).
+// - listNotifications: delegated to the supplied mock until a notifications route exists.
+export function createHttpVotingClient(api: Api, mock: Pick<VotingClient, "listNotifications">): VotingClient {
+  const mine = new Map<string, Pick<ProposalVoteStateView, "myChoice" | "myVeto">>();
+  return {
+    getVoteState: async (proposalId) => ({
+      proposalId,
+      status: "open",
+      voteAllowed: true,
+      vetoAllowed: true,
+      ...mine.get(proposalId),
+    }),
+    putVote: async (proposalId, req) => {
+      const res = await votingCall(() =>
+        api.request<ProposalVoteResponse>(`/v1/proposals/${seg(proposalId)}/vote`, { method: "PUT", body: req }),
+      );
+      mine.set(proposalId, { ...mine.get(proposalId), myChoice: res.choice });
+      return res;
+    },
+    veto: async (proposalId) => {
+      const res = await votingCall(() =>
+        api.request<ProposalVetoResponse>(`/v1/proposals/${seg(proposalId)}/veto`, { method: "POST" }),
+      );
+      mine.set(proposalId, { ...mine.get(proposalId), myVeto: true });
+      return res;
+    },
+    getConfirmedEvent: async (groupId) => {
+      try {
+        const event = await api.request<ConfirmedEventResponse>(`/v1/groups/${seg(groupId)}/confirmed-event`);
+        return { status: "confirmed", event };
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 404) return { status: "none" };
+        throw votingError(e);
+      }
+    },
+    listNotifications: mock.listNotifications,
   };
 }

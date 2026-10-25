@@ -42,7 +42,7 @@ Core API lane only. Other lanes own their tasks separately.
 | DEV1-008 | done | DEV1-007 | Gate 1 mobile exit |
 | DEV1-009 | candidate | DEV1-008, GATE2-EXIT | Started early with user approval (Supabase auth independent of contract freeze); real-device smoke and live /v1/me not yet run |
 | DEV1-010 | candidate | DEV1-009 | Gate 3: real API groups + setup |
-| DEV1-011 | blocked | DEV1-010 | Gate 3: real API planning/voting/events/notifications |
+| DEV1-011 | candidate (partial) | DEV1-010 | Gate 3: real API planning/voting/events/notifications |
 | DEV1-012 | blocked | DEV1-011 | Gate 5: mobile demo hardening |
 
 Milestone: [`docs/milestone-dag.md`](../docs/milestone-dag.md)

@@ -2,7 +2,9 @@
 
 ## Status
 
-blocked
+candidate
+
+Partial: planning run/proposals/retry, vote (PUT), veto, and confirmed-event are real HTTP clients. Notifications feed, ICS export, vote-state tallies, push-device registration and weekly schedule remain mock pending API routes (SPEC §9).
 
 ## Dependencies
 

@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { Button, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { useGroups } from "./groupsState";
-import { createMockIcsClient, createMockVotingClient } from "./voting";
+import { VotingError, createMockIcsClient, createMockVotingClient } from "./voting";
 import type {
   ConfirmedEventView,
   IcsClient,
@@ -39,6 +39,9 @@ function useVoting(): VotingContextValue {
 }
 
 const GENERIC_ERROR = "Something went wrong. Please try again.";
+const SESSION_EXPIRED = "Your session has expired. Please sign out and sign in again.";
+const errorText = (e: unknown) =>
+  e instanceof VotingError && e.code === "unauthenticated" ? SESSION_EXPIRED : GENERIC_ERROR;
 
 // Renders backend-provided vote state for one proposal. Statuses are SPEC section 11 stubs; nothing here
 // computes majority, deadlines, veto scope, revision or confirmation. Veto is its own control and its own
@@ -90,9 +93,9 @@ function VoteSectionBody({ proposalId }: { proposalId: string }) {
     setBusy(true);
     try {
       await fn();
-    } catch {
+    } catch (e) {
       if (!stale()) {
-        setError(GENERIC_ERROR);
+        setError(errorText(e));
         setBusy(false);
       }
       return;
@@ -129,7 +132,10 @@ function VoteSectionBody({ proposalId }: { proposalId: string }) {
     <View style={styles.section} testID={`vote-section-${proposalId}`}>
       {banner ? <Text accessibilityRole="alert" testID={`vote-banner-${proposalId}`}>{banner}</Text> : null}
       {state.deadline ? <Text>{`Voting closes: ${state.deadline}`}</Text> : null}
-      <Text>{`Interested: ${state.approveCount} | Can't make it: ${state.cantMakeItCount}`}</Text>
+      {state.approveCount !== undefined && state.cantMakeItCount !== undefined ? (
+        <Text>{`Interested: ${state.approveCount} | Can't make it: ${state.cantMakeItCount}`}</Text>
+      ) : null}
+      {state.myVeto ? <Text>You vetoed this proposal.</Text> : null}
       {state.myChoice ? (
         <Text>{`Your vote: ${state.myChoice === "approve" ? "Interested" : "Can't make it"}`}</Text>
       ) : null}
@@ -199,7 +205,7 @@ function GroupEvent({ groupId, groupName }: { groupId: string; groupName: string
     let live = true;
     voting.getConfirmedEvent(groupId).then(
       (v) => live && setView(v),
-      () => live && setError(GENERIC_ERROR),
+      (e) => live && setError(errorText(e)),
     );
     return () => {
       live = false;

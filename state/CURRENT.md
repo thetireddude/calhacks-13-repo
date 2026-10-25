@@ -1,36 +1,30 @@
 # Current Project State — Developer 2 (Core API)
 
-## Scope
+## Milestone
 
-This branch state tracks **`apps/api/**`, `supabase/**`, `packages/contracts/**` only.** Mobile and planner packages are placeholder stubs until other developers land their lanes.
+**Gate 1 complete** (merged PR #1). **Gate 2 prep in flight:** DEV2-011 ∥ DEV2-012 ∥ DEV2-013.
 
-## Shipped (Dev 2)
+## In flight
 
 | Task | Deliverable |
 |------|-------------|
-| DEV2-001 | Fastify API + `/v1/health` |
-| DEV2-002 | JWT auth + `/v1/me` + Supabase config |
-| DEV2-003 | Profiles, groups, memberships, invitations + RLS |
-| DEV2-004 | `member_preferences`, `member_availability` + owner RLS |
-| DEV2-005 | In-memory groups, invites, join, members REST |
-| DEV2-006 | GET/PUT preferences + availability + privacy tests |
-| DEV2-007 | `planning_runs` / `proposals` migration + planning route stubs |
-| DEV2-008 | Mock `PlannerPort`, persist ≤3 proposals, failed-run retry |
-| DEV2-009 | Vote/veto/confirmed-event skeleton + idempotent stub majority |
-| DEV2-010 | Gate 1 exit docs, CI `test:dev2`, checklist vs SPEC §8 |
+| DEV2-011 | Supabase-backed groups when env set; in-memory default for CI |
+| DEV2-012 | Optional Supabase JWT iss/aud validation |
+| DEV2-013 | Local Dev 2 runbook + `.env.example` |
 
-## Milestone
+## Shipped (Gate 1)
 
-**Gate 1 Developer 2 — complete** (DEV2-001–010). Evidence: [`state/GATE1-DEV2-EXIT.md`](GATE1-DEV2-EXIT.md), [`docs/gate1-dev2-exit.md`](../docs/gate1-dev2-exit.md).
+DEV2-001–010 on `main`. See [`state/GATE1-DEV2-EXIT.md`](GATE1-DEV2-EXIT.md).
 
-## Next (Gate 2 prep)
+## Tests
 
-Supabase persistence wiring, import real `@gather/planner` when Dev 3 lands, SPEC §11 when approved.
-
-## Test status
-
-`pnpm run test:dev2` — **27/27** pass. See [`state/DEV2-TEST-STATUS.md`](DEV2-TEST-STATUS.md).
+`pnpm run test:ci` — **27/27** (Tester gates must use this command).
 
 ## Blockers (SPEC §11)
 
 Voting rules, scheduler, full DTO freeze — stub until approved.
+
+## Waiting on others (Gate 2+)
+
+- **Dev 3** — real `@gather/planner` for non-mock planning.
+- **Dev 1** — Gate 3 mobile ↔ API.

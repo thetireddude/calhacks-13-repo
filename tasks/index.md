@@ -17,5 +17,8 @@ Core API lane only. Other lanes own their tasks separately.
 | DEV2-008 | done | DEV2-007, GATE0-002 | Mock planner orchestration + ≤3 proposals |
 | DEV2-009 | done | DEV2-008 | Vote + veto + confirmed-event skeleton (merged) |
 | DEV2-010 | done | DEV2-009 | Gate 1 Dev 2 exit (docs + CI) |
+| DEV2-011 | implementing | DEV2-010 | Supabase groups store (env-gated) |
+| DEV2-012 | implementing | DEV2-010 | JWT iss/aud hardening |
+| DEV2-013 | implementing | DEV2-010 | Local setup docs + `.env.example` |
 
 Milestone: [`docs/milestone-dag.md`](../docs/milestone-dag.md)

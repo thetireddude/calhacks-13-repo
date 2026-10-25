@@ -20,6 +20,9 @@ export type ProposalVoteStateView = {
   status: string;
   approveCount: number;
   cantMakeItCount: number;
+  // mobile-local stub, pending SPEC §9 approval: backend says whether vote controls are shown at all.
+  // The UI never infers this from `status`, which is display-only.
+  voteAllowed: boolean;
   // Backend decides whether this user may veto (SPEC section 11); the UI never infers it.
   vetoAllowed: boolean;
   // ISO string supplied by the backend; shown as given, never enforced client-side.
@@ -80,7 +83,14 @@ export const FIXTURE_NOTIFICATIONS: NotificationItemView[] = [
 export const FIXTURE_DEADLINE = "2026-11-02T20:00:00.000Z";
 
 function stateFor(scenario: MockVoteScenario, proposalId: string): ProposalVoteStateView {
-  const base = { proposalId, approveCount: 3, cantMakeItCount: 1, vetoAllowed: true, deadline: FIXTURE_DEADLINE };
+  const base = {
+    proposalId,
+    approveCount: 3,
+    cantMakeItCount: 1,
+    vetoAllowed: true,
+    voteAllowed: scenario === "open" || scenario === "noVeto" || scenario === "revote",
+    deadline: FIXTURE_DEADLINE,
+  };
   if (scenario === "noVeto") return { ...base, status: "open", vetoAllowed: false };
   return { ...base, status: scenario };
 }

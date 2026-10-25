@@ -1,5 +1,5 @@
 import type { ConfirmedEventResponse } from "@gather/contracts";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Button, ScrollView, StyleSheet, Text, View } from "react-native";
 
@@ -44,12 +44,21 @@ const GENERIC_ERROR = "Something went wrong. Please try again.";
 // computes majority, deadlines, veto scope, revision or confirmation. Veto is its own control and its own
 // client call; it is never a vote choice and is shown only when the backend says `vetoAllowed`.
 export function VoteSection({ proposalId }: { proposalId: string }) {
+  // Keyed so a proposal change remounts with fresh state: old counts and errors never show under a new id.
+  return <VoteSectionBody key={proposalId} proposalId={proposalId} />;
+}
+
+function VoteSectionBody({ proposalId }: { proposalId: string }) {
   const { voting } = useVoting();
   const [state, setState] = useState<ProposalVoteStateView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [confirmingVeto, setConfirmingVeto] = useState(false);
+  // False once this body unmounts (proposal changed or screen left): late results are dropped.
+  const mounted = useRef(true);
 
   useEffect(() => {
+    mounted.current = true;
     let live = true;
     voting.getVoteState(proposalId).then(
       (s) => live && setState(s),
@@ -57,25 +66,38 @@ export function VoteSection({ proposalId }: { proposalId: string }) {
     );
     return () => {
       live = false;
+      mounted.current = false;
     };
   }, [voting, proposalId]);
 
   async function act(fn: () => Promise<unknown>) {
+    const forId = proposalId;
+    const stale = () => !mounted.current;
     setError(null);
+    setConfirmingVeto(false);
     setBusy(true);
     try {
       await fn();
-      setState(await voting.getVoteState(proposalId));
     } catch {
-      setError(GENERIC_ERROR);
-    } finally {
-      setBusy(false);
+      if (!stale()) {
+        setError(GENERIC_ERROR);
+        setBusy(false);
+      }
+      return;
     }
+    try {
+      const fresh = await voting.getVoteState(forId);
+      if (!stale()) setState(fresh);
+    } catch {
+      if (!stale()) setError("Your action was recorded, but the latest state could not be loaded. Please refresh.");
+    }
+    if (!stale()) setBusy(false);
   }
 
   if (!state) return error ? <Text accessibilityRole="alert">{error}</Text> : <Text>Loading votes.</Text>;
 
-  const canVote = state.status === "open" || state.status === "revote";
+  // Backend flag only; `status` is display-only.
+  const canVote = state.voteAllowed;
   const banner =
     state.status === "vetoed"
       ? "This proposal was vetoed."
@@ -120,13 +142,32 @@ export function VoteSection({ proposalId }: { proposalId: string }) {
       {canVote && state.vetoAllowed ? (
         <View style={styles.vetoBox}>
           <Text>Veto is separate from voting.</Text>
-          <Button
-            title="Veto this proposal"
-            color="#b00020"
-            testID={`veto-${proposalId}`}
-            disabled={busy}
-            onPress={() => void act(() => voting.veto(proposalId))}
-          />
+          {confirmingVeto ? (
+            <View style={styles.row}>
+              <Text>Veto this proposal? This is not the same as Can&apos;t make it.</Text>
+              <Button
+                title="Confirm veto"
+                color="#b00020"
+                testID={`veto-confirm-${proposalId}`}
+                disabled={busy}
+                onPress={() => void act(() => voting.veto(proposalId))}
+              />
+              <Button
+                title="Cancel"
+                testID={`veto-cancel-${proposalId}`}
+                disabled={busy}
+                onPress={() => setConfirmingVeto(false)}
+              />
+            </View>
+          ) : (
+            <Button
+              title="Veto this proposal"
+              color="#b00020"
+              testID={`veto-${proposalId}`}
+              disabled={busy}
+              onPress={() => setConfirmingVeto(true)}
+            />
+          )}
         </View>
       ) : null}
       {error ? <Text accessibilityRole="alert">{error}</Text> : null}
@@ -139,6 +180,7 @@ function GroupEvent({ groupId, groupName }: { groupId: string; groupName: string
   const [view, setView] = useState<ConfirmedEventView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     let live = true;
@@ -152,13 +194,17 @@ function GroupEvent({ groupId, groupName }: { groupId: string; groupName: string
   }, [voting, groupId]);
 
   async function exportIcs(event: ConfirmedEventResponse) {
+    if (exporting) return;
     setNotice(null);
     setError(null);
+    setExporting(true);
     try {
-      const res = await ics.exportIcs(event.id);
-      setNotice(`Calendar file ready: ${res.filename}`);
+      await ics.exportIcs(event.id);
+      setNotice("Calendar export is not connected yet (stub).");
     } catch {
       setError(GENERIC_ERROR);
+    } finally {
+      setExporting(false);
     }
   }
 
@@ -175,7 +221,7 @@ function GroupEvent({ groupId, groupName }: { groupId: string; groupName: string
           {view.status === "cancelled" ? (
             <Text accessibilityRole="alert">This event was cancelled.</Text>
           ) : (
-            <Button title="Add to calendar (.ics)" onPress={() => void exportIcs(view.event)} />
+            <Button title="Add to calendar (.ics)" disabled={exporting} onPress={() => void exportIcs(view.event)} />
           )}
         </>
       ) : null}

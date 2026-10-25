@@ -23,6 +23,7 @@ function openState(over: Partial<ProposalVoteStateView> = {}): ProposalVoteState
     approveCount: 3,
     cantMakeItCount: 1,
     vetoAllowed: true,
+    voteAllowed: (over.status ?? "open") === "open" || over.status === "revote",
     deadline: "2026-11-02T20:00:00.000Z",
     ...over,
   };
@@ -95,6 +96,11 @@ afterEach(async () => {
   jest.restoreAllMocks();
 });
 
+async function pressVeto(id = "p1") {
+  await fireEvent.press(await screen.findByTestId(`veto-${id}`));
+  await fireEvent.press(await screen.findByTestId(`veto-confirm-${id}`));
+}
+
 const loggedText = () => JSON.stringify(spies.flatMap((s) => s.mock.calls));
 
 describe("veto vs Can't make it", () => {
@@ -106,7 +112,8 @@ describe("veto vs Can't make it", () => {
     await waitFor(() => expect(putVote).toHaveBeenCalledTimes(1));
     expect(putVote).toHaveBeenLastCalledWith("p1", { choice: "cant_make_it" });
     expect(veto).not.toHaveBeenCalled();
-    await fireEvent.press(await screen.findByTestId("veto-p1"));
+    expect(veto).not.toHaveBeenCalled();
+    await pressVeto();
     await waitFor(() => expect(veto).toHaveBeenCalledTimes(1));
     expect(putVote).toHaveBeenCalledTimes(1);
     // veto payload never carries a vote choice
@@ -132,7 +139,8 @@ describe("veto vs Can't make it", () => {
     const veto = jest.fn(() => d.promise as ReturnType<VotingClient["veto"]>);
     const putVote = jest.fn(createMockVotingClient().putVote);
     await render(withProviders(client({ veto, putVote }), <VoteSection proposalId="p1" />));
-    const btn = await screen.findByTestId("veto-p1");
+    await fireEvent.press(await screen.findByTestId("veto-p1"));
+    const btn = await screen.findByTestId("veto-confirm-p1");
     await fireEvent.press(btn);
     await fireEvent.press(btn);
     await fireEvent.press(screen.getByTestId("vote-cant-make-it-p1"));
@@ -167,7 +175,7 @@ describe("veto vs Can't make it", () => {
       },
     });
     await render(withProviders(v, <VoteSection proposalId="p1" />));
-    await fireEvent.press(await screen.findByTestId("veto-p1"));
+    await pressVeto();
     await screen.findByText("This proposal was vetoed.");
     expect(screen.queryByTestId("veto-p1")).toBeNull();
   });
@@ -190,7 +198,7 @@ describe("declining members and the Events screen", () => {
     await renderEvents(v, { exportIcs });
     await screen.findByText(FIXTURE_EVENT.summary);
     await fireEvent.press(screen.getByText("Add to calendar (.ics)"));
-    await screen.findByText("Calendar file ready: event-1.ics");
+    await screen.findByText("Calendar export is not connected yet (stub).");
     expect(exportIcs).toHaveBeenCalledWith("event-1");
   });
 
@@ -245,7 +253,7 @@ describe("rejecting clients", () => {
 
   test("veto rejects: error shown, veto control still available", async () => {
     await render(withProviders(client({ veto: async () => Promise.reject(new Error("no")) }), <VoteSection proposalId="p1" />));
-    await fireEvent.press(await screen.findByTestId("veto-p1"));
+    await pressVeto();
     await screen.findByText(GENERIC);
     expect(screen.queryByText("This proposal was vetoed.")).toBeNull();
     expect(screen.getByTestId("veto-p1")).toBeTruthy();
@@ -268,7 +276,7 @@ describe("rejecting clients", () => {
     });
     await render(withProviders(v, <VoteSection proposalId="p1" />));
     await fireEvent.press(await screen.findByTestId("vote-approve-p1"));
-    await screen.findByText(GENERIC);
+    await screen.findByText(/Your action was recorded, but the latest state could not be loaded/);
     expect(screen.queryByText("Your vote: Interested")).toBeNull();
   });
 
@@ -287,14 +295,14 @@ describe("rejecting clients", () => {
     expect(screen.queryByText("Loading event.")).toBeNull();
   });
 
-  test("ICS export rejects: error shown, no 'Calendar file ready', button remains usable and retry works", async () => {
+  test("ICS export rejects: error shown, no export notice, button remains usable and retry works", async () => {
     const exportIcs = jest.fn().mockRejectedValueOnce(new Error("no")).mockResolvedValue({ filename: "ok.ics" });
     await renderEvents(createMockVotingClient({ event: "confirmed" }), { exportIcs });
     await fireEvent.press(await screen.findByText("Add to calendar (.ics)"));
     await screen.findByText(GENERIC);
-    expect(screen.queryByText(/Calendar file ready/)).toBeNull();
+    expect(screen.queryByText(/Calendar export is not connected/)).toBeNull();
     await fireEvent.press(screen.getByText("Add to calendar (.ics)"));
-    await screen.findByText("Calendar file ready: ok.ics");
+    await screen.findByText("Calendar export is not connected yet (stub).");
     expect(screen.queryByText(GENERIC)).toBeNull();
   });
 
@@ -302,10 +310,10 @@ describe("rejecting clients", () => {
     const exportIcs = jest.fn().mockResolvedValueOnce({ filename: "a.ics" }).mockRejectedValueOnce(new Error("x"));
     await renderEvents(createMockVotingClient({ event: "confirmed" }), { exportIcs });
     await fireEvent.press(await screen.findByText("Add to calendar (.ics)"));
-    await screen.findByText("Calendar file ready: a.ics");
+    await screen.findByText("Calendar export is not connected yet (stub).");
     await fireEvent.press(screen.getByText("Add to calendar (.ics)"));
     await screen.findByText(GENERIC);
-    expect(screen.queryByText(/Calendar file ready/)).toBeNull();
+    expect(screen.queryByText(/Calendar export is not connected/)).toBeNull();
   });
 
   test("synchronously throwing client does not crash the screen", async () => {
@@ -315,7 +323,7 @@ describe("rejecting clients", () => {
     await renderEvents(createMockVotingClient({ event: "confirmed" }), { exportIcs: exportIcs as unknown as IcsClient["exportIcs"] });
     await fireEvent.press(await screen.findByText("Add to calendar (.ics)"));
     await screen.findByText(GENERIC);
-    expect(screen.queryByText(/Calendar file ready/)).toBeNull();
+    expect(screen.queryByText(/Calendar export is not connected/)).toBeNull();
   });
 });
 

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import { Linking } from "react-native";
 
 import { AuthProvider, createMockAuthClient } from "./auth";
@@ -80,8 +80,15 @@ test("veto and Can't make it are distinct controls that make distinct client cal
   expect(veto).not.toHaveBeenCalled();
 
   await fireEvent.press(screen.getByTestId("veto-proposal-1"));
-  expect(veto).toHaveBeenCalledWith("proposal-1");
+  expect(veto).not.toHaveBeenCalled();
+  await fireEvent.press(screen.getByTestId("veto-confirm-proposal-1"));
+  await waitFor(() => expect(veto).toHaveBeenCalledWith("proposal-1"));
   expect(putVote).toHaveBeenCalledTimes(1);
+
+  // Cancel backs out without a veto call.
+  await fireEvent.press(screen.getByTestId("veto-proposal-1"));
+  await fireEvent.press(screen.getByTestId("veto-cancel-proposal-1"));
+  expect(veto).toHaveBeenCalledTimes(1);
 });
 
 test("Interested sends the approve choice only", async () => {
@@ -114,7 +121,7 @@ test("confirmed event shows summary and exports ICS through the IcsClient", asyn
   await openTab("Events");
   await screen.findByText("Saturday hike at the ridge");
   await fireEvent.press(screen.getByText("Add to calendar (.ics)"));
-  await screen.findByText("Calendar file ready: event-1.ics");
+  await screen.findByText("Calendar export is not connected yet (stub).");
   expect(exportIcs).toHaveBeenCalledWith("event-1");
 });
 

@@ -7,8 +7,8 @@ Human-readable status. Detailed state: [`state/CURRENT.md`](../state/CURRENT.md)
 | Task | Status | Depends on | Lane | Notes |
 |------|--------|------------|------|-------|
 | META-001 | done | — | integration | Agent workflow + scaffold |
-| GATE0-001 | ready | META-001 | integration | Root workspace + CI stub |
-| GATE0-002 | ready | GATE0-001 | core-api | Contract type stubs |
+| GATE0-001 | done | META-001 | integration | Root workspace + CI stub |
+| GATE0-002 | done | GATE0-001 | core-api | Merged `76a97e7` — planner stubs |
 
 ## Developer readiness (Gate 1 prep)
 
@@ -16,7 +16,7 @@ Human-readable status. Detailed state: [`state/CURRENT.md`](../state/CURRENT.md)
 |------|--------|------------|------|-------|
 | DEV1-001 | blocked | GATE0-001 | mobile | Expo bootstrap |
 | DEV2-001 | blocked | GATE0-001 | core-api | API bootstrap |
-| DEV3-001 | blocked | GATE0-001, GATE0-002 | planner | Planner package stub |
+| DEV3-001 | ready | GATE0-001, GATE0-002 | planner | Planner package stub (contracts on main) |
 
 ## How to pick work
 
@@ -26,10 +26,4 @@ Human-readable status. Detailed state: [`state/CURRENT.md`](../state/CURRENT.md)
 
 Template: [`TASK_TEMPLATE.md`](TASK_TEMPLATE.md)
 
-## Proposed milestone DAG (awaiting approval)
-
-Full graph, parallel waves, and Dev 2 critical path:
-
-**[`docs/milestone-dag.md`](../docs/milestone-dag.md)** — Gate 0 → Gate 1 task IDs (`GATE0-*`, `DEV2-*`, `DEV1-*`, `DEV3-*`, `GATE1-EXIT`).
-
-Do not create implementation task files until the team approves that document.
+Milestone DAG: [`docs/milestone-dag.md`](../docs/milestone-dag.md). Orchestration: `state/agents/ORCH-001.md`.

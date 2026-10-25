@@ -22,7 +22,7 @@
 | Priority | Task | Owner lane | Status |
 |----------|------|------------|--------|
 | — | GATE0-001 | integration | **done** |
-| P0 | GATE0-002 | core-api | **implementing** (subagent) |
+| — | GATE0-002 | core-api | **done** (merged `76a97e7`) |
 | P0 | DEV2-001 | core-api | **implementing** (subagent) |
 | P0 | DEV1-001 | mobile | **implementing** (subagent) |
 | Next | DEV2-002, DEV3-001, DEV1-002 | — | queued after W2 |

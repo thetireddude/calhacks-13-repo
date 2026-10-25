@@ -48,6 +48,9 @@ test("GET /v1/me with valid token returns user id", async () => {
     headers: { authorization: `Bearer ${token}` },
   });
   assert.equal(res.statusCode, 200);
-  assert.deepEqual(res.json(), { id: "user-abc" });
+  assert.deepEqual(res.json(), {
+    id: "user-abc",
+    profile: { displayName: null },
+  });
   await app.close();
 });

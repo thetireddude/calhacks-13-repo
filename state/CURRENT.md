@@ -23,16 +23,16 @@
 | Task | Deliverable expected |
 |------|----------------------|
 | DEV2-004 | `member_preferences` + `member_availability` migrations (**candidate on main — finish R/T then mark done**) |
+| **DEV2-005** | **REST groups/invites/join/members (in-memory store stub) + `/v1/me` profile stub — candidate** |
 | DEV1-003 | OTP mock auth screens in mobile app |
 | DEV3-003 | Seeded activity fallback in planner package |
 
 ## Next auto-queue (Dev 2 spine)
 
-1. DEV2-005 — REST: create/join group, invites, members (uses DEV2-003 schema)
-2. DEV2-006 — REST: GET/PUT preferences + availability + privacy tests
-3. DEV2-007 — planning_runs + proposals tables + route stubs
-4. DEV2-008 — wire `@gather/planner` mock into API orchestration
-5. DEV2-009 — vote + confirmed-event skeleton routes
+1. DEV2-006 — REST: GET/PUT preferences + availability + privacy tests
+2. DEV2-007 — planning_runs + proposals tables + route stubs
+3. DEV2-008 — wire `@gather/planner` mock into API orchestration
+4. DEV2-009 — vote + confirmed-event skeleton routes
 
 ## Blockers (SPEC §11)
 

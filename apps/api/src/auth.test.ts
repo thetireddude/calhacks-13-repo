@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { createSecretKey } from "node:crypto";
 import test from "node:test";
-import { SignJWT } from "jose";
+import { SignJWT, createLocalJWKSet, exportJWK, generateKeyPair, type KeyLike } from "jose";
 import { createApp } from "./app.js";
+import { setJwksResolverForTests } from "./auth.js";
 import { createDefaultProfileStore } from "./me/createProfileStore.js";
 import { InMemoryProfileStore, type ProfileStore } from "./me/profileStore.js";
 import { SupabaseProfileStore } from "./me/supabaseProfileStore.js";
@@ -283,4 +284,72 @@ test("SupabaseProfileStore.updateDisplayName upserts profiles.display_name for s
       row: { id: "user-abc", display_name: "Ada" },
     },
   ]);
+});
+
+async function signEs256Token(sub: string, privateKey: KeyLike, kid: string): Promise<string> {
+  return new SignJWT({ role: "authenticated" })
+    .setProtectedHeader({ alg: "ES256", kid })
+    .setSubject(sub)
+    .setIssuedAt()
+    .setExpirationTime("2h")
+    .sign(privateKey);
+}
+
+async function useEs256Jwks(kid: string): Promise<KeyLike> {
+  const { publicKey, privateKey } = await generateKeyPair("ES256");
+  const jwk = { ...(await exportJWK(publicKey)), kid, alg: "ES256", use: "sig" };
+  setJwksResolverForTests(createLocalJWKSet({ keys: [jwk] }));
+  return privateKey;
+}
+
+test("GET /v1/me accepts an ES256 token signed by a key in the project JWKS", async () => {
+  clearJwtClaimEnv();
+  process.env.SUPABASE_JWT_SECRET = TEST_SECRET;
+  const privateKey = await useEs256Jwks("k1");
+  const token = await signEs256Token("user-es256", privateKey, "k1");
+  const app = await createApp();
+  const res = await app.inject({ method: "GET", url: "/v1/me", headers: { authorization: `Bearer ${token}` } });
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.json().id, "user-es256");
+  await app.close();
+  setJwksResolverForTests(undefined);
+});
+
+test("GET /v1/me rejects an ES256 token signed by a key that is not in the JWKS", async () => {
+  clearJwtClaimEnv();
+  process.env.SUPABASE_JWT_SECRET = TEST_SECRET;
+  await useEs256Jwks("k1");
+  const { privateKey: otherKey } = await generateKeyPair("ES256");
+  const token = await signEs256Token("user-evil", otherKey, "k1");
+  const app = await createApp();
+  const res = await app.inject({ method: "GET", url: "/v1/me", headers: { authorization: `Bearer ${token}` } });
+  assert.equal(res.statusCode, 401);
+  await app.close();
+  setJwksResolverForTests(undefined);
+});
+
+test("GET /v1/me rejects an ES256 token when no JWKS is configured", async () => {
+  clearJwtClaimEnv();
+  process.env.SUPABASE_JWT_SECRET = TEST_SECRET;
+  const savedUrl = process.env.SUPABASE_URL;
+  delete process.env.SUPABASE_URL;
+  setJwksResolverForTests(undefined);
+  const { privateKey } = await generateKeyPair("ES256");
+  const token = await signEs256Token("user-x", privateKey, "k1");
+  const app = await createApp();
+  const res = await app.inject({ method: "GET", url: "/v1/me", headers: { authorization: `Bearer ${token}` } });
+  assert.equal(res.statusCode, 401);
+  await app.close();
+  if (savedUrl !== undefined) process.env.SUPABASE_URL = savedUrl;
+});
+
+test("GET /v1/me rejects a token with an unsupported algorithm", async () => {
+  clearJwtClaimEnv();
+  process.env.SUPABASE_JWT_SECRET = TEST_SECRET;
+  const key = createSecretKey(Buffer.from(TEST_SECRET, "utf8"));
+  const token = await new SignJWT({}).setProtectedHeader({ alg: "HS512" }).setSubject("user-hs512").setExpirationTime("2h").sign(key);
+  const app = await createApp();
+  const res = await app.inject({ method: "GET", url: "/v1/me", headers: { authorization: `Bearer ${token}` } });
+  assert.equal(res.statusCode, 401);
+  await app.close();
 });

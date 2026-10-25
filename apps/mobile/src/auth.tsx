@@ -12,19 +12,50 @@ export interface AuthClient {
   signOut(): Promise<void>;
 }
 
-// In-memory mock: accepts any non-empty code. Nothing is persisted or logged.
-export function createMockAuthClient(): AuthClient {
+// Mobile-local error shape. The contract error schema is not frozen in packages/contracts yet
+// (SPEC section 11), so this stands in for it; swap when the contract lands.
+export type AuthErrorCode = "invalid_code" | "expired_code" | "network";
+export class AuthError extends Error {
+  constructor(readonly code: AuthErrorCode) {
+    super(code);
+    this.name = "AuthError";
+  }
+}
+
+// Fixture outcomes for the mock. Code length, expiry window and rate limits are NOT approved
+// product rules; the mock only simulates the outcomes the UI must handle.
+export type MockOutcome = "success" | "invalid_code" | "expired_code" | "network";
+export type MockAuthClient = AuthClient & {
+  setRequestOutcome(outcome: "success" | "network"): void;
+  setVerifyOutcome(outcome: MockOutcome): void;
+};
+
+// In-memory mock. Nothing is persisted or logged (never log email or OTP values).
+export function createMockAuthClient(
+  initial: { request?: "success" | "network"; verify?: MockOutcome } = {},
+): MockAuthClient {
   let session: Session | null = null;
+  let requestOutcome = initial.request ?? "success";
+  let verifyOutcome: MockOutcome = initial.verify ?? "success";
   return {
     getSession: async () => session,
-    requestOtp: async () => {},
+    requestOtp: async () => {
+      if (requestOutcome === "network") throw new AuthError("network");
+    },
     verifyOtp: async (_email, code) => {
-      if (code.trim() === "") throw new Error("Enter the code.");
+      if (verifyOutcome !== "success") throw new AuthError(verifyOutcome);
+      if (code.trim() === "") throw new AuthError("invalid_code");
       session = { kind: "mock" };
       return session;
     },
     signOut: async () => {
       session = null;
+    },
+    setRequestOutcome: (o) => {
+      requestOutcome = o;
+    },
+    setVerifyOutcome: (o) => {
+      verifyOutcome = o;
     },
   };
 }

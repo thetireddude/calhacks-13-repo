@@ -11,6 +11,13 @@ export type {
   MeResponse,
 } from "./groups.js";
 export type {
+  AvailabilityWindow,
+  MemberAvailabilityResponse,
+  MemberPreferencesResponse,
+  PutMemberAvailabilityRequest,
+  PutMemberPreferencesRequest,
+} from "./member-setup.js";
+export type {
   PlannerInput,
   PlannerPort,
   PlannerResult,

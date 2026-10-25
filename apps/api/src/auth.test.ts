@@ -3,6 +3,9 @@ import { createSecretKey } from "node:crypto";
 import test from "node:test";
 import { SignJWT } from "jose";
 import { createApp } from "./app.js";
+import { createDefaultProfileStore } from "./me/createProfileStore.js";
+import { InMemoryProfileStore, type ProfileStore } from "./me/profileStore.js";
+import { SupabaseProfileStore } from "./me/supabaseProfileStore.js";
 
 const TEST_SECRET = "dev-test-jwt-secret-at-least-32-chars!!";
 
@@ -111,4 +114,47 @@ test("GET /v1/me accepts token matching configured issuer and audience", async (
     profile: { displayName: null },
   });
   await app.close();
+});
+
+test("GET /v1/me returns displayName from the authenticated user's profile store", async () => {
+  clearJwtClaimEnv();
+  process.env.SUPABASE_JWT_SECRET = TEST_SECRET;
+  const token = await signTestToken("user-abc");
+  const profileStore: ProfileStore = {
+    async getOrCreateProfile(userId) {
+      return {
+        id: userId,
+        profile: { displayName: userId === "user-abc" ? "Ada" : "other" },
+      };
+    },
+  };
+  const app = await createApp({ profileStore });
+  const res = await app.inject({
+    method: "GET",
+    url: "/v1/me",
+    headers: { authorization: `Bearer ${token}` },
+  });
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(res.json(), {
+    id: "user-abc",
+    profile: { displayName: "Ada" },
+  });
+  await app.close();
+});
+
+test("createDefaultProfileStore uses in-memory when supabase env is unset", () => {
+  delete process.env.SUPABASE_URL;
+  delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+  assert.ok(createDefaultProfileStore() instanceof InMemoryProfileStore);
+});
+
+test("createDefaultProfileStore uses supabase when env is set", () => {
+  process.env.SUPABASE_URL = "https://example.supabase.co";
+  process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-key";
+  try {
+    assert.ok(createDefaultProfileStore() instanceof SupabaseProfileStore);
+  } finally {
+    delete process.env.SUPABASE_URL;
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+  }
 });

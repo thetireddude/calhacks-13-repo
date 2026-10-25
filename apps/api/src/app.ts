@@ -1,9 +1,11 @@
 import Fastify from "fastify";
-import { requireAuth } from "./auth.js";
 import { registerGroupRoutes } from "./groups/routes.js";
 import { createDefaultGroupsStore } from "./groups/createGroupsStore.js";
 import type { GroupsStore } from "./groups/store.js";
 import { createDefaultMemberSetupStore } from "./me/createMemberSetupStore.js";
+import { createDefaultProfileStore } from "./me/createProfileStore.js";
+import { registerProfileRoutes } from "./me/profileRoutes.js";
+import type { ProfileStore } from "./me/profileStore.js";
 import { registerMemberSetupRoutes } from "./me/routes.js";
 import type { MemberSetupStore } from "./me/store.js";
 import { createMockPlannerPort } from "./planner/mockPlannerPort.js";
@@ -18,6 +20,7 @@ import type { PlannerPort } from "@gather/contracts";
 
 export type CreateAppOptions = {
   groupsStore?: GroupsStore;
+  profileStore?: ProfileStore;
   memberSetupStore?: MemberSetupStore;
   planningStore?: PlanningStore;
   votingStore?: VotingStore;
@@ -27,6 +30,7 @@ export type CreateAppOptions = {
 export async function createApp(options: CreateAppOptions = {}) {
   const app = Fastify({ logger: false });
   const groupsStore = options.groupsStore ?? createDefaultGroupsStore();
+  const profileStore = options.profileStore ?? createDefaultProfileStore();
   const memberSetupStore =
     options.memberSetupStore ?? createDefaultMemberSetupStore();
   const planningStore = options.planningStore ?? new InMemoryPlanningStore();
@@ -35,13 +39,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 
   app.get("/v1/health", async () => ({ status: "ok" as const }));
 
-  app.get("/v1/me", { preHandler: requireAuth }, async (request) => ({
-    id: request.authUser!.sub,
-    profile: {
-      displayName: null,
-    },
-  }));
-
+  registerProfileRoutes(app, profileStore);
   registerGroupRoutes(app, groupsStore);
   registerMemberSetupRoutes(app, memberSetupStore);
   registerPlanningRoutes(app, groupsStore, planningStore, plannerPort);

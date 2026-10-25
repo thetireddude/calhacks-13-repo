@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { normalizeFacebookEventRecords, normalizeYelpRecords } from "../src/bright-data-discovery.js";
+import { BrightDataCandidateDiscovery } from "../src/bright-data-discovery.js";
+import { BrightDataDatasetClient } from "../src/bright-data.js";
 
 test("Yelp normalization retains only complete public records", () => {
   const candidates = normalizeYelpRecords([
@@ -24,4 +26,20 @@ test("Facebook venue-event normalization retains public event details", () => {
   assert.equal(candidates.length, 1);
   assert.equal(candidates[0]?.source, "facebook_events");
   assert.equal(candidates[0]?.isFree, true);
+});
+
+test("Facebook discovery sends only explicitly supplied public venue URLs", async () => {
+  let requestBody = "";
+  const client = new BrightDataDatasetClient({ apiKey: "test" }, async (_url, init) => {
+    requestBody = String(init?.body);
+    return new Response(JSON.stringify([{ event_name: "Music", event_url: "https://facebook.com/events/1" }]), { status: 200 });
+  });
+  const discovery = new BrightDataCandidateDiscovery(client, {
+    facebookEventsVenueDatasetId: "gd_facebook",
+    facebookVenueUrls: ["https://www.facebook.com/example-venue/events"],
+  });
+  const candidates = await discovery.discover({ city: "San Francisco", limit: 1 });
+  assert.equal(candidates.length, 1);
+  assert.match(requestBody, /example-venue\/events/);
+  assert.match(requestBody, /upcoming_events_only/);
 });

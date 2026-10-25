@@ -5,6 +5,8 @@ import { parseActivityCandidate } from "./validation.js";
 export interface BrightDataDiscoveryConfig {
   readonly yelpDatasetId?: string;
   readonly facebookEventsVenueDatasetId?: string;
+  /** Public venue /events URLs explicitly selected by the caller. */
+  readonly facebookVenueUrls?: readonly string[];
 }
 
 type RawRecord = Record<string, unknown>;
@@ -103,6 +105,14 @@ export class BrightDataCandidateDiscovery implements CandidateDiscoveryPort {
         input: [{ country: "US", category: "Restaurants", location: city, limit_per_input: limit }],
       });
       return normalizeYelpRecords(records, city).slice(0, limit);
+    }
+
+    if (this.config.facebookEventsVenueDatasetId && this.config.facebookVenueUrls?.length) {
+      const records = await this.client.scrape({
+        datasetId: this.config.facebookEventsVenueDatasetId,
+        input: this.config.facebookVenueUrls.slice(0, limit).map((url) => ({ url, upcoming_events_only: true })),
+      });
+      return normalizeFacebookEventRecords(records, city).slice(0, limit);
     }
 
     throw new Error("No approved Bright Data discovery source is configured");

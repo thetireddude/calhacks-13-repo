@@ -26,9 +26,28 @@ import {
   MembersScreen,
 } from "./groupScreens";
 import type { GroupsStackParams } from "./groupScreens";
+import {
+  createMockLocalScheduleClient,
+  createMockMemberSetupClient,
+  createMockNotificationPermissionClient,
+} from "./memberSetup";
+import type {
+  LocalScheduleClient,
+  MemberSetupClient,
+  NotificationPermissionClient,
+} from "./memberSetup";
+import {
+  AvailabilityScreen,
+  MemberSetupProvider,
+  PreferencesScreen,
+  SetupHomeScreen,
+  WeeklyPlanningScreen,
+} from "./memberSetupScreens";
+import type { SetupStackParams } from "./memberSetupScreens";
 
 const SignedOutStack = createNativeStackNavigator<SignedOutParams>();
 const GroupsStack = createNativeStackNavigator<GroupsStackParams>();
+const SetupStack = createNativeStackNavigator<SetupStackParams>();
 const navigationRef = createNavigationContainerRef<ParamListBase>();
 const Tabs = createBottomTabNavigator();
 
@@ -46,6 +65,17 @@ function GroupsNavigator() {
       <GroupsStack.Screen name="Members" component={MembersScreen} />
       <GroupsStack.Screen name="Invite" component={InviteScreen} options={{ title: "Invite" }} />
     </GroupsStack.Navigator>
+  );
+}
+
+function SetupNavigator() {
+  return (
+    <SetupStack.Navigator>
+      <SetupStack.Screen name="SetupHome" component={SetupHomeScreen} options={{ headerShown: false }} />
+      <SetupStack.Screen name="Preferences" component={PreferencesScreen} options={{ title: "Preferences" }} />
+      <SetupStack.Screen name="Availability" component={AvailabilityScreen} options={{ title: "Availability" }} />
+      <SetupStack.Screen name="WeeklyPlanning" component={WeeklyPlanningScreen} options={{ title: "Weekly planning" }} />
+    </SetupStack.Navigator>
   );
 }
 
@@ -68,6 +98,7 @@ function AuthenticatedTabs() {
   return (
     <Tabs.Navigator screenOptions={{ headerRight: () => <SignOutButton /> }}>
       <Tabs.Screen name="Groups" component={GroupsNavigator} />
+      <Tabs.Screen name="Setup" component={SetupNavigator} />
       <Tabs.Screen name="Planning" component={PlanningScreen} />
       <Tabs.Screen name="Events" component={EventsScreen} />
       <Tabs.Screen name="Notifications" component={NotificationsScreen} />
@@ -76,7 +107,23 @@ function AuthenticatedTabs() {
 }
 
 // Authenticated screens are only mounted while a session exists.
-export function RootNavigator({ groupClient }: { groupClient: GroupClient }) {
+// Setup clients are optional so existing callers keep working; defaults are in-memory mocks.
+export function RootNavigator({
+  groupClient,
+  memberSetupClient,
+  scheduleClient,
+  notificationClient,
+}: {
+  groupClient: GroupClient;
+  memberSetupClient?: MemberSetupClient;
+  scheduleClient?: LocalScheduleClient;
+  notificationClient?: NotificationPermissionClient;
+}) {
+  const [defaults] = useState(() => ({
+    member: createMockMemberSetupClient(),
+    schedule: createMockLocalScheduleClient(),
+    notifications: createMockNotificationPermissionClient(),
+  }));
   const { loading, session } = useAuth();
   // Links are captured at the root so one that arrives while signed out is held until sign-in.
   // The launch URL is read once per mount of this component, so sign-out/in does not replay it.
@@ -101,7 +148,13 @@ export function RootNavigator({ groupClient }: { groupClient: GroupClient }) {
     <NavigationContainer ref={navigationRef}>
       {session ? (
         <GroupsProvider client={groupClient}>
-          <AuthenticatedTabs />
+          <MemberSetupProvider
+            member={memberSetupClient ?? defaults.member}
+            schedule={scheduleClient ?? defaults.schedule}
+            notifications={notificationClient ?? defaults.notifications}
+          >
+            <AuthenticatedTabs />
+          </MemberSetupProvider>
           <InviteJoiner token={pendingToken} onDone={clearPending} />
         </GroupsProvider>
       ) : (

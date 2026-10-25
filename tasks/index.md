@@ -44,5 +44,6 @@ Core API lane only. Other lanes own their tasks separately.
 | DEV1-010 | candidate | DEV1-009 | Gate 3: real API groups + setup |
 | DEV1-011 | candidate (partial) | DEV1-010 | Gate 3: real API planning/voting/events/notifications |
 | DEV1-012 | blocked | DEV1-011 | Gate 5: mobile demo hardening |
+| DEV1-013 | in progress | DEV1-011 | UI restyle from the Gather design system (visual only) |
 
 Milestone: [`docs/milestone-dag.md`](../docs/milestone-dag.md)

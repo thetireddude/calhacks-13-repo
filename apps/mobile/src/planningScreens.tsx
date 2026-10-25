@@ -6,6 +6,7 @@ import { ActivityIndicator, Button, ScrollView, StyleSheet, Text, TextInput, Vie
 import { useGroups } from "./groupsState";
 import { createMockPlanningClient } from "./planning";
 import type { PlanningClient } from "./planning";
+import { VoteSection } from "./votingScreens";
 
 const PlanningContext = createContext<PlanningClient | null>(null);
 
@@ -34,6 +35,7 @@ export function ProposalList({ proposals }: { proposals: Proposal[] }) {
         <View key={p.proposalId} style={styles.card}>
           <Text style={styles.cardTitle}>{`#${p.rank} ${p.summary}`}</Text>
           {p.explanation ? <Text>{p.explanation}</Text> : null}
+          <VoteSection proposalId={p.proposalId} />
         </View>
       ))}
     </View>

@@ -14,6 +14,8 @@ import { createExpoNotificationPermissionClient } from "./src/notifications";
 import { createMockPlanningClient } from "./src/planning";
 import { createMockIcsClient, createMockVotingClient } from "./src/voting";
 import { selectBackend } from "./src/backendConfig";
+import { useAppFonts } from "./src/fonts";
+import { FontsLoadedContext } from "./src/theme";
 import { RootNavigator } from "./src/RootNavigator";
 import { createDefaultSupabaseAuthClient } from "./src/supabaseAuth";
 
@@ -55,6 +57,9 @@ const votingClient = api ? createHttpVotingClient(api) : mockVoting;
 const icsClient = createMockIcsClient();
 
 export default function App() {
+  const fonts = useAppFonts();
+  // Wait for fonts; a load failure falls through and the app uses system fonts.
+  if (fonts === "loading") return null;
   if (!authClient) {
     return <Text>Configuration error: Supabase URL and anon key are not set.</Text>;
   }
@@ -62,6 +67,7 @@ export default function App() {
     return <Text>Configuration error: API URL is not set.</Text>;
   }
   return (
+    <FontsLoadedContext.Provider value={fonts === "loaded"}>
     <AuthProvider client={authClient}>
       <RootNavigator
         groupClient={groupClient}
@@ -73,5 +79,6 @@ export default function App() {
       />
       <StatusBar style="auto" />
     </AuthProvider>
+    </FontsLoadedContext.Provider>
   );
 }

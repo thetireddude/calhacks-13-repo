@@ -12,7 +12,7 @@ import type { IcsClient, MockVotingOptions, VotingClient } from "./voting";
 async function setup(options: MockVotingOptions | VotingClient = {}, ics?: IcsClient) {
   const voting = "getVoteState" in options ? options : createMockVotingClient(options);
   const auth = createMockAuthClient();
-  await auth.verifyOtp("a@example.com", "123456");
+  await auth.signIn("a@example.com", "secret1");
   await render(
     <AuthProvider client={auth}>
       <RootNavigator

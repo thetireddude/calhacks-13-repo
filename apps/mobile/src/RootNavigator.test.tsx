@@ -19,113 +19,119 @@ async function renderApp(client: AuthClient = createMockAuthClient()) {
   );
 }
 
-async function signIn() {
-  await fireEvent.changeText(await screen.findByLabelText("Email"), "a@example.com");
-  await fireEvent.press(screen.getByText("Send code"));
-  await fireEvent.changeText(await screen.findByLabelText("Code"), "123456");
-  await fireEvent.press(screen.getByText("Verify"));
-  await screen.findByText("Your groups");
+async function fill(email = "a@example.com", password = "secret1") {
+  await fireEvent.changeText(await screen.findByLabelText("Email"), email);
+  await fireEvent.changeText(screen.getByLabelText("Password"), password);
 }
 
-test("signed-out user sees the email screen and no authenticated screens", async () => {
+test("signed-out user sees the sign-in form and no authenticated screens", async () => {
   await renderApp();
   expect(await screen.findByLabelText("Email")).toBeTruthy();
+  expect(screen.getByLabelText("Password").props.secureTextEntry).toBe(true);
   expect(screen.queryByText("Your groups")).toBeNull();
   expect(screen.queryByText("Sign out")).toBeNull();
 });
 
-test("a failed verification does not reach authenticated screens", async () => {
-  await renderApp();
-  await fireEvent.changeText(await screen.findByLabelText("Email"), "a@example.com");
-  await fireEvent.press(screen.getByText("Send code"));
-  await fireEvent.changeText(await screen.findByLabelText("Code"), " ");
-  await fireEvent.press(screen.getByText("Verify"));
-  await screen.findByText("Enter the code.");
-  expect(screen.queryByText("Your groups")).toBeNull();
-});
-
 test("an existing session skips the signed-out stack", async () => {
   const client = createMockAuthClient();
-  await client.verifyOtp("a@example.com", "123456");
+  await client.signIn("a@example.com", "secret1");
   await renderApp(client);
   expect(await screen.findByText("Your groups")).toBeTruthy();
   expect(screen.queryByLabelText("Email")).toBeNull();
 });
 
-test("sign-in reaches authenticated tabs and logout returns to the email screen", async () => {
+test("sign in reaches authenticated tabs and logout returns to the form", async () => {
   const client = createMockAuthClient();
   await renderApp(client);
-  await signIn();
+  await fill();
+  await fireEvent.press(screen.getByText("Sign in"));
+  await screen.findByText("Your groups");
   await fireEvent.press(screen.getByText("Sign out"));
   expect(await screen.findByLabelText("Email")).toBeTruthy();
   expect(screen.queryByText("Your groups")).toBeNull();
   await waitFor(async () => expect(await client.getSession()).toBeNull());
 });
 
-async function toOtp(client: AuthClient) {
-  await renderApp(client);
-  await fireEvent.changeText(await screen.findByLabelText("Email"), "a@example.com");
-  await fireEvent.press(screen.getByText("Send code"));
-  await screen.findByLabelText("Code");
-}
-
-test("invalid code shows its own error, clears on retry, and a retry can succeed", async () => {
-  const client = createMockAuthClient({ verify: "invalid_code" });
-  await toOtp(client);
-  await fireEvent.changeText(screen.getByLabelText("Code"), "111111");
-  await fireEvent.press(screen.getByText("Verify"));
-  await screen.findByText(/not correct/);
-  expect(screen.queryByText(/expired/)).toBeNull();
-  client.setVerifyOutcome("success");
-  await fireEvent.changeText(screen.getByLabelText("Code"), "222222");
-  expect(screen.queryByText(/not correct/)).toBeNull();
-  await fireEvent.press(screen.getByText("Verify"));
-  await screen.findByText("Your groups");
-});
-
-test("expired code shows a distinct error and resend recovers", async () => {
-  const client = createMockAuthClient({ verify: "expired_code" });
-  await toOtp(client);
-  await fireEvent.changeText(screen.getByLabelText("Code"), "111111");
-  await fireEvent.press(screen.getByText("Verify"));
-  await screen.findByText(/expired/);
-  expect(screen.queryByText(/not correct/)).toBeNull();
-  client.setVerifyOutcome("success");
-  await fireEvent.press(screen.getByText("Resend code"));
-  await screen.findByText("A new code was sent.");
-  expect(screen.queryByText(/expired/)).toBeNull();
-  await fireEvent.changeText(screen.getByLabelText("Code"), "333333");
-  await fireEvent.press(screen.getByText("Verify"));
-  await screen.findByText("Your groups");
-});
-
-test("network failure on verify is recoverable", async () => {
-  const client = createMockAuthClient({ verify: "network" });
-  await toOtp(client);
-  await fireEvent.changeText(screen.getByLabelText("Code"), "111111");
-  await fireEvent.press(screen.getByText("Verify"));
-  await screen.findByText(/Network problem/);
-  client.setVerifyOutcome("success");
-  await fireEvent.press(screen.getByText("Verify"));
-  await screen.findByText("Your groups");
-});
-
-test("requestOtp failure on the email screen shows an error and stays retryable", async () => {
-  const client = createMockAuthClient({ request: "network" });
-  await renderApp(client);
-  await fireEvent.changeText(await screen.findByLabelText("Email"), "a@example.com");
-  await fireEvent.press(screen.getByText("Send code"));
-  await screen.findByText(/Network problem/);
-  expect(screen.queryByLabelText("Code")).toBeNull();
-  client.setRequestOutcome("success");
-  await fireEvent.press(screen.getByText("Send code"));
-  expect(await screen.findByLabelText("Code")).toBeTruthy();
-});
-
-test("invalid email is rejected before requesting a code", async () => {
+test("create account success reaches authenticated tabs", async () => {
   await renderApp();
-  await fireEvent.changeText(await screen.findByLabelText("Email"), "not-an-email");
-  await fireEvent.press(screen.getByText("Send code"));
+  await fill();
+  await fireEvent.press(screen.getByText("Create account"));
+  await screen.findByText("Your groups");
+});
+
+test("wrong password shows an error, stays signed out, and a retry can succeed", async () => {
+  const client = createMockAuthClient({ signIn: "invalid_credentials" });
+  await renderApp(client);
+  await fill();
+  await fireEvent.press(screen.getByText("Sign in"));
+  await screen.findByText("Incorrect email or password.");
+  expect(screen.queryByText("Your groups")).toBeNull();
+  client.setSignInOutcome("success");
+  await fireEvent.changeText(screen.getByLabelText("Password"), "secret2");
+  expect(screen.queryByText("Incorrect email or password.")).toBeNull();
+  await fireEvent.press(screen.getByText("Sign in"));
+  await screen.findByText("Your groups");
+});
+
+test.each([
+  ["email_taken", /already exists/],
+  ["weak_password", /too weak/],
+  ["confirmation_required", /Turn off Confirm email/],
+  ["network", /Network problem/],
+] as const)("create account %s shows its own message and stays signed out", async (outcome, pattern) => {
+  await renderApp(createMockAuthClient({ signUp: outcome }));
+  await fill();
+  await fireEvent.press(screen.getByText("Create account"));
+  await screen.findByText(pattern);
+  expect(screen.queryByText("Your groups")).toBeNull();
+});
+
+test("validation blocks empty or invalid input before calling the client", async () => {
+  const client = createMockAuthClient();
+  const signIn = jest.spyOn(client, "signIn");
+  const signUp = jest.spyOn(client, "signUp");
+  await renderApp(client);
+  await fireEvent.press(await screen.findByText("Sign in"));
   await screen.findByText("Enter a valid email address.");
-  expect(screen.queryByLabelText("Code")).toBeNull();
+  await fill("not-an-email", "secret1");
+  await fireEvent.press(screen.getByText("Create account"));
+  await screen.findByText("Enter a valid email address.");
+  await fill("a@example.com", "12345");
+  await fireEvent.press(screen.getByText("Create account"));
+  await screen.findByText("Password must be at least 6 characters.");
+  expect(signIn).not.toHaveBeenCalled();
+  expect(signUp).not.toHaveBeenCalled();
+  expect(screen.queryByText("Your groups")).toBeNull();
+});
+
+test("sign in with a short existing password reaches the client; create account with it is blocked", async () => {
+  const client = createMockAuthClient();
+  const signIn = jest.spyOn(client, "signIn");
+  const signUp = jest.spyOn(client, "signUp");
+  await renderApp(client);
+  await fill("a@example.com", "12345");
+  await fireEvent.press(screen.getByText("Create account"));
+  await screen.findByText("Password must be at least 6 characters.");
+  expect(signUp).not.toHaveBeenCalled();
+  await fireEvent.press(screen.getByText("Sign in"));
+  await screen.findByText("Your groups");
+  expect(signIn).toHaveBeenCalledWith("a@example.com", "12345");
+});
+
+test("sign in requires a non-empty password", async () => {
+  const client = createMockAuthClient();
+  const signIn = jest.spyOn(client, "signIn");
+  await renderApp(client);
+  await fill("a@example.com", "");
+  await fireEvent.press(screen.getByText("Sign in"));
+  await screen.findByText("Enter your password.");
+  expect(signIn).not.toHaveBeenCalled();
+});
+
+test("sign in with confirmation_required shows the confirmation message", async () => {
+  await renderApp(createMockAuthClient({ signIn: "confirmation_required" }));
+  await fill();
+  await fireEvent.press(screen.getByText("Sign in"));
+  await screen.findByText(/Turn off Confirm email/);
+  expect(screen.queryByText("Your groups")).toBeNull();
 });

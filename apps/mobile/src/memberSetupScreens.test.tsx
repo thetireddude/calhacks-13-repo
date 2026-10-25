@@ -9,7 +9,7 @@ import { RootNavigator } from "./RootNavigator";
 
 async function renderSignedIn(opts: { member?: MemberSetupClient; notifications?: NotificationPermissionClient } = {}) {
   const auth = createMockAuthClient();
-  await auth.verifyOtp("a@example.com", "123456");
+  await auth.signIn("a@example.com", "secret1");
   await render(
     <AuthProvider client={auth}>
       <RootNavigator

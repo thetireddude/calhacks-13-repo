@@ -1,3 +1,4 @@
+import { Text } from "react-native";
 import { StatusBar } from "expo-status-bar";
 
 import { AuthProvider, createMockAuthClient } from "./src/auth";
@@ -6,9 +7,19 @@ import { createExpoNotificationPermissionClient } from "./src/notifications";
 import { createMockPlanningClient } from "./src/planning";
 import { createMockIcsClient, createMockVotingClient } from "./src/voting";
 import { RootNavigator } from "./src/RootNavigator";
+import { createDefaultSupabaseAuthClient } from "./src/supabaseAuth";
 
-// Replaced by a Supabase-backed AuthClient in DEV1-009.
-const authClient = createMockAuthClient();
+// Real Supabase email+password auth when the public env vars are set. The mock is only a dev/test fallback;
+// a release build with missing config shows an explicit error instead of silently using the mock.
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+const allowMock = __DEV__ || process.env.JEST_WORKER_ID !== undefined;
+const authClient =
+  supabaseUrl && supabaseAnonKey
+    ? createDefaultSupabaseAuthClient(supabaseUrl, supabaseAnonKey)
+    : allowMock
+      ? createMockAuthClient()
+      : null;
 
 // Replaced by the API-backed GroupClient once the backend routes are wired.
 const groupClient = createMockGroupClient();
@@ -23,6 +34,9 @@ const votingClient = createMockVotingClient();
 const icsClient = createMockIcsClient();
 
 export default function App() {
+  if (!authClient) {
+    return <Text>Configuration error: Supabase URL and anon key are not set.</Text>;
+  }
   return (
     <AuthProvider client={authClient}>
       <RootNavigator

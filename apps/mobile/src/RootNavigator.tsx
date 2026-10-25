@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Button, Linking, View } from "react-native";
 
 import { useAuth } from "./auth";
-import { EmailScreen, OtpScreen } from "./screens";
+import { SignInScreen } from "./screens";
 import type { SignedOutParams } from "./screens";
 import { parseInviteToken } from "./groups";
 import type { GroupClient } from "./groups";
@@ -167,8 +167,7 @@ export function RootNavigator({
         </GroupsProvider>
       ) : (
         <SignedOutStack.Navigator>
-          <SignedOutStack.Screen name="Email" component={EmailScreen} options={{ title: "Sign in" }} />
-          <SignedOutStack.Screen name="Otp" component={OtpScreen} options={{ title: "Enter code" }} />
+          <SignedOutStack.Screen name="SignIn" component={SignInScreen} options={{ title: "Welcome" }} />
         </SignedOutStack.Navigator>
       )}
     </NavigationContainer>

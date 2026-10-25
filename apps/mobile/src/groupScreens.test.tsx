@@ -8,7 +8,7 @@ import { RootNavigator } from "./RootNavigator";
 
 async function renderSignedIn(groupClient: GroupClient = createMockGroupClient(), waitForList = true) {
   const auth = createMockAuthClient();
-  await auth.verifyOtp("a@example.com", "123456");
+  await auth.signIn("a@example.com", "secret1");
   await render(
     <AuthProvider client={auth}>
       <RootNavigator groupClient={groupClient} />
@@ -154,9 +154,8 @@ test("a link that arrives while signed out is held and joined after sign-in", as
   );
   await fireEvent.changeText(await screen.findByLabelText("Email"), "a@example.com");
   await act(async () => emit(inviteLink(MOCK_SEED_INVITE_TOKEN)));
-  await fireEvent.press(screen.getByText("Send code"));
-  await fireEvent.changeText(await screen.findByLabelText("Code"), "123456");
-  await fireEvent.press(screen.getByText("Verify"));
+  await fireEvent.changeText(screen.getByLabelText("Password"), "secret1");
+  await fireEvent.press(screen.getByText("Sign in"));
   await screen.findByText("Seed Friends");
 });
 
@@ -166,9 +165,8 @@ test("the launch link is consumed once and not replayed after sign-out and sign-
   await screen.findByText("Seed Friends");
   await fireEvent.press(screen.getByText("Sign out"));
   await fireEvent.changeText(await screen.findByLabelText("Email"), "a@example.com");
-  await fireEvent.press(screen.getByText("Send code"));
-  await fireEvent.changeText(await screen.findByLabelText("Code"), "123456");
-  await fireEvent.press(screen.getByText("Verify"));
+  await fireEvent.changeText(screen.getByLabelText("Password"), "secret1");
+  await fireEvent.press(screen.getByText("Sign in"));
   await screen.findByText("Your groups");
   expect(screen.getByText("No groups yet.")).toBeTruthy();
 });

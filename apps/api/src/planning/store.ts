@@ -9,6 +9,8 @@ export type PlanningStore = {
   ): PlanningRunResponse;
   getRun(runId: string): PlanningRunResponse | undefined;
   listProposals(runId: string): Proposal[];
+  completeRun(runId: string, proposals: Proposal[]): void;
+  markRunFailed(runId: string): void;
 };
 
 export class InMemoryPlanningStore implements PlanningStore {
@@ -42,5 +44,23 @@ export class InMemoryPlanningStore implements PlanningStore {
       return [];
     }
     return [...(this.proposalsByRun.get(runId) ?? [])];
+  }
+
+  completeRun(runId: string, proposals: Proposal[]): void {
+    const run = this.runs.get(runId);
+    if (!run) {
+      return;
+    }
+    this.proposalsByRun.set(runId, [...proposals]);
+    this.runs.set(runId, { ...run, status: "completed" });
+  }
+
+  markRunFailed(runId: string): void {
+    const run = this.runs.get(runId);
+    if (!run) {
+      return;
+    }
+    this.proposalsByRun.set(runId, []);
+    this.runs.set(runId, { ...run, status: "failed" });
   }
 }

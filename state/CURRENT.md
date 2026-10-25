@@ -15,10 +15,15 @@ This branch state tracks **`apps/api/**`, `supabase/**`, `packages/contracts/**`
 | DEV2-005 | In-memory groups, invites, join, members REST |
 | DEV2-006 | GET/PUT preferences + availability + privacy tests |
 | DEV2-007 | `planning_runs` / `proposals` migration + planning route stubs |
+| DEV2-008 | Mock `PlannerPort`, persist ≤3 proposals, failed-run retry |
 
 ## Next
 
-**DEV2-008** — import `@gather/planner` mock, persist ≤3 proposals on planning run (API only).
+**DEV2-009** — vote + confirmed-event route skeleton.
+
+## Test status
+
+All **DEV2-001 → DEV2-007** tasks covered; run `pnpm run test:dev2` — **17/17** pass. See [`state/DEV2-TEST-STATUS.md`](DEV2-TEST-STATUS.md).
 
 ## Blockers (SPEC §11)
 

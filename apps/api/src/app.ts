@@ -7,16 +7,19 @@ import {
   InMemoryMemberSetupStore,
   type MemberSetupStore,
 } from "./me/store.js";
+import { createMockPlannerPort } from "./planner/mockPlannerPort.js";
 import { registerPlanningRoutes } from "./planning/routes.js";
 import {
   InMemoryPlanningStore,
   type PlanningStore,
 } from "./planning/store.js";
+import type { PlannerPort } from "@gather/contracts";
 
 export type CreateAppOptions = {
   groupsStore?: GroupsStore;
   memberSetupStore?: MemberSetupStore;
   planningStore?: PlanningStore;
+  plannerPort?: PlannerPort;
 };
 
 export async function createApp(options: CreateAppOptions = {}) {
@@ -25,6 +28,7 @@ export async function createApp(options: CreateAppOptions = {}) {
   const memberSetupStore =
     options.memberSetupStore ?? new InMemoryMemberSetupStore();
   const planningStore = options.planningStore ?? new InMemoryPlanningStore();
+  const plannerPort = options.plannerPort ?? createMockPlannerPort();
 
   app.get("/v1/health", async () => ({ status: "ok" as const }));
 
@@ -37,7 +41,7 @@ export async function createApp(options: CreateAppOptions = {}) {
 
   registerGroupRoutes(app, groupsStore);
   registerMemberSetupRoutes(app, memberSetupStore);
-  registerPlanningRoutes(app, groupsStore, planningStore);
+  registerPlanningRoutes(app, groupsStore, planningStore, plannerPort);
 
   return app;
 }

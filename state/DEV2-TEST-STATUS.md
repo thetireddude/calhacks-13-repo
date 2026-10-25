@@ -11,6 +11,7 @@ Last run: automated gate on `main` (orchestrator).
 | DEV2-005 | Groups API | `groups.test.ts` |
 | DEV2-006 | Prefs/availability + privacy | `me.test.ts` |
 | DEV2-007 | Planning routes + SQL smoke | `planning.test.ts`, `migrations.smoke.test.ts` |
+| DEV2-008 | Planner orchestration, cap 3, failure retry | `planning.test.ts` |
 
 ## Run all Dev 2 tests
 

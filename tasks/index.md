@@ -14,6 +14,7 @@ Core API lane only. Other lanes own their tasks separately.
 | DEV2-005 | done | DEV2-003 | Groups/invites/join/members API |
 | DEV2-006 | done | DEV2-004, DEV2-005 | Prefs + availability API |
 | DEV2-007 | done | DEV2-004 | Planning runs migration + routes |
-| DEV2-008 | ready | DEV2-007, GATE0-002 | Wire mock `PlannerPort` in API |
+| DEV2-008 | done | DEV2-007, GATE0-002 | Mock planner orchestration + ≤3 proposals |
+| DEV2-009 | ready | DEV2-008 | Vote + confirmed-event skeleton |
 
 Milestone: [`docs/milestone-dag.md`](../docs/milestone-dag.md)

@@ -2,7 +2,7 @@
 
 ## Milestone
 
-**Gate 0** — Architecture and contract freeze (SPEC §8).
+**Gate 0 → Gate 1** — W1 complete; **W2 in progress** (parallel implementers).
 
 ## Completed
 
@@ -14,16 +14,18 @@
   - `.agents/skills/token-efficient-coding/`
 - ADR-001: SPEC as authoritative product source.
 - Monorepo directory scaffold (apps, packages, supabase placeholders).
+- **GATE0-001** — pnpm workspace, stub packages, CI workflow (ORCH-001).
+- Integration owner: **Developer 2** (interim).
 
-## Active / next work
+## Active / next work (ORCH-001)
 
-| Priority | Task | Owner lane | Notes |
-|----------|------|------------|-------|
-| 1 | GATE0-001 | Integration (unassigned) | Choose package manager, root workspace, CI stub |
-| 2 | GATE0-002 | Developer 2 | Contract type stubs (`PlannerPort`, core DTOs) |
-| 3 | DEV1-001 | Developer 1 | Mobile app bootstrap on `feature/mobile` |
-| 4 | DEV2-001 | Developer 2 | API bootstrap on `feature/core-api` |
-| 5 | DEV3-001 | Developer 3 | Planner package bootstrap on `feature/planner` |
+| Priority | Task | Owner lane | Status |
+|----------|------|------------|--------|
+| — | GATE0-001 | integration | **done** |
+| P0 | GATE0-002 | core-api | **implementing** (subagent) |
+| P0 | DEV2-001 | core-api | **implementing** (subagent) |
+| P0 | DEV1-001 | mobile | **implementing** (subagent) |
+| Next | DEV2-002, DEV3-001, DEV1-002 | — | queued after W2 |
 
 ## Blockers (from SPEC §11 — do not guess)
 
@@ -39,6 +41,10 @@ Create from the same base commit after Gate 0 scaffold merges to `main`:
 - `feature/mobile`
 - `feature/core-api`
 - `feature/planner`
+
+## Orchestration
+
+**ORCH-001** — see `state/agents/ORCH-001.md`, DAG: [`docs/milestone-dag.md`](../docs/milestone-dag.md).
 
 ## For agents
 

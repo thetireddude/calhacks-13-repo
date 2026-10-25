@@ -90,7 +90,7 @@ Update the map when you discover durable structural changes (new package, rename
 |-----------|--------|
 | Unknown import target | `rg` symbol → read defining module |
 | Changing public function | `rg` callers across repo |
-| Rolling feature change | read leakage tests + feature module |
+| Privacy-sensitive API change | read auth tests + handler + contract types |
 | Security-sensitive path | read auth/validation code even if not listed |
 | Failure source unclear | broaden trace until root cause identified |
 

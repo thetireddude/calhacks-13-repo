@@ -25,3 +25,11 @@ Human-readable status. Detailed state: [`state/CURRENT.md`](../state/CURRENT.md)
 3. Update task **Status** and `state/CURRENT.md` when starting or finishing.
 
 Template: [`TASK_TEMPLATE.md`](TASK_TEMPLATE.md)
+
+## Proposed milestone DAG (awaiting approval)
+
+Full graph, parallel waves, and Dev 2 critical path:
+
+**[`docs/milestone-dag.md`](../docs/milestone-dag.md)** — Gate 0 → Gate 1 task IDs (`GATE0-*`, `DEV2-*`, `DEV1-*`, `DEV3-*`, `GATE1-EXIT`).
+
+Do not create implementation task files until the team approves that document.

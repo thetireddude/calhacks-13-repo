@@ -6,6 +6,10 @@ export class ApiError extends Error {
     super(`api_error_${status}`);
     this.name = "ApiError";
   }
+  // status 0: the request never completed (network failure) or the 2xx body was not valid JSON.
+  get network(): boolean {
+    return this.status === 0;
+  }
   get unauthorized(): boolean {
     return this.status === 401;
   }
@@ -23,13 +27,22 @@ export function createApiClient({ baseUrl, getAccessToken, fetchImpl = fetch }: 
     const headers: Record<string, string> = { Accept: "application/json" };
     if (token) headers.Authorization = `Bearer ${token}`;
     if (init.body !== undefined) headers["Content-Type"] = "application/json";
-    const res = await fetchImpl(`${baseUrl.replace(/\/+$/, "")}${path}`, {
-      method: init.method ?? "GET",
-      headers,
-      body: init.body === undefined ? undefined : JSON.stringify(init.body),
-    });
+    let res: Response;
+    try {
+      res = await fetchImpl(`${baseUrl.replace(/\/+$/, "")}${path}`, {
+        method: init.method ?? "GET",
+        headers,
+        body: init.body === undefined ? undefined : JSON.stringify(init.body),
+      });
+    } catch {
+      throw new ApiError(0);
+    }
     if (!res.ok) throw new ApiError(res.status);
-    return (await res.json()) as T;
+    try {
+      return (await res.json()) as T;
+    } catch {
+      throw new ApiError(0);
+    }
   }
   return {
     request,

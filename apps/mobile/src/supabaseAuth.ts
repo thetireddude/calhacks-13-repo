@@ -11,7 +11,10 @@ type SupabaseError = { status?: number; code?: string } | null;
 // Requests that fail for any non-network reason (e.g. rate limits) also surface as "network" until
 // the contract error schema adds more codes (SPEC section 11).
 function mapVerifyError(error: NonNullable<SupabaseError>): AuthError {
+  // Supabase may report a wrong code as `otp_expired`, so expired vs invalid cannot be fully separated.
   if (error.code === "otp_expired") return new AuthError("expired_code");
+  // 429 is a rate limit, not a wrong code: surface the retry-type code ("network") instead of invalid_code.
+  if (error.status === 429) return new AuthError("network");
   if (typeof error.status === "number" && error.status >= 400 && error.status < 500) return new AuthError("invalid_code");
   return new AuthError("network");
 }
@@ -20,8 +23,22 @@ function toSession(s: { access_token: string } | null | undefined): Session | nu
   return s ? { kind: "supabase", accessToken: s.access_token } : null;
 }
 
-export function createSupabaseAuthClient(supabase: SupabaseClient): AuthClient {
+export type SupabaseAuthClient = AuthClient & {
+  // Current (auto-refreshed) access token. Session.accessToken is only a snapshot and expires (~1h);
+  // pass this as apiClient's `getAccessToken` so each request uses a fresh token.
+  getAccessToken(): Promise<string | null>;
+};
+
+export function createSupabaseAuthClient(supabase: SupabaseClient): SupabaseAuthClient {
   return {
+    async getAccessToken() {
+      try {
+        const { data } = await supabase.auth.getSession();
+        return data.session?.access_token ?? null;
+      } catch {
+        return null;
+      }
+    },
     async getSession() {
       try {
         const { data } = await supabase.auth.getSession();
@@ -62,7 +79,7 @@ export function createSupabaseAuthClient(supabase: SupabaseClient): AuthClient {
 }
 
 // Public anon key only; never ship the service role key or JWT secret in the app.
-export function createDefaultSupabaseAuthClient(url: string, anonKey: string): AuthClient {
+export function createDefaultSupabaseAuthClient(url: string, anonKey: string): SupabaseAuthClient {
   const supabase = createClient(url, anonKey, {
     auth: {
       storage: createSecureSessionStorage(),

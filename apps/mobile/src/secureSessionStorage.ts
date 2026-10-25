@@ -16,12 +16,23 @@ export function createSecureSessionStorage(store: SecureStoreLike = SecureStore)
   const countKey = (key: string) => `${key}.n`;
   const chunkKey = (key: string, i: number) => `${key}.${i}`;
 
+  // Attempts every delete even if one fails, then rethrows the first error.
   async function removeItem(key: string) {
     const n = Number(await store.getItemAsync(countKey(key)));
-    if (Number.isInteger(n) && n > 0) {
-      for (let i = 0; i < n; i++) await store.deleteItemAsync(chunkKey(key, i));
+    const keys = [];
+    if (Number.isInteger(n) && n > 0) for (let i = 0; i < n; i++) keys.push(chunkKey(key, i));
+    keys.push(countKey(key));
+    let firstError: unknown;
+    let failed = false;
+    for (const k of keys) {
+      try {
+        await store.deleteItemAsync(k);
+      } catch (e) {
+        if (!failed) firstError = e;
+        failed = true;
+      }
     }
-    await store.deleteItemAsync(countKey(key));
+    if (failed) throw firstError;
   }
 
   return {
@@ -40,8 +51,15 @@ export function createSecureSessionStorage(store: SecureStoreLike = SecureStore)
       await removeItem(key);
       const chunks: string[] = [];
       for (let o = 0; o < value.length; o += CHUNK_SIZE) chunks.push(value.slice(o, o + CHUNK_SIZE));
-      for (let i = 0; i < chunks.length; i++) await store.setItemAsync(chunkKey(key, i), chunks[i]!);
-      await store.setItemAsync(countKey(key), String(chunks.length));
+      try {
+        for (let i = 0; i < chunks.length; i++) await store.setItemAsync(chunkKey(key, i), chunks[i]!);
+        await store.setItemAsync(countKey(key), String(chunks.length));
+      } catch (e) {
+        // Best-effort cleanup so a partial write never looks like a session.
+        for (let i = 0; i < chunks.length; i++) await store.deleteItemAsync(chunkKey(key, i)).catch(() => {});
+        await store.deleteItemAsync(countKey(key)).catch(() => {});
+        throw e;
+      }
     },
     removeItem,
   };

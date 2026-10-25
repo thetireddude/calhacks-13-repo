@@ -41,6 +41,9 @@ test.each([
   [{ status: 400, code: "validation_failed" }, "invalid_code"],
   [{ status: 0, name: "AuthRetryableFetchError" }, "network"],
   [{ status: 500 }, "network"],
+  [{ status: 429, code: "over_request_rate_limit" }, "network"],
+  [{ status: undefined, code: "otp_expired" }, "expired_code"],
+  [{ status: undefined }, "network"],
 ])("verifyOtp maps %j to %s without leaking the SDK message", async (error, code) => {
   const c = createSupabaseAuthClient(fakeSupabase({ verifyOtp: jest.fn().mockResolvedValue({ data: { session: null }, error }) }));
   const err = await c.verifyOtp("a@example.com", "123456").catch((e) => e);
@@ -109,4 +112,101 @@ test("api client surfaces 401 distinctly and never puts the token in the error",
   const e2 = await other.getMe().catch((e) => e);
   expect(e2.unauthorized).toBe(false);
   expect(fetchImpl.mock.calls[0][1].headers.Authorization).toBe("Bearer tok-abc");
+});
+
+test("verifyOtp sends the trimmed code (whitespace-only input is not sent as a code)", async () => {
+  const verifyOtp = jest.fn().mockResolvedValue({ data: { session: sess }, error: null });
+  await createSupabaseAuthClient(fakeSupabase({ verifyOtp })).verifyOtp("a@example.com", "\t 654321\n");
+  expect(verifyOtp.mock.calls[0][0].token).toBe("654321");
+});
+
+test("getAccessToken returns the current token, not a snapshot, and null on none/throw", async () => {
+  const getSession = jest
+    .fn()
+    .mockResolvedValueOnce({ data: { session: { access_token: "old" } } })
+    .mockResolvedValueOnce({ data: { session: { access_token: "refreshed" } } })
+    .mockResolvedValueOnce({ data: { session: null } })
+    .mockRejectedValueOnce(new Error("x"));
+  const c = createSupabaseAuthClient(fakeSupabase({ getSession }));
+  expect(await c.getAccessToken()).toBe("old");
+  expect(await c.getAccessToken()).toBe("refreshed");
+  expect(await c.getAccessToken()).toBeNull();
+  expect(await c.getAccessToken()).toBeNull();
+});
+
+test.each([
+  [1800, 1],
+  [1801, 2],
+  [3600, 2],
+  [3601, 3],
+])("secure storage %i chars uses %i chunk(s) and round-trips", async (len, chunks) => {
+  const store = memoryStore();
+  const s = createSecureSessionStorage(store);
+  const v = Array.from({ length: len }, (_, i) => String.fromCharCode(97 + (i % 26))).join("");
+  await s.setItem("k", v);
+  expect(store.m.size).toBe(chunks + 1);
+  expect(await s.getItem("k")).toBe(v);
+  await s.setItem("k", "tiny");
+  expect(store.m.size).toBe(2);
+  expect(await s.getItem("k")).toBe("tiny");
+});
+
+test("secure storage returns null for corrupt count or missing chunk", async () => {
+  const store = memoryStore();
+  const s = createSecureSessionStorage(store);
+  for (const bad of ["abc", "0", "-1", "1.5", ""]) {
+    store.m.set("k.n", bad);
+    expect(await s.getItem("k")).toBeNull();
+  }
+  store.m.set("k.n", "3");
+  store.m.set("k.0", "a");
+  store.m.set("k.1", "b");
+  expect(await s.getItem("k")).toBeNull();
+});
+
+test("secure storage removeItem deletes everything it can even if one delete fails, then rethrows", async () => {
+  const store = memoryStore();
+  const s = createSecureSessionStorage(store);
+  await s.setItem("k", "x".repeat(4000));
+  const failing = { ...store, deleteItemAsync: async (k: string) => { if (k === "k.0") throw new Error("fail"); store.m.delete(k); } };
+  await expect(createSecureSessionStorage(failing).removeItem("k")).rejects.toThrow("fail");
+  expect([...store.m.keys()]).toEqual(["k.0"]);
+});
+
+test("secure storage setItem failure leaves no partial session and rethrows", async () => {
+  const store = memoryStore();
+  let calls = 0;
+  const failing = { ...store, setItemAsync: async (k: string, v: string) => { if (++calls === 2) throw new Error("disk"); store.m.set(k, v); } };
+  const s = createSecureSessionStorage(failing);
+  await expect(s.setItem("k", "x".repeat(4000))).rejects.toThrow("disk");
+  expect(store.m.size).toBe(0);
+  expect(await s.getItem("k")).toBeNull();
+});
+
+const okJson = (body: unknown) => jest.fn().mockResolvedValue({ ok: true, status: 200, json: async () => body });
+
+test("api client joins baseUrl with trailing slashes without doubling them", async () => {
+  const fetchImpl = okJson({});
+  await createApiClient({ baseUrl: "http://api.test//", getAccessToken: async () => null, fetchImpl }).getMe();
+  expect(fetchImpl.mock.calls[0][0]).toBe("http://api.test/v1/me");
+  expect(fetchImpl.mock.calls[0][1].headers.Authorization).toBeUndefined();
+});
+
+test("api client maps fetch failure and non-JSON 200 to a network ApiError with no token leak", async () => {
+  const cases = [
+    jest.fn().mockRejectedValue(new TypeError("Network request failed tok-abc")),
+    jest.fn().mockResolvedValue({ ok: true, status: 200, json: async () => { throw new SyntaxError("Unexpected token tok-abc"); } }),
+  ];
+  for (const fetchImpl of cases) {
+    const err = await createApiClient({ baseUrl: "http://api.test", getAccessToken: async () => "tok-abc", fetchImpl }).getMe().catch((e) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err.network).toBe(true);
+    expect(err.unauthorized).toBe(false);
+    expect(`${err.message}${err.stack}`).not.toContain("tok-abc");
+  }
+});
+
+test("api client treats 500 as a non-network, non-unauthorized error", async () => {
+  const err = await createApiClient({ baseUrl: "http://api.test", getAccessToken: async () => "t", fetchImpl: jest.fn().mockResolvedValue({ ok: false, status: 500 }) }).getMe().catch((e) => e);
+  expect(err).toMatchObject({ status: 500, network: false, unauthorized: false });
 });

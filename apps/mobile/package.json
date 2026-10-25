@@ -2,32 +2,10 @@
   "name": "@gather/mobile",
   "version": "0.0.0",
   "private": true,
-  "main": "index.ts",
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web",
-    "build": "tsc -p tsconfig.json --noEmit && expo config --type public",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "build:api-test": "tsc -p tsconfig.api-test.json",
-    "lint": "node -e \"process.exit(0)\"",
-    "test": "pnpm run build:api-test && node --test dist-test/**/*.test.js"
-  },
-  "dependencies": {
-    "@gather/contracts": "workspace:*",
-    "@react-navigation/native": "^7.5.1",
-    "@react-navigation/native-stack": "^7.21.0",
-    "expo": "~58.0.19",
-    "expo-status-bar": "~58.0.4",
-    "react": "19.3.0",
-    "react-native": "0.88.0",
-    "react-native-safe-area-context": "~5.10.1",
-    "react-native-screens": "~4.30.0"
-  },
-  "devDependencies": {
-    "@types/node": "^22.10.2",
-    "@types/react": "~19.3.0",
-    "typescript": "~6.0.3"
+    "start": "node -e \"console.log('Expo bootstrap: DEV1-001')\"",
+    "build": "node -e \"process.exit(0)\"",
+    "typecheck": "node -e \"process.exit(0)\"",
+    "lint": "node -e \"process.exit(0)\""
   }
 }

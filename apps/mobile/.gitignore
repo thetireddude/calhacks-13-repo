@@ -1,6 +1,0 @@
-node_modules/
-.expo/
-dist/
-dist-test/
-web-build/
-expo-env.d.ts

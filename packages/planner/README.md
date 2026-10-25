@@ -3,12 +3,12 @@
 **Owner:** Developer 3  
 **Branch:** `feature/planner`
 
-## DEV3-001 / DEV3-003
+Importable planning engine: personal-agent evaluations, discovery, deterministic scoring, explanations. See SPEC §5 and §6.3.
 
-`createPlanner()` returns a `PlannerPort` with up to three ranked proposals. When no `discoveryProvider` is configured (or it fails or returns no candidates), proposals are built from the seeded activity catalog in `seededCandidateActivities.ts`, each with stub `activityIds` on the planner proposal shape until contract freeze.
+## Status
 
-Optional `createPlanner({ discoveryProvider })` accepts external candidates; empty or failed discovery falls back to seeded data (SPEC §5).
+Implement **DEV3-001** after GATE0-001 and contract stubs.
 
-```bash
-pnpm --filter @gather/planner run test
-```
+## Public API
+
+Export a factory implementing `PlannerPort` from shared contracts. No database or vote persistence.

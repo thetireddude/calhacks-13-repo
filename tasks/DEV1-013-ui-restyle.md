@@ -46,7 +46,7 @@ Restyle `apps/mobile` to match the Gather design system (`Gather — Mobile UI K
 - Vote choices are only `approve` ("Yes") and `cant_make_it`; do NOT add "Maybe" (no contract support). Veto stays a separate action, visually distinct from "Can't make it".
 - Do NOT add client-side tallies, "N of M have voted", scores, percentages, or fairness text. Show vote counts only when the backend view supplies them (existing optional-counts logic).
 - Do not show data the API does not provide (host name, per-person "Going" status, cost per person) as if real; render only fields that exist in the DTOs/views.
-- Sign-in is email + password (ADR-003), not the design's 6-digit code screen: use the design's look (hero, headline, input, coral CTA).
+- Sign-in is email + password (ADR-004), not the design's 6-digit code screen: use the design's look (hero, headline, input, coral CTA).
 - Keep all existing accessibility labels and test IDs; keep every screen's behavior and strings that tests assert, or update tests only for pure copy/layout changes and say so.
 - No new native modules beyond Expo font packages; the app must still run in Expo Go.
 

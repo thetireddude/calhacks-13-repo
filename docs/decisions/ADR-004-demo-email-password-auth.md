@@ -1,4 +1,4 @@
-# ADR-003: Email + password sign-in for the demo build
+# ADR-004: Email + password sign-in for the demo build
 
 ## Status
 

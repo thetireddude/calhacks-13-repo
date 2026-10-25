@@ -70,6 +70,10 @@ Auth: all routes below except health require `Authorization: Bearer <JWT>` verif
 
 Registration: `apps/api/src/app.ts` plus `groups/`, `me/`, `planning/`, `voting/` route modules.
 
+## Planner wiring
+
+The API imports `@gather/planner` (selected by `PLANNER_IMPL=real`; default mock). Run `pnpm --filter @gather/planner build` before `dev`/`start`/tests; `pnpm run test:ci` does it. Planner output is validated before persistence (see `tasks/GATE2-001-planner-integration.md`). Timeout via `PLANNER_TIMEOUT_MS` (default 20000). The concurrent-generate guard is per-process only.
+
 ## Tests
 
 | File | Coverage |
@@ -78,7 +82,8 @@ Registration: `apps/api/src/app.ts` plus `groups/`, `me/`, `planning/`, `voting/
 | `auth.test.ts` | JWT + `/v1/me` |
 | `groups.test.ts` | Groups, invites, join, members |
 | `me.test.ts` | Preferences, availability, privacy |
-| `planning.test.ts` | Runs, mock planner, cap 3, failure retry |
+| `planning.test.ts` | Runs, mock planner, >3 proposals rejected, failure retry |
+| `planner-integration.test.ts` | Real planner, output validation, timeout, concurrency, logging, env gate |
 | `voting.test.ts` | Vote, veto, confirmation idempotency |
 | `migrations.smoke.test.ts` | SQL migration shape + order |
 

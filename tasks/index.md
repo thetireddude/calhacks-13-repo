@@ -51,5 +51,6 @@ Core API lane only. Other lanes own their tasks separately.
 | DEV1-012 | ready for device run | DEV1-011 | Privacy sweep done (no P0/P1), `docs/demo-mobile.md` written; physical-device checklist still to be run by a human |
 | DEV1-011b | candidate | DEV1-011, DEV2-021..023 | Real weekly schedule, notifications feed and ICS export clients (ICS is a real .ics file via the share sheet, not verified on a device or calendar); vote tally and push registration remain unavailable (no API route); not run live |
 | DEV1-013 | done | DEV1-011 | UI restyle from the Gather design system (visual only); on-device visual check pending |
+| GATE2-001 | candidate | DEV2-010, DEV3 Gate 1 | Real `@gather/planner` wired into the API behind `PLANNER_IMPL=real`; backend output validation, failure/privacy tests; cross-lane, needs Dev 2/3 review |
 
 Milestone: [`docs/milestone-dag.md`](../docs/milestone-dag.md)

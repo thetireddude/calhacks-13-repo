@@ -2,7 +2,7 @@
 
 ## Status
 
-draft — proposed by the mobile lane for orchestrator review; not approved, not scheduled.
+candidate (partial) — planner integration evidence in [`state/GATE2-EXIT.md`](../state/GATE2-EXIT.md) via [`GATE2-001`](GATE2-001-planner-integration.md); mobile-inputs decisions and review/test gates still open.
 
 ## Dependencies
 

@@ -59,6 +59,7 @@ try {
   const pc = createHttpPlanningClient(A.api);
   const run = await check("A: create planning run", () => pc.createRun(group.id, { activityRequest: "smoke test" }));
   const props = run ? await check("A: proposals (<=3)", async () => { const r: any = await pc.getProposals(run.id); assert(r.proposals.length >= 1 && r.proposals.length <= 3, "count " + r.proposals.length); return r.proposals; }) : undefined;
+  if (props) results.push(`INFO planner in use: ${String(props[0].proposalId).startsWith("mock-") ? "mock" : "real (@gather/planner)"}; first proposal: ${String(props[0].summary).slice(0, 60)}`);
   const va = createHttpVotingClient(A.api), vb = createHttpVotingClient(B.api);
   if (props) {
     await check("A: vote approve", async () => { await va.putVote(props[0].proposalId, { choice: "approve" }); });

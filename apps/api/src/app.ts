@@ -9,7 +9,7 @@ import { registerProfileRoutes } from "./me/profileRoutes.js";
 import type { ProfileStore } from "./me/profileStore.js";
 import { registerMemberSetupRoutes } from "./me/routes.js";
 import type { MemberSetupStore } from "./me/store.js";
-import { createMockPlannerPort } from "./planner/mockPlannerPort.js";
+import { createDefaultPlannerPort } from "./planner/createPlannerPort.js";
 import { createDefaultPlanningStore } from "./planning/createPlanningStore.js";
 import { registerPlanningRoutes } from "./planning/routes.js";
 import type { PlanningStore } from "./planning/store.js";
@@ -26,6 +26,8 @@ export type CreateAppOptions = {
   planningStore?: PlanningStore;
   votingStore?: VotingStore;
   plannerPort?: PlannerPort;
+  /** Planner call timeout; default PLANNER_TIMEOUT_MS env or 20000. */
+  plannerTimeoutMs?: number;
 };
 
 export async function createApp(options: CreateAppOptions = {}) {
@@ -37,14 +39,18 @@ export async function createApp(options: CreateAppOptions = {}) {
     options.memberSetupStore ?? createDefaultMemberSetupStore();
   const planningStore = options.planningStore ?? createDefaultPlanningStore();
   const votingStore = options.votingStore ?? createDefaultVotingStore();
-  const plannerPort = options.plannerPort ?? createMockPlannerPort();
+  const plannerPort = options.plannerPort ?? createDefaultPlannerPort();
+
+  const envTimeout = Number(process.env.PLANNER_TIMEOUT_MS);
+  const plannerTimeoutMs =
+    options.plannerTimeoutMs ?? (envTimeout > 0 ? envTimeout : undefined);
 
   app.get("/v1/health", async () => ({ status: "ok" as const }));
 
   registerProfileRoutes(app, profileStore);
   registerGroupRoutes(app, groupsStore);
   registerMemberSetupRoutes(app, memberSetupStore);
-  registerPlanningRoutes(app, groupsStore, planningStore, plannerPort);
+  registerPlanningRoutes(app, groupsStore, planningStore, plannerPort, plannerTimeoutMs);
   registerVotingRoutes(app, groupsStore, planningStore, votingStore);
   registerNotificationRoutes(app, groupsStore, planningStore, votingStore);
 

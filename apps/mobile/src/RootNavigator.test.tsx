@@ -1,13 +1,20 @@
+import { Linking } from "react-native";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 
 import { AuthProvider, createMockAuthClient } from "./auth";
 import type { AuthClient } from "./auth";
+import { createMockGroupClient } from "./groups";
 import { RootNavigator } from "./RootNavigator";
+
+beforeEach(() => {
+  jest.spyOn(Linking, "getInitialURL").mockResolvedValue(null);
+  jest.spyOn(Linking, "addEventListener").mockReturnValue({ remove: () => {} });
+});
 
 async function renderApp(client: AuthClient = createMockAuthClient()) {
   await render(
     <AuthProvider client={client}>
-      <RootNavigator />
+      <RootNavigator groupClient={createMockGroupClient()} />
     </AuthProvider>,
   );
 }
@@ -17,13 +24,13 @@ async function signIn() {
   await fireEvent.press(screen.getByText("Send code"));
   await fireEvent.changeText(await screen.findByLabelText("Code"), "123456");
   await fireEvent.press(screen.getByText("Verify"));
-  await screen.findByText("Groups placeholder");
+  await screen.findByText("Your groups");
 }
 
 test("signed-out user sees the email screen and no authenticated screens", async () => {
   await renderApp();
   expect(await screen.findByLabelText("Email")).toBeTruthy();
-  expect(screen.queryByText("Groups placeholder")).toBeNull();
+  expect(screen.queryByText("Your groups")).toBeNull();
   expect(screen.queryByText("Sign out")).toBeNull();
 });
 
@@ -34,14 +41,14 @@ test("a failed verification does not reach authenticated screens", async () => {
   await fireEvent.changeText(await screen.findByLabelText("Code"), " ");
   await fireEvent.press(screen.getByText("Verify"));
   await screen.findByText("Enter the code.");
-  expect(screen.queryByText("Groups placeholder")).toBeNull();
+  expect(screen.queryByText("Your groups")).toBeNull();
 });
 
 test("an existing session skips the signed-out stack", async () => {
   const client = createMockAuthClient();
   await client.verifyOtp("a@example.com", "123456");
   await renderApp(client);
-  expect(await screen.findByText("Groups placeholder")).toBeTruthy();
+  expect(await screen.findByText("Your groups")).toBeTruthy();
   expect(screen.queryByLabelText("Email")).toBeNull();
 });
 
@@ -51,7 +58,7 @@ test("sign-in reaches authenticated tabs and logout returns to the email screen"
   await signIn();
   await fireEvent.press(screen.getByText("Sign out"));
   expect(await screen.findByLabelText("Email")).toBeTruthy();
-  expect(screen.queryByText("Groups placeholder")).toBeNull();
+  expect(screen.queryByText("Your groups")).toBeNull();
   await waitFor(async () => expect(await client.getSession()).toBeNull());
 });
 
@@ -73,7 +80,7 @@ test("invalid code shows its own error, clears on retry, and a retry can succeed
   await fireEvent.changeText(screen.getByLabelText("Code"), "222222");
   expect(screen.queryByText(/not correct/)).toBeNull();
   await fireEvent.press(screen.getByText("Verify"));
-  await screen.findByText("Groups placeholder");
+  await screen.findByText("Your groups");
 });
 
 test("expired code shows a distinct error and resend recovers", async () => {
@@ -89,7 +96,7 @@ test("expired code shows a distinct error and resend recovers", async () => {
   expect(screen.queryByText(/expired/)).toBeNull();
   await fireEvent.changeText(screen.getByLabelText("Code"), "333333");
   await fireEvent.press(screen.getByText("Verify"));
-  await screen.findByText("Groups placeholder");
+  await screen.findByText("Your groups");
 });
 
 test("network failure on verify is recoverable", async () => {
@@ -100,7 +107,7 @@ test("network failure on verify is recoverable", async () => {
   await screen.findByText(/Network problem/);
   client.setVerifyOutcome("success");
   await fireEvent.press(screen.getByText("Verify"));
-  await screen.findByText("Groups placeholder");
+  await screen.findByText("Your groups");
 });
 
 test("requestOtp failure on the email screen shows an error and stays retryable", async () => {

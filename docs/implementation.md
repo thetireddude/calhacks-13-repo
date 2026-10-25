@@ -21,6 +21,10 @@ components. It rejects score ties instead of assuming an unapproved tie-break.
 Candidate and provider outputs are validated before use; malformed records and
 privacy-unsafe explanation text are rejected.
 
+The Bright Data dataset client is present behind an explicit configuration and
+is unit-tested with mocked HTTP. It does not read environment variables or run
+live requests by default.
+
 It does not create root workspace tooling, call Creao or Bright Data, implement scoring, or export the pending backend-facing `PlannerPort`. Those items still require the shared contract and approved rules.
 
 ### Next action after Gate 0

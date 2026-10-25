@@ -127,6 +127,9 @@ test("GET /v1/me returns displayName from the authenticated user's profile store
         profile: { displayName: userId === "user-abc" ? "Ada" : "other" },
       };
     },
+    async updateDisplayName(userId, displayName) {
+      return { id: userId, profile: { displayName } };
+    },
   };
   const app = await createApp({ profileStore });
   const res = await app.inject({
@@ -157,4 +160,127 @@ test("createDefaultProfileStore uses supabase when env is set", () => {
     delete process.env.SUPABASE_URL;
     delete process.env.SUPABASE_SERVICE_ROLE_KEY;
   }
+});
+
+test("PUT /v1/me without token returns 401", async () => {
+  clearJwtClaimEnv();
+  process.env.SUPABASE_JWT_SECRET = TEST_SECRET;
+  const app = await createApp();
+  const res = await app.inject({
+    method: "PUT",
+    url: "/v1/me",
+    payload: { profile: { displayName: "Ada" } },
+  });
+  assert.equal(res.statusCode, 401);
+  assert.deepEqual(res.json(), { error: "unauthorized" });
+  await app.close();
+});
+
+test("PUT /v1/me with invalid body returns 400", async () => {
+  clearJwtClaimEnv();
+  process.env.SUPABASE_JWT_SECRET = TEST_SECRET;
+  const token = await signTestToken("user-abc");
+  const app = await createApp();
+  const res = await app.inject({
+    method: "PUT",
+    url: "/v1/me",
+    headers: { authorization: `Bearer ${token}` },
+    payload: { displayName: "Ada" },
+  });
+  assert.equal(res.statusCode, 400);
+  assert.deepEqual(res.json(), { error: "invalid_body" });
+  await app.close();
+});
+
+test("PUT /v1/me persists displayName per JWT subject", async () => {
+  clearJwtClaimEnv();
+  process.env.SUPABASE_JWT_SECRET = TEST_SECRET;
+  const ada = await signTestToken("user-abc");
+  const other = await signTestToken("user-xyz");
+  const store = new InMemoryProfileStore();
+  const app = await createApp({ profileStore: store });
+
+  const putAda = await app.inject({
+    method: "PUT",
+    url: "/v1/me",
+    headers: { authorization: `Bearer ${ada}` },
+    payload: { profile: { displayName: "Ada" } },
+  });
+  assert.equal(putAda.statusCode, 200);
+  assert.deepEqual(putAda.json(), {
+    id: "user-abc",
+    profile: { displayName: "Ada" },
+  });
+
+  const getAda = await app.inject({
+    method: "GET",
+    url: "/v1/me",
+    headers: { authorization: `Bearer ${ada}` },
+  });
+  assert.equal(getAda.statusCode, 200);
+  assert.deepEqual(getAda.json(), {
+    id: "user-abc",
+    profile: { displayName: "Ada" },
+  });
+
+  const getOther = await app.inject({
+    method: "GET",
+    url: "/v1/me",
+    headers: { authorization: `Bearer ${other}` },
+  });
+  assert.equal(getOther.statusCode, 200);
+  assert.deepEqual(getOther.json(), {
+    id: "user-xyz",
+    profile: { displayName: null },
+  });
+
+  const clearAda = await app.inject({
+    method: "PUT",
+    url: "/v1/me",
+    headers: { authorization: `Bearer ${ada}` },
+    payload: { profile: { displayName: null } },
+  });
+  assert.equal(clearAda.statusCode, 200);
+  assert.deepEqual(clearAda.json(), {
+    id: "user-abc",
+    profile: { displayName: null },
+  });
+  await app.close();
+});
+
+test("SupabaseProfileStore.updateDisplayName upserts profiles.display_name for sub", async () => {
+  const calls: { table: string; row: unknown }[] = [];
+  const client = {
+    from(table: string) {
+      return {
+        upsert(row: unknown) {
+          calls.push({ table, row });
+          return {
+            select() {
+              return {
+                async single() {
+                  return {
+                    data: { id: "user-abc", display_name: "Ada" },
+                    error: null,
+                  };
+                },
+              };
+            },
+          };
+        },
+      };
+    },
+  };
+  const store = new SupabaseProfileStore(client as never);
+  const result = await store.updateDisplayName("user-abc", "Ada");
+  assert.deepEqual(result, {
+    id: "user-abc",
+    profile: { displayName: "Ada" },
+  });
+  assert.deepEqual(calls, [
+    {
+      table: "profiles",
+      row: { id: "user-abc", display_name: "Ada" },
+    },
+  ]);
 });

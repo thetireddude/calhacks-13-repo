@@ -37,4 +37,30 @@ export class SupabaseProfileStore implements ProfileStore {
       profile: { displayName: row.display_name ?? null },
     };
   }
+
+  async updateDisplayName(
+    userId: string,
+    displayName: string | null,
+  ): Promise<MeResponse> {
+    const { data, error } = await this.client
+      .from("profiles")
+      .upsert(
+        { id: userId, display_name: displayName },
+        { onConflict: "id" },
+      )
+      .select("id, display_name")
+      .single();
+
+    if (error || !data) {
+      throw new Error(
+        `update display_name failed: ${error?.message ?? "no row returned"}`,
+      );
+    }
+
+    const row = data as ProfileRow;
+    return {
+      id: row.id,
+      profile: { displayName: row.display_name ?? null },
+    };
+  }
 }

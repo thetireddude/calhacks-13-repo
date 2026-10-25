@@ -2,13 +2,12 @@
 
 ## Milestone
 
-**Gate 1 complete.** **Gate 2 persistence complete** (011–017). **Catch-up in flight:** DEV2-018 ∥ 019 ∥ 020 (env/CORS, list groups, displayName).
+**Lane branch:** `dev-2` (all Dev 2 work through DEV2-018). **Catch-up in flight:** DEV2-019 ∥ DEV2-020.
 
 ## In flight
 
 | Task | Deliverable |
 |------|-------------|
-| DEV2-018 | Load `.env` on `dev` + CORS |
 | DEV2-019 | `GET /v1/groups` (membership-scoped) |
 | DEV2-020 | `PUT /v1/me` displayName |
 
@@ -18,7 +17,7 @@ DEV2-001–010 on `main`. See [`state/GATE1-DEV2-EXIT.md`](GATE1-DEV2-EXIT.md).
 
 ## Tests
 
-`pnpm run test:ci` — **35/35** (Tester gates must use this command).
+`pnpm run test:ci` — **37/37** (Tester gates must use this command).
 
 ## Blockers (SPEC §11)
 

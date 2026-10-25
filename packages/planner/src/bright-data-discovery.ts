@@ -134,12 +134,11 @@ export class BrightDataCandidateDiscovery implements CandidateDiscoveryPort {
     const limit = Math.max(1, Math.min(query.limit ?? 3, 3));
 
     if (this.config.yelpDatasetId) {
-      const searchUrl = new URL("https://www.yelp.com/search");
-      searchUrl.searchParams.set("find_desc", "Restaurants");
-      searchUrl.searchParams.set("find_loc", city);
       const records = await this.client.scrape({
         datasetId: this.config.yelpDatasetId,
-        input: [{ url: searchUrl.toString() }],
+        query: { type: "discover_new", discover_by: "search_filters" },
+        input: [{ country: "US", category: "Restaurants", location: city }],
+        limitPerInput: limit,
       });
       return normalizeYelpRecords(records, city).slice(0, limit);
     }

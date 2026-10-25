@@ -46,15 +46,19 @@ test("Facebook discovery uses Bright Data's discover-by-venue method", async () 
   assert.doesNotMatch(requestBody, /upcoming_events_only/);
 });
 
-test("Yelp discovery sends a public search URL to the configured URL collector", async () => {
+test("Yelp discovery uses Bright Data's discover-by-search-filters method", async () => {
   let requestBody = "";
-  const client = new BrightDataDatasetClient({ apiKey: "test" }, async (_url, init) => {
+  let requestUrl = "";
+  const client = new BrightDataDatasetClient({ apiKey: "test" }, async (url, init) => {
+    requestUrl = url;
     requestBody = String(init?.body);
     return new Response(JSON.stringify([{ name: "Cafe", url: "https://www.yelp.com/biz/cafe" }]), { status: 200 });
   });
   const discovery = new BrightDataCandidateDiscovery(client, { yelpDatasetId: "gd_yelp" });
   const candidates = await discovery.discover({ city: "San Francisco, CA", limit: 1 });
   assert.equal(candidates.length, 1);
-  assert.match(requestBody, /www\.yelp\.com\/search/);
-  assert.match(requestBody, /find_desc=Restaurants/);
+  assert.match(requestBody, /"category":"Restaurants"/);
+  assert.match(requestBody, /"location":"San Francisco, CA"/);
+  assert.match(requestUrl, /type=discover_new/);
+  assert.match(requestUrl, /discover_by=search_filters/);
 });

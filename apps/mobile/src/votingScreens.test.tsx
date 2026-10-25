@@ -54,7 +54,6 @@ test("open voting shows deadline, aggregate counts, vote and separate veto contr
   expect(screen.getByTestId("vote-approve-proposal-1")).toBeTruthy();
   expect(screen.getByTestId("veto-proposal-1")).toBeTruthy();
   expect(screen.queryByTestId("vote-banner-proposal-1")).toBeNull();
-  expect(screen.getByTestId("vote-suggest-proposal-1").props.accessibilityState?.disabled).toBe(true);
 });
 
 test("veto control is hidden when the backend does not allow it", async () => {

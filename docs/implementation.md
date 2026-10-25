@@ -15,6 +15,12 @@ The project owner authorized contract-independent implementation before `GATE0-0
 - provider-neutral personal-evaluation boundary and safe unavailable-provider error path;
 - frozen TypeScript tests for seeded discovery.
 
+The package now also provides privacy-safe provider input preparation, a
+fallback-discovery wrapper, and fixed-weight ranking over precomputed score
+components. It rejects score ties instead of assuming an unapproved tie-break.
+Candidate and provider outputs are validated before use; malformed records and
+privacy-unsafe explanation text are rejected.
+
 It does not create root workspace tooling, call Creao or Bright Data, implement scoring, or export the pending backend-facing `PlannerPort`. Those items still require the shared contract and approved rules.
 
 ### Next action after Gate 0

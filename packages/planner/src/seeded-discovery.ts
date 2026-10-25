@@ -1,4 +1,4 @@
-import type { ActivityCandidate, CandidateDiscoveryPort, DiscoveryQuery } from "./domain";
+import type { ActivityCandidate, CandidateDiscoveryPort, DiscoveryQuery } from "./domain.js";
 
 const SEEDED_CANDIDATES: readonly ActivityCandidate[] = [
   {

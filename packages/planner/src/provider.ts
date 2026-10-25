@@ -1,4 +1,4 @@
-import type { PersonalEvaluation, PersonalEvaluationProvider } from "./domain";
+import type { PersonalEvaluation, PersonalEvaluationProvider } from "./domain.js";
 
 /**
  * Provider-neutral boundary. Creao-specific request and response handling

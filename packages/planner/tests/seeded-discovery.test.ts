@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { SeededCandidateDiscovery } from "../src/seeded-discovery";
+import { SeededCandidateDiscovery } from "../src/seeded-discovery.js";
 
 test("seeded discovery returns deterministic, bounded results", async () => {
   const discovery = new SeededCandidateDiscovery();

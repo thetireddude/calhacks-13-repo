@@ -2,13 +2,15 @@
 
 ## Milestone
 
-**Gate 1 complete** (merged PR #1). **Gate 2 env-gated persistence complete:** DEV2-011–017 on `main`. CI stays in-memory; local Supabase via `.env` (`docs/dev2-local-setup.md`).
+**Gate 1 complete.** **Gate 2 persistence complete** (011–017). **Catch-up in flight:** DEV2-018 ∥ 019 ∥ 020 (env/CORS, list groups, displayName).
 
 ## In flight
 
 | Task | Deliverable |
 |------|-------------|
-| *(none)* | Waiting on Dev 3 planner / SPEC §11 / optional live-DB smoke |
+| DEV2-018 | Load `.env` on `dev` + CORS |
+| DEV2-019 | `GET /v1/groups` (membership-scoped) |
+| DEV2-020 | `PUT /v1/me` displayName |
 
 ## Shipped (Gate 1)
 

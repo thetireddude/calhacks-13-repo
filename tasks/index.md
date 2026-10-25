@@ -24,5 +24,8 @@ Core API lane only. Other lanes own their tasks separately.
 | DEV2-015 | merged | DEV2-011 | Prefs + availability persistence |
 | DEV2-016 | merged | DEV2-014, DEV2-015 | Planning runs + proposals persistence |
 | DEV2-017 | merged | DEV2-016 | Votes / vetoes / confirmed events persistence |
+| DEV2-018 | implementing | DEV2-017 | `.env` load + CORS |
+| DEV2-019 | implementing | DEV2-011 | `GET /v1/groups` list mine |
+| DEV2-020 | implementing | DEV2-014 | `PUT /v1/me` displayName |
 
 Milestone: [`docs/milestone-dag.md`](../docs/milestone-dag.md)

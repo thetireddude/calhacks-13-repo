@@ -18,8 +18,8 @@ export interface MemberSetupClient {
 }
 
 // Mobile-local error shape for the real client (contract error schema not frozen, SPEC section 11).
-// unauthenticated = 401 (sign in again); invalid = 400 body rejected; network/server are retry types.
-export type MemberSetupErrorCode = "unauthenticated" | "invalid" | "network" | "server";
+// unauthenticated = 401 (sign in again); forbidden = 403; not_found = 404; invalid = 400 body rejected; network/server are retry types.
+export type MemberSetupErrorCode = "unauthenticated" | "forbidden" | "not_found" | "invalid" | "network" | "server";
 export class MemberSetupError extends Error {
   constructor(readonly code: MemberSetupErrorCode) {
     super(code);

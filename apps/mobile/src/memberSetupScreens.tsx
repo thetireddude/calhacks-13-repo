@@ -301,7 +301,21 @@ export function AvailabilityScreen() {
 
 // Stores GroupSchedule config (timezone + weekly toggle) through the ScheduleClient. The backend does not
 // auto-plan from it yet (SPEC section 11), so the screen says so rather than implying a schedule runs.
+const TIMEZONE_HINT = "Enter a timezone such as America/Los_Angeles.";
+const SCHEDULE_FORBIDDEN = "You do not have access to this group's settings.";
+const SCHEDULE_NOT_FOUND = "This group was not found.";
 const SCHEDULE_REJECTED = "The server rejected these settings. Enter a timezone such as America/Los_Angeles.";
+
+// Light client-side check only; the server stays authoritative for timezone validation.
+function isIanaTimezone(tz: string): boolean {
+  if (tz.trim() === "") return false;
+  try {
+    new Intl.DateTimeFormat(undefined, { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export function WeeklyPlanningScreen({ route }: NativeStackScreenProps<SetupStackParams, "WeeklyPlanning">) {
   const { schedule } = useSetup();
@@ -333,6 +347,10 @@ export function WeeklyPlanningScreen({ route }: NativeStackScreenProps<SetupStac
     if (saving) return;
     setNotice(null);
     setError(null);
+    if (!isIanaTimezone(timezone)) {
+      setError(TIMEZONE_HINT);
+      return;
+    }
     setSaving(true);
     try {
       const saved = await schedule.put(groupId, { timezone, weeklyEnabled });
@@ -340,7 +358,16 @@ export function WeeklyPlanningScreen({ route }: NativeStackScreenProps<SetupStac
       setWeeklyEnabled(saved.weeklyEnabled);
       setNotice("Saved.");
     } catch (e) {
-      setError(e instanceof MemberSetupError && e.code === "invalid" ? SCHEDULE_REJECTED : SAVE_FAILED);
+      const code = e instanceof MemberSetupError ? e.code : null;
+      setError(
+        code === "invalid"
+          ? SCHEDULE_REJECTED
+          : code === "forbidden"
+            ? SCHEDULE_FORBIDDEN
+            : code === "not_found"
+              ? SCHEDULE_NOT_FOUND
+              : SAVE_FAILED,
+      );
     } finally {
       setSaving(false);
     }

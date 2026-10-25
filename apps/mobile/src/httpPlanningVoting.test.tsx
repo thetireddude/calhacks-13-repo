@@ -6,7 +6,7 @@ import type {
   ProposalVoteResponse,
 } from "@gather/contracts";
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
-import { Linking, Share } from "react-native";
+import { Linking } from "react-native";
 
 import { createApiClient } from "./apiClient";
 import { AuthProvider, createMockAuthClient } from "./auth";
@@ -17,6 +17,7 @@ import {
   createHttpScheduleClient,
   createHttpVotingClient,
 } from "./httpClients";
+import { shareIcsFile } from "./icsShare";
 import { MemberSetupError } from "./memberSetup";
 import { PlanningError, createMockPlanningClient } from "./planning";
 import type { PlanningClient } from "./planning";
@@ -24,6 +25,9 @@ import { POLL_INTERVAL_MS } from "./planningScreens";
 import { RootNavigator } from "./RootNavigator";
 import { VotingError, createMockVotingClient } from "./voting";
 import type { IcsClient } from "./voting";
+
+jest.mock("./icsShare", () => ({ shareIcsFile: jest.fn() }));
+const shareIcsFileMock = jest.mocked(shareIcsFile);
 
 const TOKEN = "secret-token-xyz";
 const run: PlanningRunResponse = {
@@ -229,7 +233,8 @@ describe("http schedule client", () => {
     [0, "network"],
     [400, "invalid"],
     [401, "unauthenticated"],
-    [403, "server"],
+    [403, "forbidden"],
+    [404, "not_found"],
     [500, "server"],
   ])("status %s maps to %s, PUT is attempted once, no token leak", async (status, code) => {
     const f = setupApi(status);
@@ -282,6 +287,7 @@ describe("http ics client", () => {
 
 describe("screens with real clients and polling", () => {
   beforeEach(() => {
+    shareIcsFileMock.mockReset();
     jest.spyOn(Linking, "getInitialURL").mockResolvedValue(null);
     jest.spyOn(Linking, "addEventListener").mockReturnValue({ remove: () => {} });
   });
@@ -404,21 +410,42 @@ describe("screens with real clients and polling", () => {
     expect(screen.queryByText(/not available yet/)).toBeNull();
   });
 
-  test("real mode ICS button calls the client, then the OS share sheet", async () => {
-    const share = jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction", activityType: undefined });
+  test("real mode ICS button calls the client, then shares the .ics file", async () => {
+    shareIcsFileMock.mockResolvedValue("shared");
     const { voting } = setup(200, event);
     const exportIcs = jest.fn(async (id: string) => ({ filename: `event-${id}.ics`, content: "BEGIN:VCALENDAR" }));
     await open(createMockPlanningClient("three"), voting, { exportIcs });
     await fireEvent.press(screen.getByLabelText(/^Events, tab/));
     await fireEvent.press(await screen.findByText("Add to calendar (.ics)"));
-    await screen.findByText("Choose where to save the calendar file.");
+    await screen.findByText("Choose where to save or open the calendar file.");
     expect(exportIcs).toHaveBeenCalledWith("e1");
-    expect(share).toHaveBeenCalledWith({ message: "BEGIN:VCALENDAR", title: "event-e1.ics" });
+    expect(shareIcsFileMock).toHaveBeenCalledWith("event-e1.ics", "BEGIN:VCALENDAR");
     expect(screen.queryByText(/not connected yet/)).toBeNull();
   });
 
-  test("real mode ICS failure shows an error and does not open the share sheet", async () => {
-    const share = jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction", activityType: undefined });
+  test("real mode ICS shows an honest message when sharing is unavailable", async () => {
+    shareIcsFileMock.mockResolvedValue("unavailable");
+    const { voting } = setup(200, event);
+    await open(createMockPlanningClient("three"), voting, {
+      exportIcs: async () => ({ filename: "event-e1.ics", content: "BEGIN:VCALENDAR" }),
+    });
+    await fireEvent.press(screen.getByLabelText(/^Events, tab/));
+    await fireEvent.press(await screen.findByText("Add to calendar (.ics)"));
+    await screen.findByText("Sharing is not available on this device.");
+  });
+
+  test("real mode ICS file write failure shows an error", async () => {
+    shareIcsFileMock.mockRejectedValue(new Error("disk full"));
+    const { voting } = setup(200, event);
+    await open(createMockPlanningClient("three"), voting, {
+      exportIcs: async () => ({ filename: "event-e1.ics", content: "BEGIN:VCALENDAR" }),
+    });
+    await fireEvent.press(screen.getByLabelText(/^Events, tab/));
+    await fireEvent.press(await screen.findByText("Add to calendar (.ics)"));
+    await screen.findByRole("alert");
+  });
+
+  test("real mode ICS fetch failure shows an error and does not share", async () => {
     const { voting } = setup(200, event);
     await open(createMockPlanningClient("three"), voting, {
       exportIcs: async () => {
@@ -428,7 +455,7 @@ describe("screens with real clients and polling", () => {
     await fireEvent.press(screen.getByLabelText(/^Events, tab/));
     await fireEvent.press(await screen.findByText("Add to calendar (.ics)"));
     await screen.findByRole("alert");
-    expect(share).not.toHaveBeenCalled();
+    expect(shareIcsFileMock).not.toHaveBeenCalled();
   });
 
   test("a 401 on planning shows session-expired messaging", async () => {

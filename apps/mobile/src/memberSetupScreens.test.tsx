@@ -201,12 +201,43 @@ test("weekly planning shows a server validation error and a generic save failure
     .mockRejectedValueOnce(new MemberSetupError("invalid"))
     .mockRejectedValueOnce(new MemberSetupError("network"));
   await openWeekly({ get: async () => ({ timezone: "UTC", weeklyEnabled: false }), put });
-  await fireEvent.changeText(await screen.findByLabelText("Timezone"), " ");
+  await screen.findByLabelText("Timezone");
   await fireEvent.press(screen.getByText("Save weekly planning"));
   await screen.findByText(/The server rejected these settings/);
   await fireEvent.press(screen.getByText("Save weekly planning"));
   await screen.findByText("Could not save. Please try again.");
   expect(screen.queryByText("Saved.")).toBeNull();
+});
+
+test("weekly planning rejects blank and non-IANA timezones locally, accepts a valid zone", async () => {
+  const put = jest.fn(async (_id: string, s: GroupSchedule) => s);
+  await openWeekly({ get: async () => ({ timezone: "UTC", weeklyEnabled: false }), put });
+  const field = await screen.findByLabelText("Timezone");
+  await fireEvent.changeText(field, " ");
+  await fireEvent.press(screen.getByText("Save weekly planning"));
+  await screen.findByText("Enter a timezone such as America/Los_Angeles.");
+  await fireEvent.changeText(field, "Pacific");
+  await fireEvent.press(screen.getByText("Save weekly planning"));
+  await screen.findByText("Enter a timezone such as America/Los_Angeles.");
+  expect(put).not.toHaveBeenCalled();
+  await fireEvent.changeText(field, "America/Los_Angeles");
+  await fireEvent.press(screen.getByText("Save weekly planning"));
+  await screen.findByText("Saved.");
+  expect(put).toHaveBeenCalledTimes(1);
+  expect(screen.queryByText("Enter a timezone such as America/Los_Angeles.")).toBeNull();
+});
+
+test("weekly planning shows clearer messages for 403 and 404", async () => {
+  const put = jest
+    .fn<Promise<GroupSchedule>, [string, GroupSchedule]>()
+    .mockRejectedValueOnce(new MemberSetupError("forbidden"))
+    .mockRejectedValueOnce(new MemberSetupError("not_found"));
+  await openWeekly({ get: async () => ({ timezone: "UTC", weeklyEnabled: false }), put });
+  await screen.findByLabelText("Timezone");
+  await fireEvent.press(screen.getByText("Save weekly planning"));
+  await screen.findByText("You do not have access to this group's settings.");
+  await fireEvent.press(screen.getByText("Save weekly planning"));
+  await screen.findByText("This group was not found.");
 });
 
 test("weekly planning load failure hides the form and Save", async () => {

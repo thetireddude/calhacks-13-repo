@@ -1,11 +1,12 @@
 import type { ConfirmedEventResponse } from "@gather/contracts";
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { Share, View } from "react-native";
+import { View } from "react-native";
 
 import { useGroups } from "./groupsState";
 import { AppText, Banner, Button, Card, Chip, EmptyState, Screen, VoteButton } from "./ui";
 import type { ChipTone } from "./ui";
+import { shareIcsFile } from "./icsShare";
 import { VotingError, createMockIcsClient, createMockVotingClient } from "./voting";
 import type {
   ConfirmedEventView,
@@ -262,8 +263,12 @@ function GroupEvent({ groupId, groupName }: { groupId: string; groupName: string
         setNotice("Calendar export is not connected yet (stub).");
       } else {
         // The user picks the destination in the share sheet; nothing is added to a calendar silently.
-        await Share.share({ message: result.content, title: result.filename });
-        setNotice("Choose where to save the calendar file.");
+        const outcome = await shareIcsFile(result.filename, result.content);
+        setNotice(
+          outcome === "shared"
+            ? "Choose where to save or open the calendar file."
+            : "Sharing is not available on this device.",
+        );
       }
     } catch {
       setError(GENERIC_ERROR);

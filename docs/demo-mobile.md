@@ -58,10 +58,10 @@ Real = wired to the API today. MOCK = local in-memory mock, do not promise it in
 | 16 | Weekly schedule settings | Timezone + weekly toggle load from and save to the backend; no auto-planning | Real (`/v1/groups/:id/schedule`), not yet run live | |
 | 17 | Vote tally / counts / deadline display | Rendered from mobile-local stub, not backend data | MOCK | |
 | 18 | Notifications feed | Confirmed-event items from the backend; empty list shows "No notifications yet." | Real (`/v1/me/notifications`), not yet run live | |
-| 19 | ICS export | "Add to calendar (.ics)" fetches the file and opens the OS share sheet | Real (`/v1/events/:id/calendar.ics`), not yet run live | |
+| 19 | ICS export | "Add to calendar (.ics)" fetches the text, writes a real .ics file to the cache and opens the OS share sheet (user chooses where to save or open it) | Real (`/v1/events/:id/calendar.ics`); not verified on a device and not imported into a real calendar | |
 | 20 | Push device registration | Not implemented (permission request only) | MOCK / absent | |
 
-Rows 17 and 20 and "Suggest another" (disabled control), aggregate attendance counts, the inclusion-aware alternative, and revision/revote flows are not demo-able today. Do not promise them (the ICS export and in-app feed rows 18-19 are wired but unverified until run on a device).
+Rows 17 and 20 and "Suggest another" (disabled control), aggregate attendance counts, the inclusion-aware alternative, and revision/revote flows are not demo-able today. Do not promise them (the ICS export and in-app feed rows 18-19 are wired but unverified until run on a device). SPEC §3 "ICS export works on the demo device" is not yet confirmed: the .ics file has not been opened or imported on a real device or calendar.
 
 ## 4. Known limitations and fallback
 

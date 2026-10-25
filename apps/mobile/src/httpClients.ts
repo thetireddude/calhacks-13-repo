@@ -76,7 +76,13 @@ export function createHttpGroupClient(api: Api): GroupClient {
 
 function setupError(e: unknown): MemberSetupError {
   if (!(e instanceof ApiError)) return new MemberSetupError("server");
-  const byStatus: Record<number, MemberSetupErrorCode> = { 0: "network", 400: "invalid", 401: "unauthenticated" };
+  const byStatus: Record<number, MemberSetupErrorCode> = {
+    0: "network",
+    400: "invalid",
+    401: "unauthenticated",
+    403: "forbidden",
+    404: "not_found",
+  };
   return new MemberSetupError(byStatus[e.status] ?? "server");
 }
 

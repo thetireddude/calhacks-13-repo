@@ -1,27 +1,21 @@
-# Task Index — Gather
+# Task Index — Gather (Developer 2)
 
-Human-readable status. Detailed state: [`state/CURRENT.md`](../state/CURRENT.md). Graph: [`docs/roadmap.md`](../docs/roadmap.md).
+Core API lane only. Other lanes own their tasks separately.
 
-## Foundation
+| Task | Status | Depends on | Notes |
+|------|--------|------------|-------|
+| GATE0-001 | done | META-001 | Monorepo + CI stub |
+| GATE0-002 | done | GATE0-001 | `@gather/contracts` stubs |
+| GATE0-003 | done | GATE0-002 | ADR-002 contract stub ack |
+| DEV2-001 | done | GATE0-001 | Fastify `/v1/health` |
+| DEV2-002 | done | DEV2-001 | JWT + `/v1/me` |
+| DEV2-003 | done | DEV2-002, GATE0-003 | Identity + groups migrations |
+| DEV2-004 | done | DEV2-003 | Preferences + availability migrations |
+| DEV2-005 | done | DEV2-003 | Groups/invites/join/members API |
+| DEV2-006 | done | DEV2-004, DEV2-005 | Prefs + availability API |
+| DEV2-007 | done | DEV2-004 | Planning runs migration + routes |
+| DEV2-008 | done | DEV2-007, GATE0-002 | Mock planner orchestration + ≤3 proposals |
+| DEV2-009 | done | DEV2-008 | Vote + veto + confirmed-event skeleton (merged) |
+| DEV2-010 | done | DEV2-009 | Gate 1 Dev 2 exit (docs + CI) |
 
-| Task | Status | Depends on | Lane | Notes |
-|------|--------|------------|------|-------|
-| META-001 | done | — | integration | Agent workflow + scaffold |
-| GATE0-001 | ready | META-001 | integration | Root workspace + CI stub |
-| GATE0-002 | ready | GATE0-001 | core-api | Contract type stubs |
-
-## Developer readiness (Gate 1 prep)
-
-| Task | Status | Depends on | Lane | Notes |
-|------|--------|------------|------|-------|
-| DEV1-001 | blocked | GATE0-001 | mobile | Expo bootstrap |
-| DEV2-001 | blocked | GATE0-001 | core-api | API bootstrap |
-| DEV3-001 | blocked | GATE0-001, GATE0-002 | planner | Planner package stub |
-
-## How to pick work
-
-1. Read `AGENTS.md` and your [`docs/developers/`](../docs/developers/) brief.
-2. Only take tasks whose dependencies are `done` and status is `ready`.
-3. Update task **Status** and `state/CURRENT.md` when starting or finishing.
-
-Template: [`TASK_TEMPLATE.md`](TASK_TEMPLATE.md)
+Milestone: [`docs/milestone-dag.md`](../docs/milestone-dag.md)

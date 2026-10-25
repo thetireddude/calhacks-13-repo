@@ -12,7 +12,7 @@ Cal Hacks 13.0 — Meta Track. Turn friend-group hangout intentions into confirm
 
 **Product spec:** [`SPEC.md`](SPEC.md) (v1.1 contract freeze)
 
-**Agents / AI assistants:** start with [`AGENTS.md`](AGENTS.md) → [`state/CURRENT.md`](state/CURRENT.md) → your task in [`tasks/`](tasks/).
+**Agents / AI assistants:** [`AGENTS.md`](AGENTS.md) → [`docs/project-dag.md`](docs/project-dag.md) → [`state/CURRENT.md`](state/CURRENT.md) → your task in [`tasks/`](tasks/).
 
 ## Repository layout
 
@@ -35,7 +35,15 @@ Next human decision: assign **integration owner** and complete **GATE0-001** (pa
 
 ## Local development
 
-Root install commands will be added in GATE0-001. Until then, read package READMEs under `apps/` and `packages/`.
+Requires **Node 20+** and **pnpm 9** (`corepack enable`).
+
+```bash
+pnpm install
+pnpm typecheck
+pnpm test
+```
+
+Package-specific work: `pnpm --filter @gather/api run build`, etc.
 
 Copy environment template when present:
 

@@ -54,7 +54,7 @@ On failure, surface:
 
 Not thousands of passing test lines.
 
-Expand scope when change risk warrants (integration, leakage, regression suites).
+Expand scope when change risk warrants (integration, privacy/auth, regression suites).
 
 ## Search
 

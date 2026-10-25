@@ -27,9 +27,11 @@ One concise description of the outcome.
 ## Read first
 
 - `AGENTS.md`
+- `docs/project-dag.md`
 - `state/CURRENT.md`
 - `SPEC.md` (relevant sections)
 - relevant docs/ADRs
+- `docs/developers/` brief when touching a lane surface
 
 ## Allowed files
 

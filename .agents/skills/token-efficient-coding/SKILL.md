@@ -8,7 +8,7 @@ description: >-
   repositories, using shell/Git/GitHub tools, delegating coding tasks, or
   operating in multi-agent workflows. Harness-agnostic: Cursor, Claude Code,
   Codex, Copilot, or any coding agent with skills support. Correctness, security,
-  and leakage checks always override token savings.
+  and privacy/security checks always override token savings.
 metadata:
   standard: agentskills
   harness-agnostic: true
@@ -22,7 +22,7 @@ Install globally across harnesses: see [INSTALL.md](INSTALL.md).
 
 Central principle: **do not rediscover information the system already knows.**
 
-Token efficiency is **subordinate** to correctness, test quality, architecture validation, security review, and temporal/data-leakage detection.
+Token efficiency is **subordinate** to correctness, test quality, architecture validation, security review, and privacy/contract fidelity.
 
 ## Priority order
 
@@ -50,7 +50,7 @@ Do not jump to broad exploration. Escalate only when a concrete correctness ques
 | 3 | Immediate directory neighborhood, callers, adjacent tests |
 | 4 | Broad repo discovery — **justify with a specific unresolved question** |
 
-Valid reasons to broaden: unknown dependencies, security-sensitive behavior, interface callers, temporal/data leakage, architectural invariants, unclear failures, cross-package impact.
+Valid reasons to broaden: unknown dependencies, security-sensitive behavior, interface callers, privacy or auth boundaries, architectural invariants, unclear failures, cross-package impact.
 
 Details: [references/discovery-policy.md](references/discovery-policy.md)
 
@@ -104,7 +104,7 @@ Start from context pack + task. Read listed files. Targeted search when needed. 
 
 ### Reviewer
 
-Start from task, context pack, changed files, targeted diffs, invariants. `git diff --stat` then per-file diffs. Broaden for correctness, security, leakage, interfaces — never approve to save tokens.
+Start from task, context pack, changed files, targeted diffs, invariants. `git diff --stat` then per-file diffs. Broaden for correctness, security, privacy, contracts — never approve to save tokens.
 
 ### Tester
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-candidate
+merged
 
 ## Dependencies
 

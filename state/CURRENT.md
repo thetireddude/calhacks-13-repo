@@ -2,13 +2,13 @@
 
 ## Milestone
 
-**Gate 1 complete** (merged PR #1). **Gate 2 persistence:** DEV2-014–016 merged. **DEV2-017 in flight.**
+**Gate 1 complete** (merged PR #1). **Gate 2 env-gated persistence complete:** DEV2-011–017 on `main`. CI stays in-memory; local Supabase via `.env` (`docs/dev2-local-setup.md`).
 
 ## In flight
 
 | Task | Deliverable |
 |------|-------------|
-| DEV2-017 | Env-gated votes / vetoes / confirmed events |
+| *(none)* | Waiting on Dev 3 planner / SPEC §11 / optional live-DB smoke |
 
 ## Shipped (Gate 1)
 
@@ -16,7 +16,7 @@ DEV2-001–010 on `main`. See [`state/GATE1-DEV2-EXIT.md`](GATE1-DEV2-EXIT.md).
 
 ## Tests
 
-`pnpm run test:ci` — **34/34** (Tester gates must use this command).
+`pnpm run test:ci` — **35/35** (Tester gates must use this command).
 
 ## Blockers (SPEC §11)
 

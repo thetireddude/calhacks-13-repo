@@ -2,13 +2,17 @@
 
 ## Milestone
 
-**Lane branch:** `dev-2` (through DEV2-020). Catch-up batch **018–020 merged**. Nothing in flight.
+**Lane branch:** `dev-2` / `main` through DEV2-020. **Stub wave in flight:** DEV2-021–025.
 
 ## In flight
 
 | Task | Deliverable |
 |------|-------------|
-| *(none)* | Waiting on Dev 3 planner / Dev 1 real API / SPEC §11 |
+| DEV2-021 | Group schedule GET/PUT (no auto-run) |
+| DEV2-022 | ICS export for confirmed events |
+| DEV2-023 | `GET /v1/me/notifications` feed stub |
+| DEV2-024 | Dev 1 API handoff doc |
+| DEV2-025 | Demo seed notes |
 
 ## Shipped (Gate 1)
 

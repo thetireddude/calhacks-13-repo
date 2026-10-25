@@ -23,7 +23,7 @@
 |------|-------|--------|
 | W1 | GATE0-001 | done on main |
 | W2 | GATE0-002, DEV2-001 | merged — **retro review recommended** |
-| W2 | DEV1-001 | worktree — candidate pending |
+| W2 | DEV1-001 | **merged** (`9777545`) — reviewer APPROVE |
 | W3 | DEV2-002, DEV3-001 | worktrees — **do not merge until R+T** |
 
 ## Active worktrees

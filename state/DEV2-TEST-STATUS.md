@@ -14,10 +14,17 @@ Last run: post DEV2-009 merge on `main`.
 | DEV2-008 | Planner orchestration, cap 3, failure retry | `planning.test.ts` |
 | DEV2-009 | Vote, veto, confirmed event, idempotency | `voting.test.ts`, votes migration smoke |
 
-## Run all Dev 2 tests
+## Run all Dev 2 tests (same as CI)
+
+**Single command** — Implementer, Tester, and GitHub Actions must all use this:
 
 ```bash
-pnpm run test:dev2
+pnpm install --frozen-lockfile || pnpm install
+pnpm run test:ci
 ```
 
-Expected: **27** API tests, **0** failures (includes 5 migration smoke cases).
+(`test:dev2` is an alias for `test:ci`.)
+
+Expected: **27** API tests, **0** failures.
+
+Tester **PASS** is invalid without `test:ci` on the candidate commit in the task worktree.

@@ -8,14 +8,12 @@ import { createSecureSessionStorage } from "./secureSessionStorage";
 type SupabaseError = { status?: number; code?: string } | null;
 
 // Map SDK errors to the mobile-local codes. Never include SDK messages (they may echo input).
-// Requests that fail for any non-network reason (e.g. rate limits) also surface as "network" until
-// the contract error schema adds more codes (SPEC section 11).
-function mapVerifyError(error: NonNullable<SupabaseError>): AuthError {
-  // Supabase may report a wrong code as `otp_expired`, so expired vs invalid cannot be fully separated.
-  if (error.code === "otp_expired") return new AuthError("expired_code");
-  // 429 is a rate limit, not a wrong code: surface the retry-type code ("network") instead of invalid_code.
-  if (error.status === 429) return new AuthError("network");
-  if (typeof error.status === "number" && error.status >= 400 && error.status < 500) return new AuthError("invalid_code");
+// Rate limits (429), 5xx and unknown/missing status surface as "network" (retry-type) until the
+// contract error schema adds more codes (SPEC section 11).
+function mapAuthError(error: NonNullable<SupabaseError>): AuthError {
+  if (error.code === "invalid_credentials") return new AuthError("invalid_credentials");
+  if (error.code === "user_already_exists" || error.code === "email_exists") return new AuthError("email_taken");
+  if (error.code === "weak_password") return new AuthError("weak_password");
   return new AuthError("network");
 }
 
@@ -47,25 +45,29 @@ export function createSupabaseAuthClient(supabase: SupabaseClient): SupabaseAuth
         return null;
       }
     },
-    async requestOtp(email) {
-      let error: SupabaseError;
-      try {
-        ({ error } = await supabase.auth.signInWithOtp({ email }));
-      } catch {
-        throw new AuthError("network");
-      }
-      if (error) throw new AuthError("network");
-    },
-    async verifyOtp(email, code) {
+    async signIn(email, password) {
       let result;
       try {
-        result = await supabase.auth.verifyOtp({ email, token: code.trim(), type: "email" });
+        result = await supabase.auth.signInWithPassword({ email, password });
       } catch {
         throw new AuthError("network");
       }
-      if (result.error) throw mapVerifyError(result.error);
+      if (result.error) throw mapAuthError(result.error);
       const session = toSession(result.data.session);
-      if (!session) throw new AuthError("invalid_code");
+      if (!session) throw new AuthError("network");
+      return session;
+    },
+    async signUp(email, password) {
+      let result;
+      try {
+        result = await supabase.auth.signUp({ email, password });
+      } catch {
+        throw new AuthError("network");
+      }
+      if (result.error) throw mapAuthError(result.error);
+      const session = toSession(result.data.session);
+      // No session means Supabase "Confirm email" is still ON; do not pretend the user is signed in.
+      if (!session) throw new AuthError("confirmation_required");
       return session;
     },
     async signOut() {

@@ -9,7 +9,7 @@ import { createMockIcsClient, createMockVotingClient } from "./src/voting";
 import { RootNavigator } from "./src/RootNavigator";
 import { createDefaultSupabaseAuthClient } from "./src/supabaseAuth";
 
-// Real Supabase email OTP when the public env vars are set. The mock is only a dev/test fallback;
+// Real Supabase email+password auth when the public env vars are set. The mock is only a dev/test fallback;
 // a release build with missing config shows an explicit error instead of silently using the mock.
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;

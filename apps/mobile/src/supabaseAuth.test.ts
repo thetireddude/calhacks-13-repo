@@ -16,47 +16,61 @@ function fakeSupabase(auth: Record<string, jest.Mock>) {
 }
 const sess = { access_token: "tok-abc" };
 
-test("requestOtp calls signInWithOtp with the email", async () => {
-  const signInWithOtp = jest.fn().mockResolvedValue({ error: null });
-  await createSupabaseAuthClient(fakeSupabase({ signInWithOtp })).requestOtp("a@example.com");
-  expect(signInWithOtp).toHaveBeenCalledWith({ email: "a@example.com" });
+test("signIn calls signInWithPassword and returns a session with the access token", async () => {
+  const signInWithPassword = jest.fn().mockResolvedValue({ data: { session: sess }, error: null });
+  const c = createSupabaseAuthClient(fakeSupabase({ signInWithPassword }));
+  expect(await c.signIn("a@example.com", "secret1")).toEqual({ kind: "supabase", accessToken: "tok-abc" });
+  expect(signInWithPassword).toHaveBeenCalledWith({ email: "a@example.com", password: "secret1" });
 });
 
-test("requestOtp maps SDK error and thrown fetch failure to network", async () => {
-  const a = createSupabaseAuthClient(fakeSupabase({ signInWithOtp: jest.fn().mockResolvedValue({ error: { status: 429 } }) }));
-  await expect(a.requestOtp("a@example.com")).rejects.toMatchObject({ code: "network" });
-  const b = createSupabaseAuthClient(fakeSupabase({ signInWithOtp: jest.fn().mockRejectedValue(new Error("boom")) }));
-  await expect(b.requestOtp("a@example.com")).rejects.toBeInstanceOf(AuthError);
-});
-
-test("verifyOtp success returns a session with the access token", async () => {
-  const verifyOtp = jest.fn().mockResolvedValue({ data: { session: sess }, error: null });
-  const c = createSupabaseAuthClient(fakeSupabase({ verifyOtp }));
-  expect(await c.verifyOtp("a@example.com", " 123456 ")).toEqual({ kind: "supabase", accessToken: "tok-abc" });
-  expect(verifyOtp).toHaveBeenCalledWith({ email: "a@example.com", token: "123456", type: "email" });
+test("signUp calls signUp and returns the immediate session", async () => {
+  const signUp = jest.fn().mockResolvedValue({ data: { session: sess }, error: null });
+  const c = createSupabaseAuthClient(fakeSupabase({ signUp }));
+  expect(await c.signUp("a@example.com", "secret1")).toEqual({ kind: "supabase", accessToken: "tok-abc" });
+  expect(signUp).toHaveBeenCalledWith({ email: "a@example.com", password: "secret1" });
 });
 
 test.each([
-  [{ status: 403, code: "otp_expired", message: "secret-email@x.com" }, "expired_code"],
-  [{ status: 400, code: "validation_failed" }, "invalid_code"],
+  [{ status: 400, code: "invalid_credentials", message: "secret-email@x.com secret1" }, "invalid_credentials"],
+  [{ status: 422, code: "user_already_exists" }, "email_taken"],
+  [{ status: 422, code: "email_exists" }, "email_taken"],
+  [{ status: 422, code: "weak_password" }, "weak_password"],
+  [{ status: 429, code: "over_request_rate_limit" }, "network"],
   [{ status: 0, name: "AuthRetryableFetchError" }, "network"],
   [{ status: 500 }, "network"],
-  [{ status: 429, code: "over_request_rate_limit" }, "network"],
-  [{ status: undefined, code: "otp_expired" }, "expired_code"],
   [{ status: undefined }, "network"],
-])("verifyOtp maps %j to %s without leaking the SDK message", async (error, code) => {
-  const c = createSupabaseAuthClient(fakeSupabase({ verifyOtp: jest.fn().mockResolvedValue({ data: { session: null }, error }) }));
-  const err = await c.verifyOtp("a@example.com", "123456").catch((e) => e);
-  expect(err).toBeInstanceOf(AuthError);
-  expect(err.code).toBe(code);
-  expect(err.message).toBe(code);
+])("signIn and signUp map %j to %s without leaking the SDK message", async (error, code) => {
+  const result = jest.fn().mockResolvedValue({ data: { session: null }, error });
+  const c = createSupabaseAuthClient(fakeSupabase({ signInWithPassword: result, signUp: result }));
+  for (const err of [
+    await c.signIn("a@example.com", "secret1").catch((e) => e),
+    await c.signUp("a@example.com", "secret1").catch((e) => e),
+  ]) {
+    expect(err).toBeInstanceOf(AuthError);
+    expect(err.code).toBe(code);
+    expect(err.message).toBe(code);
+    expect(`${err.message}${err.stack}`).not.toMatch(/a@example\.com|secret1|secret-email/);
+  }
 });
 
-test("verifyOtp with no session or a thrown error rejects", async () => {
-  const none = createSupabaseAuthClient(fakeSupabase({ verifyOtp: jest.fn().mockResolvedValue({ data: { session: null }, error: null }) }));
-  await expect(none.verifyOtp("a@example.com", "1")).rejects.toMatchObject({ code: "invalid_code" });
-  const thrown = createSupabaseAuthClient(fakeSupabase({ verifyOtp: jest.fn().mockRejectedValue(new Error("x")) }));
-  await expect(thrown.verifyOtp("a@example.com", "1")).rejects.toMatchObject({ code: "network" });
+test("signUp without a session (email confirmation on) throws confirmation_required", async () => {
+  const signUp = jest.fn().mockResolvedValue({ data: { session: null, user: { id: "u" } }, error: null });
+  const err = await createSupabaseAuthClient(fakeSupabase({ signUp })).signUp("a@example.com", "secret1").catch((e) => e);
+  expect(err).toMatchObject({ code: "confirmation_required" });
+});
+
+test("a thrown SDK/fetch error maps to network with no input or token in message or stack", async () => {
+  const boom = jest.fn().mockRejectedValue(new Error("fail a@example.com secret1 tok-abc"));
+  const c = createSupabaseAuthClient(fakeSupabase({ signInWithPassword: boom, signUp: boom }));
+  for (const err of [await c.signIn("a@example.com", "secret1").catch((e) => e), await c.signUp("a@example.com", "secret1").catch((e) => e)]) {
+    expect(err).toMatchObject({ code: "network" });
+    expect(`${err.message}${err.stack}`).not.toMatch(/a@example\.com|secret1|tok-abc/);
+  }
+});
+
+test("signIn with no session and no error is a network-type failure, not success", async () => {
+  const none = createSupabaseAuthClient(fakeSupabase({ signInWithPassword: jest.fn().mockResolvedValue({ data: { session: null }, error: null }) }));
+  await expect(none.signIn("a@example.com", "secret1")).rejects.toMatchObject({ code: "network" });
 });
 
 test("getSession restores the SDK session and signOut delegates", async () => {
@@ -112,12 +126,6 @@ test("api client surfaces 401 distinctly and never puts the token in the error",
   const e2 = await other.getMe().catch((e) => e);
   expect(e2.unauthorized).toBe(false);
   expect(fetchImpl.mock.calls[0][1].headers.Authorization).toBe("Bearer tok-abc");
-});
-
-test("verifyOtp sends the trimmed code (whitespace-only input is not sent as a code)", async () => {
-  const verifyOtp = jest.fn().mockResolvedValue({ data: { session: sess }, error: null });
-  await createSupabaseAuthClient(fakeSupabase({ verifyOtp })).verifyOtp("a@example.com", "\t 654321\n");
-  expect(verifyOtp.mock.calls[0][0].token).toBe("654321");
 });
 
 test("getAccessToken returns the current token, not a snapshot, and null on none/throw", async () => {

@@ -1,24 +1,25 @@
-import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useState } from "react";
 import { ActivityIndicator, Button, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { AuthError, useAuth } from "./auth";
 
 export type SignedOutParams = {
-  Email: undefined;
-  Otp: { email: string };
+  SignIn: undefined;
 };
 
-// Client-side shape check only; not an approved email policy.
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MIN_PASSWORD_LENGTH = 6; // Supabase default minimum
 
 function messageFor(e: unknown): string {
   if (e instanceof AuthError) {
     switch (e.code) {
-      case "invalid_code":
-        return "That code is not correct. Check it and try again.";
-      case "expired_code":
-        return "That code has expired. Tap Resend code to get a new one.";
+      case "invalid_credentials":
+        return "Incorrect email or password.";
+      case "email_taken":
+        return "An account with this email already exists. Try signing in.";
+      case "weak_password":
+        return "That password is too weak. Choose a longer or less common one.";
+      case "confirmation_required":
+        return "Account created, but email confirmation is still turned on in Supabase. Turn off Confirm email in the Supabase auth settings and try again.";
       case "network":
         return "Network problem. Check your connection and try again.";
     }
@@ -26,26 +27,30 @@ function messageFor(e: unknown): string {
   return "Something went wrong. Please try again.";
 }
 
-export function EmailScreen({ navigation }: NativeStackScreenProps<SignedOutParams, "Email">) {
-  const { requestOtp } = useAuth();
+export function SignInScreen() {
+  const { signIn, signUp } = useAuth();
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  async function send() {
+  async function submit(action: typeof signIn) {
     const trimmed = email.trim();
-    if (!EMAIL_PATTERN.test(trimmed)) {
+    if (!trimmed.includes("@")) {
       setError("Enter a valid email address.");
+      return;
+    }
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
       return;
     }
     setError(null);
     setBusy(true);
     try {
-      await requestOtp(trimmed);
-      navigation.navigate("Otp", { email: trimmed });
+      await action(trimmed, password);
+      // On success the navigator swaps to authenticated tabs and this screen unmounts.
     } catch (e) {
       setError(messageFor(e));
-    } finally {
       setBusy(false);
     }
   }
@@ -53,7 +58,7 @@ export function EmailScreen({ navigation }: NativeStackScreenProps<SignedOutPara
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Gather</Text>
-      <Text>Enter your email to get a sign-in code.</Text>
+      <Text>Sign in or create an account.</Text>
       <TextInput
         accessibilityLabel="Email"
         style={styles.input}
@@ -63,74 +68,29 @@ export function EmailScreen({ navigation }: NativeStackScreenProps<SignedOutPara
           setError(null);
         }}
         autoCapitalize="none"
+        autoComplete="email"
+        autoCorrect={false}
         keyboardType="email-address"
         editable={!busy}
       />
-      {error ? <Text accessibilityRole="alert">{error}</Text> : null}
-      {busy ? <ActivityIndicator accessibilityLabel="Sending code" /> : null}
-      <Button title="Send code" onPress={() => void send()} disabled={busy} />
-    </View>
-  );
-}
-
-export function OtpScreen({ route }: NativeStackScreenProps<SignedOutParams, "Otp">) {
-  const { verifyOtp, requestOtp } = useAuth();
-  const [code, setCode] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  async function verify() {
-    if (code.trim() === "") {
-      setError("Enter the code.");
-      return;
-    }
-    setError(null);
-    setNotice(null);
-    setBusy(true);
-    try {
-      await verifyOtp(route.params.email, code.trim());
-    } catch (e) {
-      setError(messageFor(e));
-      setBusy(false);
-    }
-    // On success the navigator swaps to authenticated tabs and this screen unmounts.
-  }
-
-  async function resend() {
-    setError(null);
-    setNotice(null);
-    setBusy(true);
-    try {
-      await requestOtp(route.params.email);
-      setCode("");
-      setNotice("A new code was sent.");
-    } catch (e) {
-      setError(messageFor(e));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <View style={styles.container}>
-      <Text>Enter the code we sent you.</Text>
       <TextInput
-        accessibilityLabel="Code"
+        accessibilityLabel="Password"
         style={styles.input}
-        value={code}
+        value={password}
         onChangeText={(t) => {
-          setCode(t);
+          setPassword(t);
           setError(null);
         }}
-        keyboardType="number-pad"
+        secureTextEntry
+        autoCapitalize="none"
+        autoComplete="password"
+        autoCorrect={false}
         editable={!busy}
       />
       {error ? <Text accessibilityRole="alert">{error}</Text> : null}
-      {notice ? <Text>{notice}</Text> : null}
       {busy ? <ActivityIndicator accessibilityLabel="Working" /> : null}
-      <Button title="Verify" onPress={() => void verify()} disabled={busy} />
-      <Button title="Resend code" onPress={() => void resend()} disabled={busy} />
+      <Button title="Sign in" onPress={() => void submit(signIn)} disabled={busy} />
+      <Button title="Create account" onPress={() => void submit(signUp)} disabled={busy} color="#666" />
     </View>
   );
 }

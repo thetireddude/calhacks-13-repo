@@ -1,24 +1,26 @@
 import { AuthError, createMockAuthClient } from "./auth";
 
-test("success creates a session and signOut clears it", async () => {
+test("signIn and signUp success create a session and signOut clears it", async () => {
   const c = createMockAuthClient();
-  await c.requestOtp("a@example.com");
-  expect(await c.verifyOtp("a@example.com", "123456")).toEqual({ kind: "mock" });
+  expect(await c.signIn("a@example.com", "secret1")).toEqual({ kind: "mock" });
   expect(await c.getSession()).not.toBeNull();
   await c.signOut();
   expect(await c.getSession()).toBeNull();
+  expect(await c.signUp("a@example.com", "secret1")).toEqual({ kind: "mock" });
+  expect(await c.getSession()).not.toBeNull();
 });
 
-test.each(["invalid_code", "expired_code", "network"] as const)("verify fixture %s rejects with that code and no session", async (o) => {
-  const c = createMockAuthClient({ verify: o });
-  await expect(c.verifyOtp("a@example.com", "123456")).rejects.toMatchObject({ code: o });
-  await expect(c.verifyOtp("a@example.com", "123456")).rejects.toBeInstanceOf(AuthError);
+test.each(["invalid_credentials", "network"] as const)("signIn fixture %s rejects with that code and no session", async (o) => {
+  const c = createMockAuthClient({ signIn: o });
+  await expect(c.signIn("a@example.com", "secret1")).rejects.toMatchObject({ code: o });
+  await expect(c.signIn("a@example.com", "secret1")).rejects.toBeInstanceOf(AuthError);
   expect(await c.getSession()).toBeNull();
 });
 
-test("request network fixture rejects and can be reset", async () => {
-  const c = createMockAuthClient({ request: "network" });
-  await expect(c.requestOtp("a@example.com")).rejects.toMatchObject({ code: "network" });
-  c.setRequestOutcome("success");
-  await expect(c.requestOtp("a@example.com")).resolves.toBeUndefined();
+test.each(["email_taken", "weak_password", "confirmation_required", "network"] as const)("signUp fixture %s rejects and can be reset", async (o) => {
+  const c = createMockAuthClient({ signUp: o });
+  await expect(c.signUp("a@example.com", "secret1")).rejects.toMatchObject({ code: o });
+  expect(await c.getSession()).toBeNull();
+  c.setSignUpOutcome("success");
+  await expect(c.signUp("a@example.com", "secret1")).resolves.toEqual({ kind: "mock" });
 });
